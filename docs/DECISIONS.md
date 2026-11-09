@@ -63,3 +63,9 @@ Choice: Keep the accepted architecture; findings below become spec requirements.
 - Avatars (Quaternius Modular Men/Women Suit + Universal Animation Library): rigs differ (49/51 vs 53 joints, rest rotations up to ~90 deg apart), so clips need world-space rest-pose retargeting plus hip-motion transfer. Working implementation: spike/poc/avatar/src/retarget.ts (port into apps/web). Height ~1.85 m; Sitting_Idle_Loop aligns with a 0.45 m seat.
 Alternatives: Kenney Mini Characters (shared rig, no retarget) remain the fallback.
 Consequence: Retargeting becomes an explicit Phase 2 task with a numeric pose check test.
+
+## 2026-11-09 — Core-first priority; PRD deviations accepted (owner)
+Context: SPEC cross-review surfaced PRD conflicts; owner clarified what matters most.
+Choice: Release-critical core = join a room, see other employees in real time, move, sit at a workstation, and watch a shared YouTube TV. Other interactions (coffee, wave, sofa rest, doors, cabinets) follow after the core works; lockers and most props are decorative. Accepted deviations: Quaternius Suit avatars instead of stylized big-head proportions; curated video catalog + pasted YouTube URL instead of live search (no Data API key); 8 photo-faithful desks with first-come seating; room 10 x 8 x 2.7 m (DEC over ARCH 10 x 7 x 2.8); closing the TV is local, Stop is shared.
+Alternatives: Build every SRS interaction to equal depth before release; live YouTube search.
+Consequence: Phase plans order core tasks first; SPEC "Resolved decisions" lists the full set.

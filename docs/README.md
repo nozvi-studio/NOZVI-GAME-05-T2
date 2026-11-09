@@ -7,6 +7,7 @@ Only files listed here exist. Status: Draft / Approved / Deprecated.
 |---|---|---|---|
 | ARCH | `docs/ARCHITECTURE.md` | Accepted stack, module layout, realtime, deployment | Accepted |
 | SPEC | `docs/SPEC.md` | REQ-IDs, acceptance criteria, traceability to PRD, open questions | Accepted |
+| Layout | `docs/layout/office-layout.json` | Room geometry, zones, seats, colliders; validated by `validate-layout.mjs` | Accepted |
 | GDD | `docs/GDD.md` | Casual template, superseded by PRD + ARCH | Deprecated |
 | STATUS | `docs/STATUS.md` | Current state, next steps, blockers | — |
 | CODEMAP | `docs/CODEMAP.md` | Where code lives, module boundaries, entry points | — |
