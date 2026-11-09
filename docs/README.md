@@ -5,7 +5,8 @@ Updated: 2026-11-09
 Only files listed here exist. Status: Draft / Approved / Deprecated.
 | ID | File | Owns (source of truth for) | Status |
 |---|---|---|---|
-| GDD | `docs/GDD.md` | Product intent, scope, milestones, mechanics index | Draft |
+| ARCH | `docs/ARCHITECTURE.md` | Accepted stack, module layout, realtime, deployment | Accepted |
+| GDD | `docs/GDD.md` | Casual template, superseded by PRD + ARCH | Deprecated |
 | STATUS | `docs/STATUS.md` | Current state, next steps, blockers | — |
 | CODEMAP | `docs/CODEMAP.md` | Where code lives, module boundaries, entry points | — |
 | DEC | `docs/DECISIONS.md` | Technical/design trade-offs (ADR-lite) | — |
