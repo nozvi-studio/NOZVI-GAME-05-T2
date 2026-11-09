@@ -1,0 +1,12 @@
+pnpm-lock.yaml
+dist
+coverage
+spike
+PRD
+except
+playwright-report
+test-results
+.claude
+AGENTS.md
+CLAUDE.md
+dist-types

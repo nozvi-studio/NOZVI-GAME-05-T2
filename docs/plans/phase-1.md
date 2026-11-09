@@ -62,16 +62,21 @@ docs/layout/validate-layout.mjs   default path updated to the moved JSON
 - [ ] **Step 1: Root config**
 
 `pnpm-workspace.yaml`:
+
 ```yaml
 packages:
   - apps/*
   - packages/*
 ```
+
 `.npmrc`:
+
 ```
 save-exact=true
 ```
+
 `package.json`:
+
 ```json
 {
   "name": "virtual-office",
@@ -90,7 +95,9 @@ save-exact=true
   }
 }
 ```
+
 `tsconfig.base.json`:
+
 ```json
 {
   "compilerOptions": {
@@ -108,21 +115,40 @@ save-exact=true
   }
 }
 ```
+
 `tsconfig.json`:
+
 ```json
-{ "files": [], "references": [{ "path": "packages/protocol" }, { "path": "apps/server" }, { "path": "apps/web" }] }
+{
+  "files": [],
+  "references": [{ "path": "packages/protocol" }, { "path": "apps/server" }, { "path": "apps/web" }]
+}
 ```
+
 `.prettierrc.json`: `{ "singleQuote": true, "printWidth": 100 }`. `.prettierignore`: `pnpm-lock.yaml`, `dist`, `coverage`, `spike`, `PRD`, `except`, `playwright-report`, `test-results`.
 
 `eslint.config.js`:
+
 ```js
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', 'spike/**', 'coverage/**', '**/playwright-report/**', 'docs/layout/*.mjs'] },
+  {
+    ignores: [
+      '**/dist/**',
+      'spike/**',
+      'coverage/**',
+      '**/playwright-report/**',
+      'docs/layout/*.mjs',
+    ],
+  },
   ...tseslint.configs.recommended,
-  { files: ['apps/web/src/**/*.tsx'], plugins: { 'react-hooks': reactHooks }, rules: reactHooks.configs.recommended.rules },
+  {
+    files: ['apps/web/src/**/*.tsx'],
+    plugins: { 'react-hooks': reactHooks },
+    rules: reactHooks.configs.recommended.rules,
+  },
   {
     files: ['packages/protocol/**/*.ts'],
     rules: {
@@ -135,6 +161,7 @@ export default tseslint.config(
 - [ ] **Step 2: Protocol package skeleton with a smoke test**
 
 `packages/protocol/package.json`:
+
 ```json
 {
   "name": "@office/protocol",
@@ -144,12 +171,20 @@ export default tseslint.config(
   "scripts": { "test": "vitest run" }
 }
 ```
+
 `packages/protocol/tsconfig.json`:
+
 ```json
-{ "extends": "../../tsconfig.base.json", "compilerOptions": { "outDir": "dist", "rootDir": "." }, "include": ["src", "src/**/*.json", "test"] }
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "." },
+  "include": ["src", "src/**/*.json", "test"]
+}
 ```
+
 `src/index.ts`: `export const PROTOCOL_VERSION = 1;`
 `test/smoke.test.ts`:
+
 ```ts
 import { expect, it } from 'vitest';
 import { PROTOCOL_VERSION } from '../src/index';
@@ -159,6 +194,7 @@ it('exports a protocol version', () => expect(PROTOCOL_VERSION).toBe(1));
 - [ ] **Step 3: Server health service (TDD)**
 
 `apps/server/package.json`:
+
 ```json
 {
   "name": "@office/server",
@@ -168,11 +204,20 @@ it('exports a protocol version', () => expect(PROTOCOL_VERSION).toBe(1));
   "dependencies": { "@office/protocol": "workspace:*" }
 }
 ```
+
 `apps/server/tsconfig.json`:
+
 ```json
-{ "extends": "../../tsconfig.base.json", "compilerOptions": { "outDir": "dist", "rootDir": ".", "types": ["node"] }, "include": ["src", "test"], "references": [{ "path": "../../packages/protocol" }] }
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": ".", "types": ["node"] },
+  "include": ["src", "test"],
+  "references": [{ "path": "../../packages/protocol" }]
+}
 ```
+
 Write the failing test `apps/server/test/health.test.ts`:
+
 ```ts
 import { afterEach, expect, it } from 'vitest';
 import type { AddressInfo } from 'node:net';
@@ -199,9 +244,11 @@ it('returns 404 for other paths', async () => {
   expect((await fetch(`http://127.0.0.1:${port}/nope`)).status).toBe(404);
 });
 ```
+
 **Run:** `pnpm --filter @office/server test`. Expected: FAIL, cannot resolve `../src/health`.
 
 `apps/server/src/health.ts`:
+
 ```ts
 import { createServer, type Server } from 'node:http';
 
@@ -216,7 +263,9 @@ export function createHealthServer(): Server {
   });
 }
 ```
+
 `apps/server/src/main.ts`:
+
 ```ts
 import { createHealthServer } from './health';
 
@@ -227,41 +276,85 @@ createHealthServer().listen(port, () => console.log(`server listening on ${port}
 - [ ] **Step 4: Web app shell**
 
 `apps/web/package.json`:
+
 ```json
 {
   "name": "@office/web",
   "private": true,
   "type": "module",
-  "scripts": { "dev": "vite", "build": "vite build", "preview": "vite preview", "test": "vitest run", "e2e": "playwright test" },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "e2e": "playwright test"
+  },
   "dependencies": { "@office/protocol": "workspace:*" }
 }
 ```
+
 `apps/web/tsconfig.json`:
+
 ```json
-{ "extends": "../../tsconfig.base.json", "compilerOptions": { "outDir": "dist-types", "rootDir": ".", "jsx": "react-jsx", "lib": ["ES2022", "DOM", "DOM.Iterable"], "types": ["vite/client"] }, "include": ["src", "test", "e2e", "vite.config.ts", "playwright.config.ts"], "references": [{ "path": "../../packages/protocol" }] }
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist-types",
+    "rootDir": ".",
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"]
+  },
+  "include": ["src", "test", "e2e", "vite.config.ts", "playwright.config.ts"],
+  "references": [{ "path": "../../packages/protocol" }]
+}
 ```
+
 `apps/web/vite.config.ts`:
+
 ```ts
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 export default defineConfig({ plugins: [react()], server: { port: 5173, strictPort: true } });
 ```
+
 `apps/web/index.html`:
+
 ```html
 <!doctype html>
 <html lang="en">
-  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Virtual Office</title>
-    <style>html,body,#root{margin:0;height:100%;overflow:hidden;background:#F5F6F8}</style></head>
-  <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Virtual Office</title>
+    <style>
+      html,
+      body,
+      #root {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #f5f6f8;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
 ```
+
 `apps/web/src/main.tsx`:
+
 ```tsx
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 createRoot(document.getElementById('root')!).render(<App />);
 ```
+
 `apps/web/src/App.tsx` (placeholder, replaced in Task 5):
+
 ```tsx
 export function App() {
   return <div data-testid="app">Virtual Office</div>;
@@ -271,6 +364,7 @@ export function App() {
 - [ ] **Step 5: CI**
 
 `.github/workflows/ci.yml`:
+
 ```yaml
 name: ci
 on: [push, pull_request]
@@ -289,6 +383,7 @@ jobs:
 - [ ] **Step 6: Install dependencies (agy)**
 
 **Run:**
+
 ```
 pnpm add -Dw typescript prettier eslint typescript-eslint eslint-plugin-react-hooks vitest @types/node
 pnpm --filter @office/server add -D tsx
@@ -311,6 +406,7 @@ pnpm --filter @office/web exec playwright install chromium
 **Files:** Move `docs/layout/office-layout.json` to `packages/protocol/src/layout/office-layout.json`. Modify `docs/layout/validate-layout.mjs` (default path) and `docs/layout/README.md` (location line). Create `packages/protocol/src/balance.ts`, `src/layout/layout.ts` and `test/layout.test.ts`. Modify `src/index.ts`.
 
 **Interfaces:**
+
 - Produces `type Aabb = { x: number; z: number; w: number; d: number }` and `type Vec2 = { x: number; z: number }`.
 - Produces the layout types `OfficeLayout`, `LayoutBox` and `Workstation`, plus `parseLayout(raw: unknown): OfficeLayout` and `officeLayout: OfficeLayout`.
 - Produces `BALANCE` (shape below).
@@ -324,6 +420,7 @@ In `docs/layout/validate-layout.mjs`, replace the default path expression `new U
 - [ ] **Step 2: Balance config**
 
 `packages/protocol/src/balance.ts`:
+
 ```ts
 export const BALANCE = {
   movement: { walkSpeed: 2.0, runSpeed: 4.0, capsuleRadius: 0.3, turnRate: 12 },
@@ -346,6 +443,7 @@ export type Balance = typeof BALANCE;
 - [ ] **Step 3: Failing layout test**
 
 `packages/protocol/test/layout.test.ts`:
+
 ```ts
 import { describe, expect, it } from 'vitest';
 import { officeLayout, parseLayout } from '../src/layout/layout';
@@ -370,6 +468,7 @@ describe('officeLayout', () => {
   });
 });
 ```
+
 **Run:** `pnpm --filter @office/protocol test`. Expected: FAIL, module not found.
 
 - [ ] **Step 4: Implement `layout.ts`**
@@ -382,7 +481,11 @@ export type Aabb = { x: number; z: number; w: number; d: number };
 export type Vec3 = [number, number, number];
 export type Collider = Aabb & { id: string; kind: string };
 export type LayoutBox = { id: string; type: string; position: Vec3; size: Vec3; material?: string };
-export type Workstation = { id: string; seat: { position: Vec3; rotY: number }; interactionPoint: Vec3 };
+export type Workstation = {
+  id: string;
+  seat: { position: Vec3; rotY: number };
+  interactionPoint: Vec3;
+};
 export type OfficeLayout = {
   room: { width: number; depth: number; height: number };
   palette: Record<string, string>;
@@ -410,7 +513,11 @@ export function parseLayout(input: unknown): OfficeLayout {
   for (const key of required) if (!(key in input)) fail(`missing ${key}`);
   const workstations = (input.workstations as Record<string, unknown>[]).map((ws) => {
     const seat = ws.seatSocket as { position: Vec3; rotY: number };
-    return { id: ws.id as string, seat: { position: seat.position, rotY: seat.rotY }, interactionPoint: ws.interactionPoint as Vec3 };
+    return {
+      id: ws.id as string,
+      seat: { position: seat.position, rotY: seat.rotY },
+      interactionPoint: ws.interactionPoint as Vec3,
+    };
   });
   return {
     room: { width: dims.width, depth: dims.depth, height: dims.height },
@@ -426,7 +533,9 @@ export function parseLayout(input: unknown): OfficeLayout {
 
 export const officeLayout: OfficeLayout = parseLayout(raw);
 ```
+
 `src/index.ts`:
+
 ```ts
 export const PROTOCOL_VERSION = 1;
 export * from './balance';
@@ -446,6 +555,7 @@ export * from './layout/layout';
 **Files:** Create `packages/protocol/src/collision.ts` and `test/collision.test.ts`. Modify `src/index.ts` (add `export * from './collision';`).
 
 **Interfaces:**
+
 - Consumes `Aabb` and `Vec2` from Task 2.
 - Produces `resolveCircle(p: Vec2, r: number, boxes: readonly Aabb[]): Vec2` and `moveCircle(from: Vec2, delta: Vec2, r: number, boxes: readonly Aabb[]): Vec2`.
 
@@ -489,6 +599,7 @@ describe('collision', () => {
   });
 });
 ```
+
 **Run:** `pnpm --filter @office/protocol test`. Expected: FAIL, module not found.
 
 - [ ] **Step 2: Implement**
@@ -503,11 +614,14 @@ export function resolveCircle(p: Vec2, r: number, boxes: readonly Aabb[]): Vec2 
   for (let iter = 0; iter < 4; iter++) {
     let moved = false;
     for (const b of boxes) {
-      const minX = b.x - b.w / 2, maxX = b.x + b.w / 2;
-      const minZ = b.z - b.d / 2, maxZ = b.z + b.d / 2;
+      const minX = b.x - b.w / 2,
+        maxX = b.x + b.w / 2;
+      const minZ = b.z - b.d / 2,
+        maxZ = b.z + b.d / 2;
       const cx = Math.min(Math.max(x, minX), maxX);
       const cz = Math.min(Math.max(z, minZ), maxZ);
-      const dx = x - cx, dz = z - cz;
+      const dx = x - cx,
+        dz = z - cz;
       const d2 = dx * dx + dz * dz;
       if (d2 >= r * r - EPS) continue;
       if (d2 > EPS * EPS) {
@@ -516,8 +630,10 @@ export function resolveCircle(p: Vec2, r: number, boxes: readonly Aabb[]): Vec2 
         x += dx * push;
         z += dz * push;
       } else {
-        const left = x - minX + r, right = maxX - x + r;
-        const north = z - minZ + r, south = maxZ - z + r;
+        const left = x - minX + r,
+          right = maxX - x + r;
+        const north = z - minZ + r,
+          south = maxZ - z + r;
         const m = Math.min(left, right, north, south);
         if (m === left) x -= left;
         else if (m === right) x += right;
@@ -552,6 +668,7 @@ export function moveCircle(from: Vec2, delta: Vec2, r: number, boxes: readonly A
 **Files:** Create `packages/protocol/src/movement.ts` and `test/movement.test.ts`. Modify `src/index.ts` (add `export * from './movement';`).
 
 **Interfaces:**
+
 - Consumes `moveCircle`, `BALANCE`, `Aabb` and `Vec2`.
 - Produces:
   - `type MoveInput = { forward: number; right: number; run: boolean }`. Axes are -1, 0 or 1. W is `forward: 1`, D is `right: 1`.
@@ -602,11 +719,14 @@ describe('movement', () => {
     expect(s).toEqual({ x: 0, z: 0, heading: 1 });
   });
   it('is blocked by colliders', () => {
-    const s = stepPlayer({ x: 0, z: 0, heading: 0 }, { ...none, forward: 1 }, 0, 1, [{ x: 0, z: 1, w: 4, d: 0.2 }]);
+    const s = stepPlayer({ x: 0, z: 0, heading: 0 }, { ...none, forward: 1 }, 0, 1, [
+      { x: 0, z: 1, w: 4, d: 0.2 },
+    ]);
     expect(s.z).toBeLessThanOrEqual(0.6 + 1e-6);
   });
 });
 ```
+
 **Run:** `pnpm --filter @office/protocol test`. Expected: FAIL.
 
 - [ ] **Step 2: Implement**
@@ -620,8 +740,10 @@ export type MoveInput = { forward: number; right: number; run: boolean };
 export type PlayerState = { x: number; z: number; heading: number };
 
 export function desiredVelocity(input: MoveInput, cameraYaw: number): Vec2 {
-  const fx = Math.sin(cameraYaw), fz = Math.cos(cameraYaw);
-  const rx = -Math.cos(cameraYaw), rz = Math.sin(cameraYaw);
+  const fx = Math.sin(cameraYaw),
+    fz = Math.cos(cameraYaw);
+  const rx = -Math.cos(cameraYaw),
+    rz = Math.sin(cameraYaw);
   const x = fx * input.forward + rx * input.right;
   const z = fz * input.forward + rz * input.right;
   const len = Math.hypot(x, z);
@@ -646,7 +768,12 @@ export function stepPlayer(
 ): PlayerState {
   const v = desiredVelocity(input, cameraYaw);
   if (v.x === 0 && v.z === 0) return state;
-  const p = moveCircle(state, { x: v.x * dt, z: v.z * dt }, BALANCE.movement.capsuleRadius, colliders);
+  const p = moveCircle(
+    state,
+    { x: v.x * dt, z: v.z * dt },
+    BALANCE.movement.capsuleRadius,
+    colliders,
+  );
   const heading = turnToward(state.heading, Math.atan2(v.x, v.z), BALANCE.movement.turnRate * dt);
   return { x: p.x, z: p.z, heading };
 }
@@ -662,6 +789,7 @@ export function stepPlayer(
 **Files:** Create `apps/web/src/game/Game.ts`, `src/game/room.ts` and `test/room.test.ts`. Replace `src/App.tsx`.
 
 **Interfaces:**
+
 - Consumes `officeLayout` and `OfficeLayout`.
 - Produces:
   - `buildRoom(layout: OfficeLayout): THREE.Group`. Mesh names equal the layout ids. `userData.occluder = true` is set on walls and items.
@@ -698,6 +826,7 @@ describe('buildRoom', () => {
   });
 });
 ```
+
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
 - [ ] **Step 2: Implement `room.ts`**
@@ -707,10 +836,20 @@ import * as THREE from 'three';
 import type { LayoutBox, OfficeLayout } from '@office/protocol';
 
 const TYPE_COLORS: Record<string, string> = {
-  main_door: 'mainDoor', plant: 'deskDividers', shoe_rack: 'deskFrame', countertop: 'lowerCabinetry',
-  water_dispenser: 'waterBottles', storage_cabinet: 'lowerCabinetry', lockers: 'upperCabinetry',
-  shelves: 'credenza', air_conditioner: 'airConditioner', utility_door: 'upperCabinetry', TV: 'fridge',
-  sofa: 'chairBack', coffee_table: 'credenza', decorative_lighting: 'upperCabinetry',
+  main_door: 'mainDoor',
+  plant: 'deskDividers',
+  shoe_rack: 'deskFrame',
+  countertop: 'lowerCabinetry',
+  water_dispenser: 'waterBottles',
+  storage_cabinet: 'lowerCabinetry',
+  lockers: 'upperCabinetry',
+  shelves: 'credenza',
+  air_conditioner: 'airConditioner',
+  utility_door: 'upperCabinetry',
+  TV: 'fridge',
+  sofa: 'chairBack',
+  coffee_table: 'credenza',
+  decorative_lighting: 'upperCabinetry',
 };
 
 function colorFor(box: LayoutBox, palette: Record<string, string>): string {
@@ -720,7 +859,10 @@ function colorFor(box: LayoutBox, palette: Record<string, string>): string {
 
 function boxMesh(box: LayoutBox, color: string): THREE.Mesh {
   const [w, h, d] = box.size;
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color }));
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshStandardMaterial({ color }),
+  );
   mesh.position.set(...box.position);
   mesh.name = box.id;
   mesh.userData.occluder = true;
@@ -841,6 +983,7 @@ export function App() {
 **Files:** Create `apps/web/src/game/input.ts`, `src/game/player.ts` and `test/input.test.ts`. Modify `src/game/Game.ts`.
 
 **Interfaces:**
+
 - Consumes `stepPlayer`, `MoveInput`, `PlayerState` and `officeLayout`.
 - Produces:
   - `class KeyboardInput { constructor(target: Window); read(): MoveInput; dispose(): void }`.
@@ -857,11 +1000,16 @@ import { toMoveInput } from '../src/game/input';
 
 it('maps WASD and shift', () => {
   expect(toMoveInput(new Set(['KeyW']))).toEqual({ forward: 1, right: 0, run: false });
-  expect(toMoveInput(new Set(['KeyS', 'KeyD', 'ShiftLeft']))).toEqual({ forward: -1, right: 1, run: true });
+  expect(toMoveInput(new Set(['KeyS', 'KeyD', 'ShiftLeft']))).toEqual({
+    forward: -1,
+    right: 1,
+    run: true,
+  });
   expect(toMoveInput(new Set(['KeyA', 'KeyD']))).toEqual({ forward: 0, right: 0, run: false });
   expect(toMoveInput(new Set(['Space']))).toEqual({ forward: 0, right: 0, run: false });
 });
 ```
+
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
 - [ ] **Step 2: Implement `input.ts`**
@@ -870,7 +1018,8 @@ it('maps WASD and shift', () => {
 import type { MoveInput } from '@office/protocol';
 
 export function toMoveInput(pressed: ReadonlySet<string>): MoveInput {
-  const axis = (pos: string, neg: string) => (pressed.has(pos) ? 1 : 0) - (pressed.has(neg) ? 1 : 0);
+  const axis = (pos: string, neg: string) =>
+    (pressed.has(pos) ? 1 : 0) - (pressed.has(neg) ? 1 : 0);
   return {
     forward: axis('KeyW', 'KeyS'),
     right: axis('KeyD', 'KeyA'),
@@ -904,7 +1053,13 @@ export class KeyboardInput {
 
 ```ts
 import * as THREE from 'three';
-import { BALANCE, officeLayout, stepPlayer, type MoveInput, type PlayerState } from '@office/protocol';
+import {
+  BALANCE,
+  officeLayout,
+  stepPlayer,
+  type MoveInput,
+  type PlayerState,
+} from '@office/protocol';
 
 export class Player {
   readonly mesh = new THREE.Group();
@@ -918,7 +1073,10 @@ export class Player {
     );
     body.position.y = 0.85;
     body.castShadow = true;
-    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.2), new THREE.MeshStandardMaterial({ color: '#222426' }));
+    const nose = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 0.12, 0.2),
+      new THREE.MeshStandardMaterial({ color: '#222426' }),
+    );
     nose.position.set(0, 1.5, r);
     this.mesh.add(body, nose);
     const [x, , z] = officeLayout.spawn.position;
@@ -937,11 +1095,13 @@ export class Player {
   }
 }
 ```
+
 Rotation check: `rotation.y = h` maps local +Z to `(sin h, cos h)`, which matches the convention.
 
 - [ ] **Step 4: Wire into `Game.ts`**
 
 Add the imports `KeyboardInput` and `Player`. Add fields `readonly player = new Player()`, `readonly input = new KeyboardInput(window)` and `cameraYaw = 0`. In the constructor, after building the room, add:
+
 ```ts
 this.scene.add(this.player.mesh);
 if (import.meta.env.DEV) {
@@ -951,6 +1111,7 @@ if (import.meta.env.DEV) {
   };
 }
 ```
+
 In `start()`, before `this.onFrame?.(dt)`, add `this.player.update(this.input.read(), this.cameraYaw, dt);`. In `dispose()`, add `this.input.dispose();`. Temporarily keep the fixed camera from Task 5. Task 7 replaces it.
 
 - [ ] **Step 5: Verify** with **Run:** `pnpm --filter @office/web test` and `pnpm check`. Expected: PASS.
@@ -963,6 +1124,7 @@ In `start()`, before `this.onFrame?.(dt)`, add `this.player.update(this.input.re
 **Files:** Create `apps/web/src/game/cameraMath.ts`, `src/game/camera.ts` and `test/cameraMath.test.ts`. Modify `src/game/Game.ts`.
 
 **Interfaces:**
+
 - Consumes `BALANCE.camera` and `Player`.
 - Produces:
   - `clampPitch(rad: number): number`.
@@ -1008,6 +1170,7 @@ describe('cameraMath', () => {
   });
 });
 ```
+
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
 - [ ] **Step 2: Implement `cameraMath.ts`**
@@ -1024,7 +1187,11 @@ export function clampPitch(rad: number): number {
 
 export function orbitOffset(yaw: number, pitch: number, distance: number) {
   const horizontal = Math.cos(pitch) * distance;
-  return { x: -Math.sin(yaw) * horizontal, y: Math.sin(pitch) * distance, z: -Math.cos(yaw) * horizontal };
+  return {
+    x: -Math.sin(yaw) * horizontal,
+    y: Math.sin(pitch) * distance,
+    z: -Math.cos(yaw) * horizontal,
+  };
 }
 
 export function resolveDistance(desired: number, hitDistance: number | null): number {
@@ -1055,15 +1222,22 @@ export class CameraRig {
   private readonly ray = new THREE.Raycaster();
   private readonly focus = new THREE.Vector3();
 
-  private readonly onDown = (e: PointerEvent) => { if (e.button === 0) this.dragging = true; };
-  private readonly onUp = () => { this.dragging = false; };
+  private readonly onDown = (e: PointerEvent) => {
+    if (e.button === 0) this.dragging = true;
+  };
+  private readonly onUp = () => {
+    this.dragging = false;
+  };
   private readonly onMove = (e: PointerEvent) => {
     if (!this.dragging) return;
     this.yaw -= e.movementX * C.mouseSensitivity;
     this.pitch = clampPitch(this.pitch + e.movementY * C.mouseSensitivity);
   };
   private readonly onWheel = (e: WheelEvent) => {
-    this.distance = Math.min(Math.max(this.distance + e.deltaY * 0.002, C.minDistance), C.maxDistance);
+    this.distance = Math.min(
+      Math.max(this.distance + e.deltaY * 0.002, C.minDistance),
+      C.maxDistance,
+    );
   };
 
   constructor(
@@ -1085,7 +1259,8 @@ export class CameraRig {
     this.ray.far = this.distance;
     const hit = this.ray.intersectObjects(this.occluders, false)[0];
     const wanted = resolveDistance(this.distance, hit ? hit.distance : null);
-    this.currentDistance = wanted < this.currentDistance ? wanted : damp(this.currentDistance, wanted, C.stiffness, dt);
+    this.currentDistance =
+      wanted < this.currentDistance ? wanted : damp(this.currentDistance, wanted, C.stiffness, dt);
     const o = orbitOffset(this.yaw, this.pitch, this.currentDistance);
     this.camera.position.set(this.focus.x + o.x, this.focus.y + o.y, this.focus.z + o.z);
     this.camera.lookAt(this.focus);
@@ -1099,23 +1274,30 @@ export class CameraRig {
   }
 }
 ```
+
 Occlusion snaps inward immediately and eases outward. This settles OQ-007's "clamp vs occlusion" question: the minimum-distance clamp wins.
 
 - [ ] **Step 4: Wire into `Game.ts`**
 
 Collect the occluders after building the room:
+
 ```ts
 const room = buildRoom(officeLayout);
 this.scene.add(room);
 const occluders: THREE.Object3D[] = [];
-room.traverse((o) => { if (o.userData.occluder) occluders.push(o); });
+room.traverse((o) => {
+  if (o.userData.occluder) occluders.push(o);
+});
 this.rig = new CameraRig(this.camera, this.renderer.domElement, occluders);
 ```
+
 Add the field `private readonly rig: CameraRig`. Remove the fixed camera placement and the `cameraYaw` field. In the loop:
+
 ```ts
 this.player.update(this.input.read(), this.rig.yaw, dt);
 this.rig.update(this.player.mesh.position, dt);
 ```
+
 Change the debug hook to `getCameraYaw: () => this.rig.yaw`. In `dispose()`, add `this.rig.dispose();`. Initial yaw: set `this.rig.yaw = this.player.state.heading` after the rig is constructed, so the camera starts behind the player.
 
 - [ ] **Step 5: Verify** with **Run:** `pnpm --filter @office/web test` and `pnpm check`. Expected: PASS.
@@ -1134,12 +1316,18 @@ Change the debug hook to `getCameraYaw: () => this.rig.yaw`. In `dispose()`, add
 In `vite.config.ts`, add `test: { exclude: ['e2e/**', 'node_modules/**'] }` and use `/// <reference types="vitest/config" />` at the top.
 
 `playwright.config.ts`:
+
 ```ts
 import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: 'e2e',
   use: { baseURL: 'http://localhost:5173', viewport: { width: 1280, height: 720 } },
-  webServer: { command: 'pnpm dev', url: 'http://localhost:5173', reuseExistingServer: true, timeout: 60_000 },
+  webServer: {
+    command: 'pnpm dev',
+    url: 'http://localhost:5173',
+    reuseExistingServer: true,
+    timeout: 60_000,
+  },
 });
 ```
 
@@ -1149,8 +1337,12 @@ export default defineConfig({
 import { expect, test, type Page } from '@playwright/test';
 
 type P = { x: number; z: number; heading: number };
-const getPlayer = (page: Page) => page.evaluate(() => (window as unknown as { __office: { getPlayer(): P } }).__office.getPlayer());
-const getYaw = (page: Page) => page.evaluate(() => (window as unknown as { __office: { getCameraYaw(): number } }).__office.getCameraYaw());
+const getPlayer = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __office: { getPlayer(): P } }).__office.getPlayer());
+const getYaw = (page: Page) =>
+  page.evaluate(() =>
+    (window as unknown as { __office: { getCameraYaw(): number } }).__office.getCameraYaw(),
+  );
 
 async function hold(page: Page, key: string, ms: number) {
   await page.keyboard.down(key);
@@ -1160,7 +1352,9 @@ async function hold(page: Page, key: string, ms: number) {
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await page.waitForFunction(() => 'getPlayer' in ((window as unknown as { __office?: object }).__office ?? {}));
+  await page.waitForFunction(
+    () => 'getPlayer' in ((window as unknown as { __office?: object }).__office ?? {}),
+  );
   await page.locator('canvas').click({ position: { x: 640, y: 360 } });
 });
 
@@ -1182,7 +1376,11 @@ test('S, A and D move in their camera-relative directions', async ({ page }) => 
   const yaw = await getYaw(page);
   const fwd = { x: Math.sin(yaw), z: Math.cos(yaw) };
   const right = { x: -Math.cos(yaw), z: Math.sin(yaw) };
-  for (const [key, axis, sign] of [['s', fwd, -1], ['d', right, 1], ['a', right, -1]] as const) {
+  for (const [key, axis, sign] of [
+    ['s', fwd, -1],
+    ['d', right, 1],
+    ['a', right, -1],
+  ] as const) {
     const a = await getPlayer(page);
     await hold(page, key, 400);
     const b = await getPlayer(page);
@@ -1197,6 +1395,7 @@ test('walls stop the player', async ({ page }) => {
   await page.screenshot({ path: 'test-results/walk-wall.png' });
 });
 ```
+
 Spawn faces +Z, so S walks north into the entrance wall at z = -3.9.
 
 - [ ] **Step 3: Verify**

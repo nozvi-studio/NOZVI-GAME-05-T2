@@ -55,6 +55,7 @@ apps/web/
 **Files:** Create `packages/protocol/src/identity.ts` and `test/identity.test.ts`. Modify `src/layout/layout.ts`, `test/layout.test.ts` and `src/index.ts`.
 
 **Interfaces:**
+
 - Produces from identity:
   - `AVATAR_IDS = ['men_suit', 'women_suit'] as const` and `type AvatarId`.
   - `normalizeOfficeCode(raw: string): string | null`. It trims and uppercases, then requires `/^[A-Z0-9-]{4,12}$/`.
@@ -69,6 +70,7 @@ apps/web/
 - [ ] **Step 1: Failing tests**
 
 `test/identity.test.ts`:
+
 ```ts
 import { describe, expect, it } from 'vitest';
 import { AVATAR_IDS, normalizeOfficeCode, validateName } from '../src/identity';
@@ -93,7 +95,9 @@ describe('identity', () => {
   });
 });
 ```
+
 Append to `test/layout.test.ts`:
+
 ```ts
 describe('interactables', () => {
   it('exposes 22 interactables including all chairs', () => {
@@ -106,6 +110,7 @@ describe('interactables', () => {
   });
 });
 ```
+
 **Run:** `pnpm --filter @office/protocol test`. Expected: FAIL.
 
 - [ ] **Step 2: Implement `identity.ts`**
@@ -144,19 +149,30 @@ export function isAvatarId(value: unknown): value is AvatarId {
 - [ ] **Step 3: Extend `layout.ts`**
 
 Add these types after `Workstation`, and change `Workstation`'s seat to `{ id: string; position: Vec3; rotY: number }`:
+
 ```ts
 export type SeatSocket = { id: string; position: Vec3; rotY: number; interactionPoint: Vec3 };
 export type Interactable = {
-  id: string; type: string; itemId: string; position: Vec3;
-  interactionPoint: Vec3; interactionRange: number; workstationId?: string;
+  id: string;
+  type: string;
+  itemId: string;
+  position: Vec3;
+  interactionPoint: Vec3;
+  interactionRange: number;
+  workstationId?: string;
 };
 ```
+
 Add `interactables: Interactable[]; sofaSeats: SeatSocket[];` to `OfficeLayout`. In `parseLayout`, add `'interactables'` to `required`. Map the workstation seat as `{ id: seat.id, position: seat.position, rotY: seat.rotY }`, with the cast type including `id: string`. Then add:
+
 ```ts
 const interactables = (input.interactables as Record<string, unknown>[]).map((i) => {
   const out: Interactable = {
-    id: i.id as string, type: i.type as string, itemId: i.itemId as string,
-    position: i.position as Vec3, interactionPoint: i.interactionPoint as Vec3,
+    id: i.id as string,
+    type: i.type as string,
+    itemId: i.itemId as string,
+    position: i.position as Vec3,
+    interactionPoint: i.interactionPoint as Vec3,
     interactionRange: i.interactionRange as number,
   };
   if (typeof i.workstationId === 'string') out.workstationId = i.workstationId;
@@ -164,8 +180,14 @@ const interactables = (input.interactables as Record<string, unknown>[]).map((i)
 });
 const sofaSeats = (input.items as Record<string, unknown>[])
   .flatMap((item) => (Array.isArray(item.seatSockets) ? (item.seatSockets as SeatSocket[]) : []))
-  .map((s) => ({ id: s.id, position: s.position, rotY: s.rotY, interactionPoint: s.interactionPoint }));
+  .map((s) => ({
+    id: s.id,
+    position: s.position,
+    rotY: s.rotY,
+    interactionPoint: s.interactionPoint,
+  }));
 ```
+
 Return both in the result. Export `identity` from `src/index.ts`.
 
 - [ ] **Step 4: Verify** with **Run:** `pnpm --filter @office/protocol test` and `pnpm check`. Expected: PASS.
@@ -178,6 +200,7 @@ Return both in the result. Export `identity` from `src/index.ts`.
 **Files:** Create `packages/protocol/src/activity.ts`, `src/seats.ts`, `src/interaction.ts` and `test/{activity,seats,interaction}.test.ts`. Modify `src/balance.ts` and `src/index.ts`.
 
 **Interfaces:**
+
 - Produces from activity:
   - `type Activity = 'idle' | 'walking' | 'sitting' | 'working' | 'resting' | 'drinking' | 'waving'`.
   - `type ActivityEvent = { type: 'move' } | { type: 'stop' } | { type: 'sit'; kind: 'desk' | 'sofa' } | { type: 'toggleWork' } | { type: 'stand' } | { type: 'drink' } | { type: 'wave' } | { type: 'actionDone' }`.
@@ -189,6 +212,7 @@ Return both in the result. Export `identity` from `src/index.ts`.
 - [ ] **Step 1: Failing tests**
 
 `test/activity.test.ts`:
+
 ```ts
 import { describe, expect, it } from 'vitest';
 import { isSeated, nextActivity, statusFor } from '../src/activity';
@@ -227,7 +251,9 @@ describe('activity', () => {
   });
 });
 ```
+
 `test/seats.test.ts`:
+
 ```ts
 import { expect, it } from 'vitest';
 import { SeatRegistry } from '../src/seats';
@@ -243,7 +269,9 @@ it('claims first-come and releases', () => {
   expect(seats.seatOf('b')).toBe('ws_1_seat');
 });
 ```
+
 `test/interaction.test.ts`:
+
 ```ts
 import { describe, expect, it } from 'vitest';
 import { findInteractionTarget } from '../src/interaction';
@@ -272,27 +300,39 @@ describe('findInteractionTarget', () => {
   });
 });
 ```
+
 **Run:** `pnpm --filter @office/protocol test`. Expected: FAIL.
 
 - [ ] **Step 2: Implement**
 
 `balance.ts`: add these to `BALANCE`:
+
 ```ts
 interaction: { facingConeDeg: 90 },
 activity: { drinkSeconds: 2.5, waveSeconds: 1.6, crossFadeSeconds: 0.25 },
 ```
+
 `activity.ts`:
+
 ```ts
-export type Activity = 'idle' | 'walking' | 'sitting' | 'working' | 'resting' | 'drinking' | 'waving';
+export type Activity =
+  'idle' | 'walking' | 'sitting' | 'working' | 'resting' | 'drinking' | 'waving';
 export type ActivityEvent =
-  | { type: 'move' } | { type: 'stop' } | { type: 'sit'; kind: 'desk' | 'sofa' }
-  | { type: 'toggleWork' } | { type: 'stand' } | { type: 'drink' } | { type: 'wave' } | { type: 'actionDone' };
+  | { type: 'move' }
+  | { type: 'stop' }
+  | { type: 'sit'; kind: 'desk' | 'sofa' }
+  | { type: 'toggleWork' }
+  | { type: 'stand' }
+  | { type: 'drink' }
+  | { type: 'wave' }
+  | { type: 'actionDone' };
 
 const SEATED: ReadonlySet<Activity> = new Set(['sitting', 'working', 'resting']);
 const FREE: ReadonlySet<Activity> = new Set(['idle', 'walking']);
 
 export const isSeated = (a: Activity): boolean => SEATED.has(a);
-export const statusFor = (a: Activity): 'online' | 'working' => (a === 'working' ? 'working' : 'online');
+export const statusFor = (a: Activity): 'online' | 'working' =>
+  a === 'working' ? 'working' : 'online';
 
 export function nextActivity(a: Activity, e: ActivityEvent): Activity {
   switch (e.type) {
@@ -315,7 +355,9 @@ export function nextActivity(a: Activity, e: ActivityEvent): Activity {
   }
 }
 ```
+
 `seats.ts`:
+
 ```ts
 export class SeatRegistry {
   private readonly bySeat = new Map<string, string>();
@@ -342,7 +384,9 @@ export class SeatRegistry {
   }
 }
 ```
+
 `interaction.ts`:
+
 ```ts
 import { BALANCE } from './balance';
 import type { Interactable } from './layout/layout';
@@ -354,13 +398,15 @@ export function findInteractionTarget(
   coneDeg: number = BALANCE.interaction.facingConeDeg,
 ): Interactable | null {
   const half = ((coneDeg / 2) * Math.PI) / 180;
-  const fx = Math.sin(player.heading), fz = Math.cos(player.heading);
+  const fx = Math.sin(player.heading),
+    fz = Math.cos(player.heading);
   let best: Interactable | null = null;
   let bestAngle = Infinity;
   for (const c of candidates) {
     const [ix, , iz] = c.interactionPoint;
     if (Math.hypot(ix - player.x, iz - player.z) > c.interactionRange) continue;
-    const dx = c.position[0] - player.x, dz = c.position[2] - player.z;
+    const dx = c.position[0] - player.x,
+      dz = c.position[2] - player.z;
     const len = Math.hypot(dx, dz);
     const angle = len < 1e-6 ? 0 : Math.acos(Math.min(1, Math.max(-1, (dx * fx + dz * fz) / len)));
     if (angle <= half && angle < bestAngle) {
@@ -371,6 +417,7 @@ export function findInteractionTarget(
   return best;
 }
 ```
+
 Export all three from `src/index.ts`.
 
 - [ ] **Step 3: Verify** with **Run:** `pnpm --filter @office/protocol test` and `pnpm check`. Expected: PASS.
@@ -383,6 +430,7 @@ Export all three from `src/index.ts`.
 **Files:** Create `apps/web/public/assets/furniture/*.glb`, `public/assets/CREDITS.md`, `src/game/assets/furnitureManifest.ts`, `src/game/assets/fit.ts`, `src/game/assets/loadFurniture.ts` and `test/fit.test.ts`. Modify `src/game/Game.ts`.
 
 **Interfaces:**
+
 - Produces:
   - `FURNITURE: Record<string, string>`, mapping a layout item type to a file under `/assets/furniture/`.
   - `fitScale(modelSize: [number, number, number], target: [number, number, number]): [number, number, number]`.
@@ -391,6 +439,7 @@ Export all three from `src/index.ts`.
 - [ ] **Step 1: Copy assets (agy, local files from the gitignored spike)**
 
 **Run:**
+
 ```
 mkdir -p apps/web/public/assets/furniture
 cd "spike/assets/kenney_furniture/Models/GLTF format"
@@ -400,11 +449,14 @@ cp desk.glb chairDesk.glb computerScreen.glb kitchenFridge.glb kitchenCabinet.gl
    ../../../../../apps/web/public/assets/furniture/
 cp ../../License.txt ../../../../../apps/web/public/assets/furniture/KENNEY-LICENSE.txt
 ```
+
 Then confirm that `ls apps/web/public/assets/furniture | wc -l` prints 18.
 
 `apps/web/public/assets/CREDITS.md`:
+
 ```md
 # Asset credits (all CC0 1.0)
+
 - furniture/*.glb — Kenney Furniture Kit, https://kenney.nl (KENNEY-LICENSE.txt)
 - avatars/*.glb — Quaternius Modular Men / Women (Suit), https://quaternius.com
 - anim/*.glb — Quaternius Universal Animation Library, https://quaternius.com
@@ -447,17 +499,28 @@ it('guards zero-size axes', () => {
   expect(fitScale([0, 1, 1], [1, 2, 1])).toEqual([1, 2, 1]);
 });
 ```
+
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
 - [ ] **Step 4: Implement `fit.ts` and `loadFurniture.ts`**
 
 `fit.ts`:
+
 ```ts
-export function fitScale(model: [number, number, number], target: [number, number, number]): [number, number, number] {
-  return [0, 1, 2].map((i) => (model[i]! > 1e-6 ? target[i]! / model[i]! : 1)) as [number, number, number];
+export function fitScale(
+  model: [number, number, number],
+  target: [number, number, number],
+): [number, number, number] {
+  return [0, 1, 2].map((i) => (model[i]! > 1e-6 ? target[i]! / model[i]! : 1)) as [
+    number,
+    number,
+    number,
+  ];
 }
 ```
+
 `loadFurniture.ts`:
+
 ```ts
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -527,6 +590,7 @@ export async function loadFurniture(room: THREE.Group, layout: OfficeLayout) {
   return { loaded, failed };
 }
 ```
+
 Add `rotY?: number` to `LayoutBox` in `packages/protocol/src/layout/layout.ts`. With that, the cast is no longer needed, so use `item.rotY ?? 0`.
 
 In `Game.ts`, after building the room, call `void loadFurniture(room, officeLayout).then((r) => { this.furniture = r; })`. Expose `getFurniture: () => this.furniture` in the dev hook. Rebuild the occluder list after the load, because occluders are read by reference: replace the `occluders` array contents with a fresh traverse.
@@ -545,6 +609,7 @@ In `Game.ts`, after building the room, call `void loadFurniture(room, officeLayo
 **Files:** Copy `spike/poc/avatar/src/retarget.ts` to `apps/web/src/game/avatar/retarget.ts`. Copy the models to `apps/web/public/assets/avatars/` and the animation library to `public/assets/anim/`. Create `src/game/avatar/AvatarView.ts` and `test/avatarClips.test.ts`. Modify `src/game/player.ts` and `src/game/Game.ts`.
 
 **Interfaces:**
+
 - Consumes `retargetClipFromRestPose(target, source, clip, isFemale)` and `findSkinnedMesh(root)` from the copied file.
 - Produces:
   - `CLIP_FOR: Record<Activity, { clip: string; loop: boolean }>`, exported for the test.
@@ -554,6 +619,7 @@ In `Game.ts`, after building the room, call `void loadFurniture(room, officeLayo
 - [ ] **Step 1: Copy files (agy)**
 
 **Run:**
+
 ```
 mkdir -p apps/web/src/game/avatar apps/web/public/assets/avatars apps/web/public/assets/anim
 cp spike/poc/avatar/src/retarget.ts apps/web/src/game/avatar/retarget.ts
@@ -561,6 +627,7 @@ cp spike/poc/avatar/public/models/quaternius_modular_men_Suit.glb apps/web/publi
 cp spike/poc/avatar/public/models/quaternius_modular_women_Suit.glb apps/web/public/assets/avatars/women_suit.glb
 cp spike/poc/avatar/public/models/AnimationLibrary_Godot_Standard.glb apps/web/public/assets/anim/ual.glb
 ```
+
 Codex then adds `// Ported from spike/poc/avatar/src/retarget.ts (validated in PoC, see DECISIONS).` as line 1 and fixes only lint and strict-type errors. The retargeting logic is not changed.
 
 - [ ] **Step 2: Failing test** (`test/avatarClips.test.ts`)
@@ -569,14 +636,30 @@ Codex then adds `// Ported from spike/poc/avatar/src/retarget.ts (validated in P
 import { expect, it } from 'vitest';
 import { CLIP_FOR } from '../src/game/avatar/AvatarView';
 
-const UAL = ['Idle_Loop', 'Walk_Loop', 'Sitting_Enter', 'Sitting_Exit', 'Sitting_Idle_Loop', 'Interact'];
+const UAL = [
+  'Idle_Loop',
+  'Walk_Loop',
+  'Sitting_Enter',
+  'Sitting_Exit',
+  'Sitting_Idle_Loop',
+  'Interact',
+];
 
 it('maps every activity to a UAL clip that exists', () => {
-  for (const a of ['idle', 'walking', 'sitting', 'working', 'resting', 'drinking', 'waving'] as const) {
+  for (const a of [
+    'idle',
+    'walking',
+    'sitting',
+    'working',
+    'resting',
+    'drinking',
+    'waving',
+  ] as const) {
     expect(UAL).toContain(CLIP_FOR[a].clip);
   }
 });
 ```
+
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
 - [ ] **Step 3: Implement `AvatarView.ts`**
@@ -616,7 +699,11 @@ export class AvatarView {
   private activity: Activity = 'idle';
   private waveTime = 0;
 
-  private constructor(model: THREE.Object3D, private readonly bones: THREE.Bone[], clips: THREE.AnimationClip[]) {
+  private constructor(
+    model: THREE.Object3D,
+    private readonly bones: THREE.Bone[],
+    clips: THREE.AnimationClip[],
+  ) {
     this.root.add(model);
     this.mixer = new THREE.AnimationMixer(model);
     for (const clip of clips) this.actions.set(clip.name, this.mixer.clipAction(clip));
@@ -624,21 +711,31 @@ export class AvatarView {
   }
 
   static async load(avatarId: AvatarId): Promise<AvatarView> {
-    const [gltf, ual] = await Promise.all([loader.loadAsync(`/assets/avatars/${avatarId}.glb`), loadUal()]);
+    const [gltf, ual] = await Promise.all([
+      loader.loadAsync(`/assets/avatars/${avatarId}.glb`),
+      loadUal(),
+    ]);
     const target = findSkinnedMesh(gltf.scene);
     if (!target) throw new Error(`No skinned mesh in ${avatarId}`);
     target.skeleton.pose();
-    const names = new Set(Object.values(CLIP_FOR).map((c) => c.clip).concat('Sitting_Enter', 'Sitting_Exit'));
+    const names = new Set(
+      Object.values(CLIP_FOR)
+        .map((c) => c.clip)
+        .concat('Sitting_Enter', 'Sitting_Exit'),
+    );
     const clips = ual.clips
       .filter((c) => names.has(c.name))
       .map((c) => retargetClipFromRestPose(target, ual.mesh, c, avatarId === 'women_suit'));
-    gltf.scene.traverse((o) => { if ((o as THREE.Mesh).isMesh) o.castShadow = true; });
+    gltf.scene.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh) o.castShadow = true;
+    });
     return new AvatarView(gltf.scene, target.skeleton.bones, clips);
   }
 
   setActivity(a: Activity): void {
     if (a === this.activity) return;
-    const wasSeated = this.activity === 'sitting' || this.activity === 'working' || this.activity === 'resting';
+    const wasSeated =
+      this.activity === 'sitting' || this.activity === 'working' || this.activity === 'resting';
     const seated = a === 'sitting' || a === 'working' || a === 'resting';
     this.activity = a;
     if (a === 'waving') this.waveTime = BALANCE.activity.waveSeconds;
@@ -670,7 +767,8 @@ export class AvatarView {
     next.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, loop ? Infinity : 1);
     next.clampWhenFinished = !loop;
     next.play();
-    if (this.current && this.current !== next) this.current.crossFadeTo(next, BALANCE.activity.crossFadeSeconds, false);
+    if (this.current && this.current !== next)
+      this.current.crossFadeTo(next, BALANCE.activity.crossFadeSeconds, false);
     this.current = next;
     return next;
   }
@@ -688,7 +786,11 @@ export class AvatarView {
   }
 
   hasFiniteBones(): boolean {
-    return this.bones.every((b) => [b.position.x, b.position.y, b.position.z, b.quaternion.x, b.quaternion.w].every(Number.isFinite));
+    return this.bones.every((b) =>
+      [b.position.x, b.position.y, b.position.z, b.quaternion.x, b.quaternion.w].every(
+        Number.isFinite,
+      ),
+    );
   }
 }
 ```
@@ -696,6 +798,7 @@ export class AvatarView {
 - [ ] **Step 4: Player uses the avatar**
 
 In `player.ts`:
+
 - Keep the capsule as a placeholder until `setView` is called. `setView(view)` removes the capsule children and adds `view.root`.
 - Add `activity: Activity = 'idle'` and `private view: AvatarView | null = null`.
 - Add `private seated: { position: Vec3; rotY: number } | null = null`.
@@ -703,6 +806,7 @@ In `player.ts`:
 - `standAt(point: Vec3)` clears `seated`, puts the state at `point`, and keeps the heading.
 - Add `setActivity(a)`, which sets `this.activity` and calls `this.view?.setActivity(a)`.
 - `update(input, yaw, dt)`:
+
 ```ts
 const moving = input.forward !== 0 || input.right !== 0;
 if (!this.seated) {
@@ -714,6 +818,7 @@ if (!this.seated) {
 this.view?.update(dt);
 this.sync();
 ```
+
 The mesh root stays at y = 0 when seated. DEC says `Sitting_Idle_Loop` aligns with a 0.45 m seat when the root is on the floor below the seat socket.
 
 In `Game.ts`, take `avatarId: AvatarId` as a second constructor parameter, then call `void AvatarView.load(avatarId).then((v) => this.player.setView(v))`. Add `getActivity: () => this.player.activity` and `avatarOk: () => this.player.viewFinite()` to the dev hook. `viewFinite()` returns `view?.hasFiniteBones() ?? false`. `App.tsx` passes `'men_suit'` until Task 6.
@@ -732,6 +837,7 @@ In `Game.ts`, take `avatarId: AvatarId` as a second constructor parameter, then 
 **Files:** Create `apps/web/src/game/interaction/InteractionController.ts`, `src/ui/Prompt.tsx` and `test/interactionController.test.ts`. Modify `src/game/Game.ts` and `src/App.tsx`.
 
 **Interfaces:**
+
 - Consumes `findInteractionTarget`, `SeatRegistry`, `nextActivity`, `isSeated`, `officeLayout` and `Player`.
 - Produces:
   - `type Prompt = { text: string; available: boolean } | null`.
@@ -741,15 +847,15 @@ In `Game.ts`, take `avatarId: AvatarId` as a second constructor parameter, then 
 
 Prompt text per state:
 
-| State | Prompt |
-|---|---|
-| Free chair in range and facing | `E — Sit` |
-| Taken chair | `Desk taken` (available `false`) |
-| Seated at a desk | `E — Start working` or `E — Stop working`, plus the hint `WASD — Stand up` |
-| Main door | `E — Leave office` |
-| Coffee machine or water | `E — Take a break` |
-| Sofa | `E — Rest` |
-| Storage cabinet | `E — Open cabinet` |
+| State                          | Prompt                                                                     |
+| ------------------------------ | -------------------------------------------------------------------------- |
+| Free chair in range and facing | `E — Sit`                                                                  |
+| Taken chair                    | `Desk taken` (available `false`)                                           |
+| Seated at a desk               | `E — Start working` or `E — Stop working`, plus the hint `WASD — Stand up` |
+| Main door                      | `E — Leave office`                                                         |
+| Coffee machine or water        | `E — Take a break`                                                         |
+| Sofa                           | `E — Rest`                                                                 |
+| Storage cabinet                | `E — Open cabinet`                                                         |
 
 Task 7 implements the effects for the last three. Until then their `press()` does nothing.
 
@@ -757,7 +863,13 @@ Task 7 implements the effects for the last three. Until then their `press()` doe
 
 ```ts
 import { describe, expect, it, vi } from 'vitest';
-import { SeatRegistry, officeLayout, type Activity, type PlayerState, type Vec3 } from '@office/protocol';
+import {
+  SeatRegistry,
+  officeLayout,
+  type Activity,
+  type PlayerState,
+  type Vec3,
+} from '@office/protocol';
 import { InteractionController } from '../src/game/interaction/InteractionController';
 
 function fakePlayer(state: PlayerState) {
@@ -765,9 +877,17 @@ function fakePlayer(state: PlayerState) {
     state,
     activity: 'idle' as Activity,
     seatedAt: null as Vec3 | null,
-    setActivity(a: Activity) { this.activity = a; },
-    seatAt(s: { position: Vec3; rotY: number }) { this.seatedAt = s.position; this.state = { x: s.position[0], z: s.position[2], heading: (s.rotY * Math.PI) / 180 }; },
-    standAt(p: Vec3) { this.seatedAt = null; this.state = { ...this.state, x: p[0], z: p[2] }; },
+    setActivity(a: Activity) {
+      this.activity = a;
+    },
+    seatAt(s: { position: Vec3; rotY: number }) {
+      this.seatedAt = s.position;
+      this.state = { x: s.position[0], z: s.position[2], heading: (s.rotY * Math.PI) / 180 };
+    },
+    standAt(p: Vec3) {
+      this.seatedAt = null;
+      this.state = { ...this.state, x: p[0], z: p[2] };
+    },
   };
 }
 
@@ -778,7 +898,9 @@ describe('InteractionController', () => {
     expect(c.currentPrompt()?.text).toBe('E — Sit');
     c.press();
     expect(p.activity).toBe('sitting');
-    expect(p.seatedAt).toEqual(officeLayout.workstations.find((w) => w.id === 'ws_5')!.seat.position);
+    expect(p.seatedAt).toEqual(
+      officeLayout.workstations.find((w) => w.id === 'ws_5')!.seat.position,
+    );
     c.press();
     expect(p.activity).toBe('working');
     c.onMoveIntent();
@@ -802,14 +924,22 @@ describe('InteractionController', () => {
   });
 });
 ```
+
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
 - [ ] **Step 2: Implement**
 
 ```ts
 import {
-  findInteractionTarget, isSeated, nextActivity, officeLayout,
-  type Activity, type Interactable, type PlayerState, type SeatRegistry, type Vec3,
+  findInteractionTarget,
+  isSeated,
+  nextActivity,
+  officeLayout,
+  type Activity,
+  type Interactable,
+  type PlayerState,
+  type SeatRegistry,
+  type Vec3,
 } from '@office/protocol';
 
 export type Prompt = { text: string; available: boolean } | null;
@@ -860,7 +990,9 @@ export class InteractionController {
     if (t.type === 'chair') {
       const seat = deskSeat(t);
       if (!seat) return null;
-      return this.seats.occupant(seat.id) ? { text: 'Desk taken', available: false } : { text: 'E — Sit', available: true };
+      return this.seats.occupant(seat.id)
+        ? { text: 'Desk taken', available: false }
+        : { text: 'E — Sit', available: true };
     }
     const label = LABELS[t.type];
     return label ? { text: label, available: true } : null;
@@ -908,11 +1040,13 @@ export class InteractionController {
   }
 }
 ```
+
 The test expects the prompt `E — Sit` for a free chair. The seated prompts combine both hints into one line, as written in the code above.
 
 - [ ] **Step 3: Wire into `Game.ts` and `App.tsx`**
 
 `Game.ts`:
+
 - Create `readonly seats = new SeatRegistry()` and the controller with owner id `'local'`.
 - Pass `hooks.onExit = () => this.onExit?.()`.
 - In the frame loop, before `player.update`: if the player is seated and the input has movement, call `controller.onMoveIntent()`.
@@ -923,17 +1057,32 @@ The test expects the prompt `E — Sit` for a free chair. The seated prompts com
 `Player.seatAt` and `Player.standAt` are implemented as described in Task 4. `Player` satisfies `PlayerLike`.
 
 `Prompt.tsx`:
+
 ```tsx
 import type { Prompt as P } from '../game/interaction/InteractionController';
 export function Prompt({ prompt }: { prompt: P }) {
   if (!prompt) return null;
   return (
-    <div data-testid="prompt" style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)',
-      padding: '8px 16px', borderRadius: 8, background: 'rgba(34,36,38,0.8)', color: prompt.available ? '#fff' : '#f5a3a3',
-      font: '600 15px system-ui' }}>{prompt.text}</div>
+    <div
+      data-testid="prompt"
+      style={{
+        position: 'absolute',
+        bottom: 32,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        padding: '8px 16px',
+        borderRadius: 8,
+        background: 'rgba(34,36,38,0.8)',
+        color: prompt.available ? '#fff' : '#f5a3a3',
+        font: '600 15px system-ui',
+      }}
+    >
+      {prompt.text}
+    </div>
   );
 }
 ```
+
 `App.tsx`: hold `const [prompt, setPrompt] = useState<P>(null)`, set `game.onPrompt = setPrompt`, and render `<Prompt prompt={prompt} />` over the canvas host (`position: relative` wrapper).
 
 - [ ] **Step 4: Verify**
@@ -951,6 +1100,7 @@ export function Prompt({ prompt }: { prompt: P }) {
 **Files:** Create `apps/web/src/ui/JoinScreen.tsx`, `src/ui/identityStorage.ts`, `src/game/hud/Nameplate.ts` and `test/identityStorage.test.ts`. Modify `src/App.tsx` and `src/game/Game.ts`.
 
 **Interfaces:**
+
 - Produces:
   - `type JoinDraft = { name: string; officeCode: string; avatarId: AvatarId }`.
   - `loadDraft(storage: Pick<Storage, 'getItem'> | null): JoinDraft`.
@@ -967,7 +1117,10 @@ import { loadDraft, saveDraft } from '../src/ui/identityStorage';
 
 const mem = () => {
   const m = new Map<string, string>();
-  return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) };
+  return {
+    getItem: (k: string) => m.get(k) ?? null,
+    setItem: (k: string, v: string) => void m.set(k, v),
+  };
 };
 
 describe('identityStorage', () => {
@@ -980,12 +1133,32 @@ describe('identityStorage', () => {
     const def = { name: '', officeCode: '', avatarId: 'men_suit' };
     expect(loadDraft(null)).toEqual(def);
     expect(loadDraft({ getItem: () => '{bad' })).toEqual(def);
-    expect(loadDraft({ getItem: () => { throw new Error('denied'); } })).toEqual(def);
-    expect(loadDraft({ getItem: () => JSON.stringify({ name: 'x', officeCode: 'y', avatarId: 'robot' }) }).avatarId).toBe('men_suit');
-    expect(() => saveDraft({ setItem: () => { throw new Error('quota'); } }, def as never)).not.toThrow();
+    expect(
+      loadDraft({
+        getItem: () => {
+          throw new Error('denied');
+        },
+      }),
+    ).toEqual(def);
+    expect(
+      loadDraft({
+        getItem: () => JSON.stringify({ name: 'x', officeCode: 'y', avatarId: 'robot' }),
+      }).avatarId,
+    ).toBe('men_suit');
+    expect(() =>
+      saveDraft(
+        {
+          setItem: () => {
+            throw new Error('quota');
+          },
+        },
+        def as never,
+      ),
+    ).not.toThrow();
   });
 });
 ```
+
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
 - [ ] **Step 2: Implement `identityStorage.ts`**
@@ -998,7 +1171,11 @@ const KEY = 'office.identity';
 const DEFAULT: JoinDraft = { name: '', officeCode: '', avatarId: 'men_suit' };
 
 export function safeLocalStorage(): Storage | null {
-  try { return window.localStorage; } catch { return null; }
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
 }
 
 export function loadDraft(storage: Pick<Storage, 'getItem'> | null): JoinDraft {
@@ -1017,7 +1194,11 @@ export function loadDraft(storage: Pick<Storage, 'getItem'> | null): JoinDraft {
 }
 
 export function saveDraft(storage: Pick<Storage, 'setItem'> | null, d: JoinDraft): void {
-  try { storage?.setItem(KEY, JSON.stringify(d)); } catch { /* storage unavailable: keep in memory only */ }
+  try {
+    storage?.setItem(KEY, JSON.stringify(d));
+  } catch {
+    /* storage unavailable: keep in memory only */
+  }
 }
 ```
 
@@ -1045,18 +1226,54 @@ export function JoinScreen({ onJoin }: { onJoin(r: JoinResult): void }) {
     onJoin(result);
   };
   return (
-    <form onSubmit={submit} data-testid="join" style={{ maxWidth: 360, margin: '12vh auto', display: 'grid', gap: 12, font: '15px system-ui' }}>
+    <form
+      onSubmit={submit}
+      data-testid="join"
+      style={{
+        maxWidth: 360,
+        margin: '12vh auto',
+        display: 'grid',
+        gap: 12,
+        font: '15px system-ui',
+      }}
+    >
       <h1 style={{ margin: 0 }}>Virtual Office</h1>
-      <label>Your name<input name="name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></label>
-      <label>Office code<input name="officeCode" value={draft.officeCode} onChange={(e) => setDraft({ ...draft, officeCode: e.target.value })} /></label>
-      <fieldset><legend>Avatar</legend>
+      <label>
+        Your name
+        <input
+          name="name"
+          value={draft.name}
+          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+        />
+      </label>
+      <label>
+        Office code
+        <input
+          name="officeCode"
+          value={draft.officeCode}
+          onChange={(e) => setDraft({ ...draft, officeCode: e.target.value })}
+        />
+      </label>
+      <fieldset>
+        <legend>Avatar</legend>
         {AVATAR_IDS.map((id) => (
           <label key={id} style={{ marginRight: 12 }}>
-            <input type="radio" name="avatar" value={id} checked={draft.avatarId === id} onChange={() => setDraft({ ...draft, avatarId: id })} /> {LABEL[id]}
+            <input
+              type="radio"
+              name="avatar"
+              value={id}
+              checked={draft.avatarId === id}
+              onChange={() => setDraft({ ...draft, avatarId: id })}
+            />{' '}
+            {LABEL[id]}
           </label>
         ))}
       </fieldset>
-      {error && <p role="alert" style={{ color: '#b42318', margin: 0 }}>{error}</p>}
+      {error && (
+        <p role="alert" style={{ color: '#b42318', margin: 0 }}>
+          {error}
+        </p>
+      )}
       <button type="submit">Join Office</button>
     </form>
   );
@@ -1066,6 +1283,7 @@ export function JoinScreen({ onJoin }: { onJoin(r: JoinResult): void }) {
 - [ ] **Step 4: Nameplate and App flow**
 
 `Nameplate.ts`:
+
 ```ts
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
@@ -1075,7 +1293,8 @@ export class Nameplate {
   private readonly statusEl = document.createElement('div');
   constructor() {
     const el = document.createElement('div');
-    el.style.cssText = 'padding:2px 8px;border-radius:6px;background:rgba(34,36,38,.75);color:#fff;font:600 12px system-ui;text-align:center;white-space:nowrap';
+    el.style.cssText =
+      'padding:2px 8px;border-radius:6px;background:rgba(34,36,38,.75);color:#fff;font:600 12px system-ui;text-align:center;white-space:nowrap';
     this.statusEl.style.cssText = 'font-weight:400;font-size:11px;color:#6CB33F';
     el.append(this.nameEl, this.statusEl);
     this.object = new CSS2DObject(el);
@@ -1087,13 +1306,16 @@ export class Nameplate {
   }
 }
 ```
+
 `Game.ts`:
+
 - Add a `CSS2DRenderer` whose DOM element is absolutely positioned over the canvas with `pointer-events: none`. Size it in `resize()` and render it after the WebGL render.
 - Add `nameplate.object` to `player.mesh`.
 - Each frame, call `nameplate.set(identity.name, label)`, where `label` is `Working` for `working`, `Break` for `drinking`, `Resting` for `resting`, and `Online` otherwise.
 - Remove the CSS2D element in `dispose()`.
 
 `App.tsx`:
+
 - Keep `const [joined, setJoined] = useState<JoinResult | null>(null)`.
 - When the player has not joined, render `<JoinScreen onJoin={setJoined} />`.
 - Otherwise render the game host and prompt. Construct `new Game(host, { name: joined.name, avatarId: joined.avatarId })`, with the effect depending on `joined`.
@@ -1103,6 +1325,7 @@ export class Nameplate {
 
 **Run:** `pnpm --filter @office/web test` and `pnpm check`. Expected: PASS.
 **Run (agy):**
+
 1. Open the app, fill `Khánh`, `nozvi-01` and women_suit, then click Join. Expect a canvas, and a nameplate with the text `Khánh`.
 2. Reload: the form is prefilled.
 3. Teleport to `(-0.4, -3, Math.PI)`, press E and expect the join form again.
@@ -1124,14 +1347,30 @@ Take screenshots of the join form and of the in-office nameplate.
 
 ```ts
 import { expect, it, vi } from 'vitest';
-import { SeatRegistry, officeLayout, type Activity, type PlayerState, type Vec3 } from '@office/protocol';
+import {
+  SeatRegistry,
+  officeLayout,
+  type Activity,
+  type PlayerState,
+  type Vec3,
+} from '@office/protocol';
 import { InteractionController } from '../src/game/interaction/InteractionController';
 import { handleAction } from '../src/game/interaction/extras';
 
 function fake(state: PlayerState) {
-  return { state, activity: 'idle' as Activity, setActivity(a: Activity) { this.activity = a; },
-    seatAt(s: { position: Vec3; rotY: number }) { this.state = { x: s.position[0], z: s.position[2], heading: 0 }; },
-    standAt(p: Vec3) { this.state = { ...this.state, x: p[0], z: p[2] }; } };
+  return {
+    state,
+    activity: 'idle' as Activity,
+    setActivity(a: Activity) {
+      this.activity = a;
+    },
+    seatAt(s: { position: Vec3; rotY: number }) {
+      this.state = { x: s.position[0], z: s.position[2], heading: 0 };
+    },
+    standAt(p: Vec3) {
+      this.state = { ...this.state, x: p[0], z: p[2] };
+    },
+  };
 }
 
 it('coffee starts a timed break', () => {
@@ -1148,7 +1387,11 @@ it('sofa seats the player on the first free sofa seat', () => {
   const seats = new SeatRegistry();
   seats.claim('sofa_seat_1', 'other');
   const c = new InteractionController(p, seats, 'me', { onExit: vi.fn() });
-  handleAction(officeLayout.interactables.find((i) => i.id === 'sofa')!, p, c);
+  handleAction(
+    officeLayout.interactables.find((i) => i.id === 'sofa')!,
+    p,
+    c,
+  );
   expect(p.activity).toBe('resting');
   expect(seats.seatOf('me')).toBe('sofa_seat_2');
 });
@@ -1162,7 +1405,11 @@ import type { InteractionController, PlayerLike } from './InteractionController'
 
 export type ActionResult = { timer: number; message?: string };
 
-export function handleAction(t: Interactable, player: PlayerLike, c: InteractionController): ActionResult {
+export function handleAction(
+  t: Interactable,
+  player: PlayerLike,
+  c: InteractionController,
+): ActionResult {
   if (t.type === 'coffee_machine' || t.type === 'water_dispenser') {
     player.setActivity(nextActivity(player.activity, { type: 'drink' }));
     return { timer: BALANCE.activity.drinkSeconds };
@@ -1175,7 +1422,9 @@ export function handleAction(t: Interactable, player: PlayerLike, c: Interaction
   return { timer: 0 };
 }
 ```
+
 `Game.ts`:
+
 - Pass `onAction: (t) => { const r = handleAction(t, this.player, this.controller); this.actionTimer = r.timer; if (r.message) this.onToast?.(r.message); }`.
 - Each frame, when `actionTimer > 0`, decrement it. When it reaches 0 and the activity is `drinking` or `waving`, call `player.setActivity(nextActivity(a, { type: 'actionDone' }))`.
 - The `KeyG` key down calls `player.setActivity(nextActivity(a, { type: 'wave' }))` and sets `actionTimer = BALANCE.activity.waveSeconds`.
@@ -1204,8 +1453,13 @@ export async function join(page: Page, name = 'Tester', code = 'TEST-01') {
   await page.getByLabel('Your name').fill(name);
   await page.getByLabel('Office code').fill(code);
   await page.getByRole('button', { name: 'Join Office' }).click();
-  await page.waitForFunction(() => 'getPlayer' in ((window as unknown as { __office?: object }).__office ?? {}));
-  await page.locator('canvas').first().click({ position: { x: 640, y: 360 } });
+  await page.waitForFunction(
+    () => 'getPlayer' in ((window as unknown as { __office?: object }).__office ?? {}),
+  );
+  await page
+    .locator('canvas')
+    .first()
+    .click({ position: { x: 640, y: 360 } });
 }
 ```
 

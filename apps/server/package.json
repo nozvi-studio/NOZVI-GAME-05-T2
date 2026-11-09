@@ -1,0 +1,16 @@
+{
+  "name": "@office/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --exclude '**/dist/**' --exclude '**/node_modules/**'",
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@office/protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "4.23.15"
+  }
+}
