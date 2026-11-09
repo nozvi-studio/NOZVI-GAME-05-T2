@@ -50,12 +50,14 @@ Common contract terms for every batch:
 - OQ-001: room is 10 x 8 x 2.7 m, per owner DEC "Layout ... enlarged to ~10 x 8 m" and the accepted layout JSON; ARCHITECTURE updated to match.
 - REQ-MOVE-002 main-door exit to join screen is deferred to the phase that adds the join screen (Phase 2); Phase 1 treats the door as a wall.
 - `@playwright/test` pinned to the pre-installed browser's Playwright version instead of downloading browsers.
+- TypeScript pinned to 6.0.3 (latest 6.x): typescript-eslint 8.72.2 does not support TypeScript 7 yet. Revisit when typescript-eslint adds TS 7 support.
+- Vitest 5 scripts exclude `dist/` and `dist-types/` because `tsc -b` emits compiled tests there; `.prettierignore` excludes protected agent files so `pnpm format` cannot rewrite them.
 
 ## 6. Status
 
-| Batch | State    | Evidence / notes |
-| ----- | -------- | ---------------- |
-| A     | Ready    | —                |
-| B     | Proposed | depends on A     |
-| C     | Proposed | depends on B     |
-| D     | Proposed | depends on C     |
+| Batch | State    | Evidence / notes                                                                                                                                        |
+| ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A     | Accepted | PM re-ran `pnpm check` (exit 0; protocol 6, server 2 tests), validator exit 0, layout JSON semantically unchanged after move, protected files untouched |
+| B     | Assigned | opus subagent                                                                                                                                           |
+| C     | Proposed | depends on B                                                                                                                                            |
+| D     | Proposed | depends on C                                                                                                                                            |
