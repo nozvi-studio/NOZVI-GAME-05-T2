@@ -1,18 +1,30 @@
 import * as THREE from 'three';
 import { officeLayout } from '@office/protocol';
+import { KeyboardInput } from './input';
+import { Player } from './player';
 import { buildRoom } from './room';
 
 export class Game {
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(60, 1, 0.05, 50);
   readonly renderer = new THREE.WebGLRenderer({ antialias: true });
+  readonly player = new Player();
+  readonly input = new KeyboardInput(window);
+  cameraYaw = 0;
   onFrame: ((dt: number) => void) | undefined;
-  private readonly clock = new THREE.Clock();
+  private readonly timer = new THREE.Timer();
   private readonly resizeObserver: ResizeObserver;
 
   constructor(private readonly host: HTMLElement) {
     this.scene.background = new THREE.Color('#dfe9f3');
     this.scene.add(buildRoom(officeLayout));
+    this.scene.add(this.player.mesh);
+    if (import.meta.env.DEV) {
+      (window as unknown as { __office: unknown }).__office = {
+        getPlayer: () => ({ ...this.player.state }),
+        getCameraYaw: () => this.cameraYaw,
+      };
+    }
     this.scene.add(new THREE.HemisphereLight('#ffffff', '#b8b0a0', 1.2));
     const sun = new THREE.DirectionalLight('#fff4e0', 1.4);
     sun.position.set(2, 6, 6);
@@ -38,7 +50,9 @@ export class Game {
 
   start(): void {
     this.renderer.setAnimationLoop(() => {
-      const dt = Math.min(this.clock.getDelta(), 0.1);
+      this.timer.update();
+      const dt = Math.min(this.timer.getDelta(), 0.1);
+      this.player.update(this.input.read(), this.cameraYaw, dt);
       this.onFrame?.(dt);
       this.renderer.render(this.scene, this.camera);
     });
@@ -46,6 +60,7 @@ export class Game {
 
   dispose(): void {
     this.renderer.setAnimationLoop(null);
+    this.input.dispose();
     this.resizeObserver.disconnect();
     this.renderer.dispose();
     this.renderer.domElement.remove();
