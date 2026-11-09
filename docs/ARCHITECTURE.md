@@ -23,7 +23,7 @@ Node LTS + pnpm (pinned via `packageManager`/`engines`), TypeScript strict with 
 ## 4. Client (3D)
 | System | Choice |
 |---|---|
-| Room shell | Parametric Box/Plane assembly from layout data; ~10 m × 7 m × 2.8 m; palette from `except/` (off-white walls, light-grey tile, walnut wood, white metal, black electronics, lime-green accents) |
+| Room shell | Parametric Box/Plane assembly from layout data; 10 m × 8 m × 2.7 m (OQ-001 resolved, see DECISIONS); palette from `except/` (off-white walls, light-grey tile, walnut wood, white metal, black electronics, lime-green accents) |
 | Assets | Kenney furniture/office kits + Quaternius animated characters (CC0). Seat sockets defined per furniture type in config |
 | Collision | Custom 2.5D capsule-vs-AABB sweep-and-slide (no Rapier); shared with server |
 | Camera | Spring-damped orbit third-person camera, ray occlusion pull-in, min distance clamp |

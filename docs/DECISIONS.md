@@ -69,3 +69,15 @@ Context: SPEC cross-review surfaced PRD conflicts; owner clarified what matters 
 Choice: Release-critical core = join a room, see other employees in real time, move, sit at a workstation, and watch a shared YouTube TV. Other interactions (coffee, wave, sofa rest, doors, cabinets) follow after the core works; lockers and most props are decorative. Accepted deviations: Quaternius Suit avatars instead of stylized big-head proportions; curated video catalog + pasted YouTube URL instead of live search (no Data API key); 8 photo-faithful desks with first-come seating; room 10 x 8 x 2.7 m (DEC over ARCH 10 x 7 x 2.8); closing the TV is local, Stop is shared.
 Alternatives: Build every SRS interaction to equal depth before release; live YouTube search.
 Consequence: Phase plans order core tasks first; SPEC "Resolved decisions" lists the full set.
+
+## 2026-11-09 — OQ-001 closed: room is 10 x 8 x 2.7 m (PM, decide + inform)
+Context: SPEC OQ-001 left ARCH (~10 x 7 x 2.8 m) and the owner layout decision (~10 x 8 m) in conflict.
+Choice: Use the accepted layout JSON (10 x 8 x 2.7 m), which implements the owner's decision; ARCH updated.
+Alternatives: Keep 2.8 m height (no requirement depends on it).
+Consequence: Phase 1 tests assert 10 x 8 x 2.7; changing the room size later means editing only the layout JSON.
+
+## 2026-11-09 — Phase 1 runs in the cloud session with Claude subagents (owner)
+Context: Owner asked the PM to manage Phase 1 in this session instead of Codex + agy on the local machine.
+Choice: Batches A–D per `docs/plans/phase-1-execution.md`; PM re-verifies every batch; `@playwright/test` pinned to the pre-installed Playwright (1.63.0).
+Alternatives: Local Codex + agy execution as planned in phase-1.md.
+Consequence: phase-1.md stays the build source; the execution brief records roles, contracts and acceptance.
