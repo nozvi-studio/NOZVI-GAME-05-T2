@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { officeLayout } from '@office/protocol';
+import { CameraRig } from './camera';
 import { KeyboardInput } from './input';
 import { Player } from './player';
 import { buildRoom } from './room';
@@ -10,28 +11,37 @@ export class Game {
   readonly renderer = new THREE.WebGLRenderer({ antialias: true });
   readonly player = new Player();
   readonly input = new KeyboardInput(window);
-  cameraYaw = 0;
   onFrame: ((dt: number) => void) | undefined;
   private readonly timer = new THREE.Timer();
   private readonly resizeObserver: ResizeObserver;
+  private readonly rig: CameraRig;
+  private readonly debugHook: unknown;
 
   constructor(private readonly host: HTMLElement) {
     this.scene.background = new THREE.Color('#dfe9f3');
-    this.scene.add(buildRoom(officeLayout));
+    const room = buildRoom(officeLayout);
+    this.scene.add(room);
+    const occluders: THREE.Object3D[] = [];
+    room.traverse((o) => {
+      if (o.userData.occluder) occluders.push(o);
+    });
     this.scene.add(this.player.mesh);
+    this.rig = new CameraRig(this.camera, this.renderer.domElement, occluders);
+    this.rig.yaw = this.player.state.heading;
+    this.scene.updateMatrixWorld(true);
+    this.rig.update(this.player.mesh.position, 0);
     if (import.meta.env.DEV) {
-      (window as unknown as { __office: unknown }).__office = {
+      this.debugHook = {
         getPlayer: () => ({ ...this.player.state }),
-        getCameraYaw: () => this.cameraYaw,
+        getCameraYaw: () => this.rig.yaw,
       };
+      (window as unknown as { __office: unknown }).__office = this.debugHook;
     }
     this.scene.add(new THREE.HemisphereLight('#ffffff', '#b8b0a0', 1.2));
     const sun = new THREE.DirectionalLight('#fff4e0', 1.4);
     sun.position.set(2, 6, 6);
     sun.castShadow = true;
     this.scene.add(sun);
-    this.camera.position.set(0, 2.2, -1);
-    this.camera.lookAt(0, 1, 2);
     this.renderer.shadowMap.enabled = true;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     host.appendChild(this.renderer.domElement);
@@ -52,7 +62,8 @@ export class Game {
     this.renderer.setAnimationLoop(() => {
       this.timer.update();
       const dt = Math.min(this.timer.getDelta(), 0.1);
-      this.player.update(this.input.read(), this.cameraYaw, dt);
+      this.player.update(this.input.read(), this.rig.yaw, dt);
+      this.rig.update(this.player.mesh.position, dt);
       this.onFrame?.(dt);
       this.renderer.render(this.scene, this.camera);
     });
@@ -61,6 +72,9 @@ export class Game {
   dispose(): void {
     this.renderer.setAnimationLoop(null);
     this.input.dispose();
+    this.rig.dispose();
+    const w = window as unknown as { __office?: unknown };
+    if (this.debugHook !== undefined && w.__office === this.debugHook) delete w.__office;
     this.resizeObserver.disconnect();
     this.renderer.dispose();
     this.renderer.domElement.remove();
