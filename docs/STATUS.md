@@ -1,5 +1,5 @@
 # STATUS — project memory
-Updated: 2026-11-09 by Claude Code (lead) · Phase: Phase 1 plan ready → execute Phase 1
+Updated: 2026-11-09 by Claude Code (lead) · Phase: Phase 1 + 2 plans ready → execute Phase 1
 Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/SPEC.md` (implementation spec). `docs/GDD.md` is deprecated (casual template).
 
 ## Done
@@ -12,7 +12,7 @@ Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTU
 - Proof-of-concepts in `spike/poc/` (gitignored): TV CSS3D pass 5/6, Colyseus 0.18 sync pass 8/8, Quaternius retarget pass after 2 fixes. Findings in DECISIONS.
 
 ## Next (ordered)
-1. **Execute Phase 1** (`docs/plans/phase-1.md`, 8 tasks) — Codex implements per task; agy runs tests/Playwright and reports; lead reviews screenshots personally.
+1. **Execute Phase 1** (`docs/plans/phase-1.md`, 8 tasks), then **Phase 2** (`docs/plans/phase-2.md`, 8 tasks; Tasks 1-6 core, Task 7 secondary) — Codex implements per task; agy runs tests/Playwright and reports; lead reviews screenshots personally.
 
 ## Open items
 - Find a truly embed-blocked YouTube video id to verify the TV error path.
