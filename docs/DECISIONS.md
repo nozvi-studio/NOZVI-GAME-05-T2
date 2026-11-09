@@ -54,3 +54,12 @@ Context: PRD asks for semi-realistic stylized characters; Kenney Mini Characters
 Choice: Quaternius CC0 characters with UAL clips (Idle, Walk, Sitting_Enter/Idle/Exit, Interact); Kenney Furniture Kit for props.
 Alternatives: Kenney Mini Characters (lightest, shared rig, off-style).
 Consequence: Bone retargeting work; typing and drinking clips must be composed (no CC0 source found; Mixamo is not CC0).
+
+## 2026-11-09 — Proof-of-concept results (spike/poc, not committed)
+Context: Validate the three highest technical risks before writing specs.
+Choice: Keep the accepted architecture; findings below become spec requirements.
+- TV (CSS3D + YouTube IFrame API, three 0.187): muted autoplay, orbit through pointer-events:none, depth-only occluder and TV-mode toggle all work. Clicking inside the iframe steals keyboard focus, so TV mode needs an on-screen exit and focus recovery. Embed-blocked error path still unverified (need a truly blocked video id).
+- Multiplayer (Colyseus 0.18.12, @colyseus/sdk 0.18.9, @colyseus/schema 5.0.45): room per office code via custom roomId, movement sync at 20 Hz, TV state sync and 20 s reconnection pass. 0.18 API differs from older docs (Room<{state}>, onLeave(client, code), CloseCode). SDK auto-reconnect requires 5 s minimum room uptime; client needs its own retry/rejoin path.
+- Avatars (Quaternius Modular Men/Women Suit + Universal Animation Library): rigs differ (49/51 vs 53 joints, rest rotations up to ~90 deg apart), so clips need world-space rest-pose retargeting plus hip-motion transfer. Working implementation: spike/poc/avatar/src/retarget.ts (port into apps/web). Height ~1.85 m; Sitting_Idle_Loop aligns with a 0.45 m seat.
+Alternatives: Kenney Mini Characters (shared rig, no retarget) remain the fallback.
+Consequence: Retargeting becomes an explicit Phase 2 task with a numeric pose check test.
