@@ -57,9 +57,9 @@ Common contract terms for every batch:
 
 ## 6. Status
 
-| Batch | State    | Evidence / notes                                                                                                                                        |
-| ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A     | Accepted | PM re-ran `pnpm check` (exit 0; protocol 6, server 2 tests), validator exit 0, layout JSON semantically unchanged after move, protected files untouched |
-| B     | Accepted | PM re-ran `pnpm check` (exit 0; protocol 35 tests) and reviewed `collision.ts`; plan defects fixed, see §5                                              |
-| C     | Assigned | sonnet subagent                                                                                                                                         |
-| D     | Proposed | depends on C                                                                                                                                            |
+| Batch | State    | Evidence / notes                                                                                                                                                                                                                                                                                                            |
+| ----- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A     | Accepted | PM re-ran `pnpm check` (exit 0; protocol 6, server 2 tests), validator exit 0, layout JSON semantically unchanged after move, protected files untouched                                                                                                                                                                     |
+| B     | Accepted | PM re-ran `pnpm check` (exit 0; protocol 35 tests) and reviewed `collision.ts`; plan defects fixed, see §5                                                                                                                                                                                                                  |
+| C     | Accepted | PM re-ran `pnpm check` (exit 0; web 4 tests) and opened `task5-room.png` / `task6-player.png`: walls, floor, desks, dividers and blue capsule render; player stopped at +Z wall (z = 3.6). `THREE.Clock` replaced by `THREE.Timer` (deprecated in 0.187). Note: walls read mid-grey under current lighting, tune in Phase 2 |
+| D     | Assigned | opus subagent                                                                                                                                                                                                                                                                                                               |
