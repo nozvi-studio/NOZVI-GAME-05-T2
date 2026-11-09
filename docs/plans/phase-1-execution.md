@@ -53,11 +53,13 @@ Common contract terms for every batch:
 - TypeScript pinned to 6.0.3 (latest 6.x): typescript-eslint 8.72.2 does not support TypeScript 7 yet. Revisit when typescript-eslint adds TS 7 support.
 - Vitest 5 scripts exclude `dist/` and `dist-types/` because `tsc -b` emits compiled tests there; `.prettierignore` excludes protected agent files so `pnpm format` cannot rewrite them.
 
+- Batch B fixed five defects in the phase-1.md collision/movement code, all covered by new tests: (1) the plan's oblique-slide test started at a box corner, not the face, so no correct solver could pass it; start moved to z = -0.5 and the original geometry kept as a corner-rounding test; (2) non-finite or huge deltas hung the loop, now capped at 256 substeps; (3) 4 push-out rounds left the circle inside furniture in narrow desk gaps, now 16 rounds and an unresolvable substep is rejected; (4) flush box seams caused sideways drift, now the deepest overlap is resolved first; (5) NaN/Infinity input or non-positive dt produced NaN or backward motion, now ignored. Consequence: a player whose start position overlaps a collider cannot move; the layout validator guarantees spawn is clear.
+
 ## 6. Status
 
 | Batch | State    | Evidence / notes                                                                                                                                        |
 | ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A     | Accepted | PM re-ran `pnpm check` (exit 0; protocol 6, server 2 tests), validator exit 0, layout JSON semantically unchanged after move, protected files untouched |
-| B     | Assigned | opus subagent                                                                                                                                           |
-| C     | Proposed | depends on B                                                                                                                                            |
+| B     | Accepted | PM re-ran `pnpm check` (exit 0; protocol 35 tests) and reviewed `collision.ts`; plan defects fixed, see §5                                              |
+| C     | Assigned | sonnet subagent                                                                                                                                         |
 | D     | Proposed | depends on C                                                                                                                                            |
