@@ -42,3 +42,15 @@ Context: Zero cost; Colyseus needs a long-lived Node process.
 Choice: Pages for web, Render Free for server; Oracle Always Free VPS as fallback.
 Alternatives: Fly.io, Railway (no lasting free tier), Koyeb (low CPU, far region).
 Consequence: ~1 min cold start after 15 min idle; UI must handle it.
+
+## 2026-11-09 — Layout: photo-faithful office, enlarged to ~10 x 8 m (owner)
+Context: The real office in `except/` measures ~6 x 8 m with 8 seats; too tight for the PRD Entertainment Zone (sofa, coffee table).
+Choice: Keep the photo layout and palette (8 desks in two pods, TV wall, entrance, pantry) and widen the room so Entertainment, Pantry and Storage zones are distinct.
+Alternatives: Exact 6 x 8 m replica (drops sofa); free-form layout.
+Consequence: Layout data starts from the agy floor-plan JSON and is extended, not used verbatim.
+
+## 2026-11-09 — Avatars: Quaternius characters + Universal Animation Library (owner)
+Context: PRD asks for semi-realistic stylized characters; Kenney Mini Characters are chibi.
+Choice: Quaternius CC0 characters with UAL clips (Idle, Walk, Sitting_Enter/Idle/Exit, Interact); Kenney Furniture Kit for props.
+Alternatives: Kenney Mini Characters (lightest, shared rig, off-style).
+Consequence: Bone retargeting work; typing and drinking clips must be composed (no CC0 source found; Mixamo is not CC0).
