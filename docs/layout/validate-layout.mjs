@@ -623,7 +623,9 @@ function validateReachability(spawn, targets, obstacles, step) {
 try {
   const path = process.argv[2]
     ? resolve(process.argv[2])
-    : fileURLToPath(new URL('./office-layout.json', import.meta.url));
+    : fileURLToPath(
+        new URL('../../packages/protocol/src/layout/office-layout.json', import.meta.url),
+      );
   validate(JSON.parse(readFileSync(path, 'utf8')));
 } catch (error) {
   errors.push(error.message);

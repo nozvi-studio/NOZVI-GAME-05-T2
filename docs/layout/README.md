@@ -1,6 +1,6 @@
 # Procedural office layout
 
-`office-layout.json` is the authoritative placement data for this room. Run
+`packages/protocol/src/layout/office-layout.json` is the authoritative placement data for this room. Run
 `node docs/layout/validate-layout.mjs` from the repository root (Node only, no
 dependencies). An optional first argument selects another JSON file for validation.
 
