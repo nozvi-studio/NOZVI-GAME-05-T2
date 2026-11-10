@@ -2,23 +2,27 @@
 
 Updated: 2026-11-09 · Keep under ~80 lines. One row per module, not per file.
 
-> No source code exists yet. Add rows only for paths that actually exist. Planned layout: `docs/ARCHITECTURE.md` §2 (apps/web, apps/server, packages/protocol); Phase 1 file plan in `docs/plans/phase-1.md`. Layout data: `docs/layout/office-layout.json` (moves to packages/protocol in Phase 1 Task 2).
+> Add rows only for paths that actually exist. Architecture: `docs/ARCHITECTURE.md` §2. Commands: `pnpm check` (format, lint, typecheck, test, build), `pnpm --filter @office/web dev`, `pnpm --filter @office/web e2e`, `node docs/layout/validate-layout.mjs`. Node 24 required.
 
 ## Entry points
 
-| What                   | File            |
-| ---------------------- | --------------- |
-| App bootstrap          | — (not created) |
-| Main game scene / loop | — (not created) |
-| Balance config         | — (not created) |
-| Test setup             | — (not created) |
+| What                   | File                                                                                      |
+| ---------------------- | ----------------------------------------------------------------------------------------- |
+| App bootstrap          | `apps/web/src/main.tsx`, `apps/web/src/App.tsx`                                           |
+| Main game scene / loop | `apps/web/src/game/Game.ts`                                                               |
+| Balance config         | `packages/protocol/src/balance.ts`                                                        |
+| Layout data            | `packages/protocol/src/layout/office-layout.json`                                         |
+| Server entry           | `apps/server/src/main.ts`                                                                 |
+| Test setup             | Vitest per package (`test/`); Playwright `apps/web/playwright.config.ts`, `apps/web/e2e/` |
 
 ## Modules
 
 | Module (folder) | Responsibility | Key files (max 3) | Depends on | Requirement IDs | Tests |
 | --------------- | -------------- | ----------------- | ---------- | --------------- | ----- |
 
-<!-- add rows: apps/web, apps/server, packages/protocol ... -->
+| packages/protocol | Shared pure TS: layout loader, balance, 2.5D collision, movement step (no React/Three) | `src/layout/layout.ts`, `src/collision.ts`, `src/movement.ts` | — | REQ-ROOM-002, REQ-MOVE-001, REQ-MOVE-002 | `packages/protocol/test/` |
+| apps/web/src/game | Three.js room, render loop, input, capsule player, orbit camera (outside React) | `Game.ts`, `room.ts`, `camera.ts` | protocol, three | REQ-ROOM-001, REQ-ROOM-003, REQ-CAM-001 | `apps/web/test/`, `apps/web/e2e/walk.spec.ts` |
+| apps/server | Node HTTP health service (Colyseus arrives in Phase 3) | `src/main.ts`, `src/health.ts` | protocol | REQ-NFR-001 | `apps/server/test/` |
 
 ## Do not read (generated, vendored or binary)
 

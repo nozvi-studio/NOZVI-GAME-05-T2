@@ -1,6 +1,6 @@
 # STATUS — project memory
 
-Updated: 2026-11-09 by Claude Code (lead) · Phase: Phase 1 + 2 plans ready → execute Phase 1
+Updated: 2026-11-09 by Claude Code (PM, cloud session) · Phase: Phase 1 done → Phase 2 next
 Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/SPEC.md` (implementation spec). `docs/GDD.md` is deprecated (casual template).
 
 ## Done
@@ -13,9 +13,12 @@ Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTU
 - Owner core-first priority recorded in DECISIONS.
 - Proof-of-concepts in `spike/poc/` (gitignored): TV CSS3D pass 5/6, Colyseus 0.18 sync pass 8/8, Quaternius retarget pass after 2 fixes. Findings in DECISIONS.
 
+- **Phase 1 complete** (walkable office): 8 tasks in 4 batches, each re-verified by the PM; see `docs/plans/phase-1-execution.md`. 46 unit tests + 4 Playwright tests pass. FPS measured only under software rendering (13 FPS, not representative); real-hardware measurement pending.
+
 ## Next (ordered)
 
-1. **Execute Phase 1** (`docs/plans/phase-1.md`, 8 tasks), then **Phase 2** (`docs/plans/phase-2.md`, 8 tasks; Tasks 1-6 core, Task 7 secondary) — Codex implements per task; agy runs tests/Playwright and reports; lead reviews screenshots personally.
+1. Owner: measure FPS on a normal desktop (`pnpm --filter @office/web dev`, walk 30 s) and decide the draw-call budget question in `phase-1-execution.md` §7.
+2. **Phase 2** (`docs/plans/phase-2.md`, 8 tasks; Tasks 1-6 core, Task 7 secondary) — Codex implements per task; agy runs tests/Playwright and reports; lead reviews screenshots personally.
 
 ## Open items
 
