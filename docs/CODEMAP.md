@@ -21,7 +21,7 @@ Updated: 2026-11-09 · Keep under ~80 lines. One row per module, not per file.
 | --------------- | -------------- | ----------------- | ---------- | --------------- | ----- |
 
 | packages/protocol | Shared pure TS: layout loader, balance, 2.5D collision, movement step (no React/Three) | `src/layout/layout.ts`, `src/collision.ts`, `src/movement.ts` | — | REQ-ROOM-002, REQ-MOVE-001, REQ-MOVE-002 | `packages/protocol/test/` |
-| apps/web/src/game | Three.js room, render loop, input, capsule player, orbit camera (outside React) | `Game.ts`, `room.ts`, `camera.ts` | protocol, three | REQ-ROOM-001, REQ-ROOM-003, REQ-CAM-001 | `apps/web/test/`, `apps/web/e2e/walk.spec.ts` |
+| apps/web/src/game | Three.js room, render loop, lighting/shadows, input, capsule player, orbit camera with ceiling clamp (outside React) | `Game.ts`, `room.ts`, `lighting.ts`, `camera.ts`, `cameraMath.ts` | protocol, three | REQ-ROOM-001, REQ-ROOM-003, REQ-CAM-001 | `apps/web/test/`, `apps/web/e2e/walk.spec.ts`, `apps/web/e2e/visual.spec.ts` (evidence capture to `apps/web/visual-out/`) |
 | apps/server | Node HTTP health service (Colyseus arrives in Phase 3) | `src/main.ts`, `src/health.ts` | protocol | REQ-NFR-001 | `apps/server/test/` |
 
 ## Do not read (generated, vendored or binary)

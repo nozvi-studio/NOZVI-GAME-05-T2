@@ -16,6 +16,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 ### Changed
 
 - Layout data moved to `packages/protocol/src/layout/office-layout.json`; OQ-001 closed at 10 x 8 x 2.7 m.
+- Phase 1.1 lighting and camera polish: ACES tone mapping, RoomEnvironment light probe fill, soft 2048 px window-sun shadows fitted to the room (tunables in `BALANCE.rendering`); camera stays below the ceiling, player fades when the camera is close; spawn moved to (-1, 0, -2.7) facing west; `e2e/visual.spec.ts` captures fixed review poses to `apps/web/visual-out/`.
 
 ### Fixed
 

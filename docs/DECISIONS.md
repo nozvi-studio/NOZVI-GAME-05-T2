@@ -96,3 +96,10 @@ Context: Owner asked the PM to manage Phase 1 in this session instead of Codex +
 Choice: Batches A–D per `docs/plans/phase-1-execution.md`; PM re-verifies every batch; `@playwright/test` pinned to the pre-installed Playwright (1.63.0).
 Alternatives: Local Codex + agy execution as planned in phase-1.md.
 Consequence: phase-1.md stays the build source; the execution brief records roles, contracts and acceptance.
+
+## 2026-11-10 — Phase 1.1 lighting and spawn trade-offs (implementer, for PM review)
+
+Context: Phase 1.1 brief asked for `RoomEnvironment` + `PMREMGenerator` environment lighting, `PCFSoftShadowMap`, and a spawn moved within the Entrance zone so the capsule fills < 20% of the frame.
+Choice: (1) Bake `RoomEnvironment` into a spherical-harmonics `LightProbe` (`LightProbeGenerator`) instead of a PMREM `scene.environment`; (2) `PCFShadowMap` with `shadow.radius`, because three r187 removed `PCFSoftShadowMap` (it now only warns and falls back); (3) shell walls receive but do not cast shadows, since the sun enters through the south window that is part of `wall_south`; (4) spawn at (-1, 0, -2.7) with rotY 270 (facing west) — the Entrance strip is only 1.6 m deep, so a south-facing spawn always pins the camera against the north wall.
+Alternatives: PMREM environment (same diffuse look on these roughness-1 materials, but measured ~165 vs ~88 ms per frame under SwiftShader and it made `walk.spec.ts` time out of its key holds); south-facing spawn with a ~1.4 m camera.
+Consequence: no specular environment reflections until Phase 2 materials need them (switch back to PMREM then and re-measure); `walk.spec.ts` "walls stop the player" starts from a fixed pose 0.9 m from the north wall via the DEV hook.
