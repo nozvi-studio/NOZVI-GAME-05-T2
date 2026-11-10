@@ -7,3 +7,4 @@ coverage/
 !.env.example
 dist-types/
 test-results/
+visual-out/

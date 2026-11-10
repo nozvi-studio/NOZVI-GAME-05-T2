@@ -35,6 +35,8 @@ export class Game {
     const lighting = setupLighting(this.renderer, this.scene, new THREE.Box3().setFromObject(room));
     this.disposeLighting = lighting.dispose;
     if (import.meta.env.DEV) {
+      let lightingReady = false;
+      void lighting.ready.then(() => (lightingReady = true));
       this.debugHook = {
         getPlayer: () => ({ ...this.player.state }),
         getCameraYaw: () => this.rig.yaw,
@@ -47,6 +49,8 @@ export class Game {
           this.rig.yaw = p.yaw ?? p.heading;
           if (p.pitch !== undefined) this.rig.pitch = p.pitch;
         },
+        getDrawCalls: () => this.measureDrawCalls(),
+        isLightingReady: () => lightingReady,
       };
       (window as unknown as { __office: unknown }).__office = this.debugHook;
     }
@@ -63,6 +67,20 @@ export class Game {
     this.renderer.setSize(w, h);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+  }
+
+  /** Renders two frames: one with the shadow pass, one reusing the shadow map (main pass only). */
+  private measureDrawCalls(): { total: number; main: number; shadow: number; triangles: number } {
+    const shadowMap = this.renderer.shadowMap;
+    this.renderer.render(this.scene, this.camera);
+    const total = this.renderer.info.render.calls;
+    const triangles = this.renderer.info.render.triangles;
+    const autoUpdate = shadowMap.autoUpdate;
+    shadowMap.autoUpdate = false;
+    this.renderer.render(this.scene, this.camera);
+    const main = this.renderer.info.render.calls;
+    shadowMap.autoUpdate = autoUpdate;
+    return { total, main, shadow: total - main, triangles };
   }
 
   start(): void {
