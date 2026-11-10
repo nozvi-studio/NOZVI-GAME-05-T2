@@ -1,14 +1,17 @@
 import * as THREE from 'three';
-import { BALANCE } from '@office/protocol';
-import { clampPitch, damp, orbitOffset, resolveDistance } from './cameraMath';
+import { BALANCE, officeLayout } from '@office/protocol';
+import { ceilingPitch, clampPitch, damp, orbitOffset, resolveDistance } from './cameraMath';
 
 const C = BALANCE.camera;
+const MAX_Y = officeLayout.room.height - C.ceilingClearance;
 
 export class CameraRig {
   yaw = 0;
   pitch = clampPitch((C.defaultPitchDeg * Math.PI) / 180);
   private distance: number = C.distance;
   private currentDistance: number = C.distance;
+  /** Pitch actually used last frame after the ceiling limit. */
+  private effectivePitch = this.pitch;
   private dragging = false;
   private readonly ray = new THREE.Raycaster();
   private readonly focus = new THREE.Vector3();
@@ -46,7 +49,11 @@ export class CameraRig {
 
   update(target: THREE.Vector3, dt: number): void {
     this.focus.set(target.x, target.y + C.targetHeight, target.z);
-    const dir = orbitOffset(this.yaw, this.pitch, 1);
+    // Lower the orbit for the longest distance the camera may sit at, so it stays below the ceiling.
+    const reach = Math.max(this.distance, this.currentDistance);
+    const pitch = ceilingPitch(this.pitch, reach, this.focus.y, MAX_Y);
+    this.effectivePitch = pitch;
+    const dir = orbitOffset(this.yaw, pitch, 1);
     this.dirVec.set(dir.x, dir.y, dir.z).normalize();
     this.ray.set(this.focus, this.dirVec);
     this.ray.far = this.distance;
@@ -63,9 +70,23 @@ export class CameraRig {
       h.object.visible = false;
       this.hidden.add(h.object);
     }
-    const o = orbitOffset(this.yaw, this.pitch, this.currentDistance);
-    this.camera.position.set(this.focus.x + o.x, this.focus.y + o.y, this.focus.z + o.z);
+    const o = orbitOffset(this.yaw, pitch, this.currentDistance);
+    this.camera.position.set(
+      this.focus.x + o.x,
+      Math.min(this.focus.y + o.y, MAX_Y),
+      this.focus.z + o.z,
+    );
     this.camera.lookAt(this.focus);
+  }
+
+  /** Current camera-to-focus distance after occlusion and damping. */
+  get distanceToFocus(): number {
+    return this.currentDistance;
+  }
+
+  /** Orbit pitch in use after the ceiling limit (may be below the user's pitch). */
+  get pitchInUse(): number {
+    return this.effectivePitch;
   }
 
   private restoreHidden(): void {

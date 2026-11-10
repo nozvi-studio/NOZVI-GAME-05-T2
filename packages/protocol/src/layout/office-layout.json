@@ -1916,7 +1916,7 @@
   ],
   "spawn": {
     "zone": "Entrance",
-    "position": [-0.4, 0, -3],
-    "rotY": 0
+    "position": [-1, 0, -2.7],
+    "rotY": 270
   }
 }

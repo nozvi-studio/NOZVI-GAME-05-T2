@@ -1,6 +1,7 @@
 export const BALANCE = {
   movement: { walkSpeed: 2.0, runSpeed: 4.0, capsuleRadius: 0.3, turnRate: 12 },
   camera: {
+    fovDeg: 60,
     distance: 4.0,
     minDistance: 1.0,
     maxDistance: 6.0,
@@ -11,6 +12,12 @@ export const BALANCE = {
     stiffness: 10,
     mouseSensitivity: 0.0035,
     occlusionPadding: 0.2,
+    /** The camera stays this far below the room ceiling (layout room.dimensions.height). */
+    ceilingClearance: 0.15,
+    /** Player mesh fades from opaque at fadeStartDistance to fadeMinOpacity at fadeEndDistance. */
+    fadeStartDistance: 1.2,
+    fadeEndDistance: 1.0,
+    fadeMinOpacity: 0.35,
   },
   rendering: {
     /** 'agx' or 'aces' (THREE.AgXToneMapping / THREE.ACESFilmicToneMapping). */

@@ -8,9 +8,21 @@ const getYaw = (page: Page) =>
     (window as unknown as { __office: { getCameraYaw(): number } }).__office.getCameraYaw(),
   );
 
-async function hold(page: Page, key: string, ms: number) {
+// Holds a key for at least `ms` and at least `minFrames` rendered frames. Software WebGL can
+// stall a single frame for longer than a short hold, and the game only samples input per frame.
+async function hold(page: Page, key: string, ms: number, minFrames = 4) {
   await page.keyboard.down(key);
-  await page.waitForTimeout(ms);
+  await Promise.all([
+    page.waitForTimeout(ms),
+    page.evaluate(
+      (n) =>
+        new Promise<void>((resolve) => {
+          const tick = () => (--n <= 0 ? resolve() : requestAnimationFrame(tick));
+          requestAnimationFrame(tick);
+        }),
+      minFrames,
+    ),
+  ]);
   await page.keyboard.up(key);
 }
 
@@ -20,6 +32,11 @@ test.beforeEach(async ({ page }) => {
     () => 'getPlayer' in ((window as unknown as { __office?: object }).__office ?? {}),
   );
   await page.locator('canvas').click({ position: { x: 640, y: 360 } });
+  // Software WebGL stalls for ~1-2 s on the first frames (shader compilation); wait for two
+  // rendered frames so timed key holds measure steady-state movement.
+  await page.evaluate(
+    () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+  );
 });
 
 test('renders the office canvas', async ({ page }) => {
@@ -53,8 +70,18 @@ test('S, A and D move in their camera-relative directions', async ({ page }) => 
 });
 
 test('walls stop the player', async ({ page }) => {
-  await hold(page, 's', 4000);
+  // Back the player into the north wall (inner face z = -3.9, capsule radius 0.3) from 0.9 m
+  // away. The spawn now faces west with over 5 m of open floor behind it, so start from a fixed pose.
+  await page.evaluate(() =>
+    (window as unknown as { __office: { setPose(p: object): void } }).__office.setPose({
+      x: -0.4,
+      z: -3,
+      heading: 0,
+    }),
+  );
+  await hold(page, 's', 4000, 12);
   const p = await getPlayer(page);
   expect(p.z).toBeGreaterThan(-4 + 0.3 - 0.01);
+  expect(p.z).toBeLessThan(-3.9 + 0.3 + 0.05);
   await page.screenshot({ path: 'test-results/walk-wall.png' });
 });

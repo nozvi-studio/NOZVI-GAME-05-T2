@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { officeLayout } from '@office/protocol';
+import { BALANCE, officeLayout } from '@office/protocol';
 import { CameraRig } from './camera';
+import { fadeOpacity } from './cameraMath';
 import { KeyboardInput } from './input';
 import { Player } from './player';
 import { setupLighting } from './lighting';
@@ -8,7 +9,7 @@ import { buildRoom } from './room';
 
 export class Game {
   readonly scene = new THREE.Scene();
-  readonly camera = new THREE.PerspectiveCamera(60, 1, 0.05, 50);
+  readonly camera = new THREE.PerspectiveCamera(BALANCE.camera.fovDeg, 1, 0.05, 50);
   readonly renderer = new THREE.WebGLRenderer({ antialias: true });
   readonly player = new Player();
   readonly input = new KeyboardInput(window);
@@ -37,6 +38,15 @@ export class Game {
       this.debugHook = {
         getPlayer: () => ({ ...this.player.state }),
         getCameraYaw: () => this.rig.yaw,
+        getCamera: () => {
+          const { x, y, z } = this.camera.position;
+          return { x, y, z, yaw: this.rig.yaw, pitch: this.rig.pitchInUse };
+        },
+        setPose: (p: { x: number; z: number; heading: number; yaw?: number; pitch?: number }) => {
+          this.player.teleport(p.x, p.z, p.heading);
+          this.rig.yaw = p.yaw ?? p.heading;
+          if (p.pitch !== undefined) this.rig.pitch = p.pitch;
+        },
       };
       (window as unknown as { __office: unknown }).__office = this.debugHook;
     }
@@ -61,6 +71,7 @@ export class Game {
       const dt = Math.min(this.timer.getDelta(), 0.1);
       this.player.update(this.input.read(), this.rig.yaw, dt);
       this.rig.update(this.player.mesh.position, dt);
+      this.player.setOpacity(fadeOpacity(this.rig.distanceToFocus));
       this.onFrame?.(dt);
       this.renderer.render(this.scene, this.camera);
     });
