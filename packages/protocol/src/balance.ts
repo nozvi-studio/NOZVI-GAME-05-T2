@@ -12,5 +12,17 @@ export const BALANCE = {
     mouseSensitivity: 0.0035,
     occlusionPadding: 0.2,
   },
+  rendering: {
+    /** 'agx' or 'aces' (THREE.AgXToneMapping / THREE.ACESFilmicToneMapping). */
+    toneMapping: 'aces',
+    exposure: 1.0,
+    background: '#eceef0',
+    /** Intensity of the light probe baked from THREE RoomEnvironment (image-based fill). */
+    environmentIntensity: 0.55,
+    hemisphere: { sky: '#f2f0ec', ground: '#e6e0d6', intensity: 0.8 },
+    /** Daylight through the south window (layout shell.windows[south_window]). */
+    sun: { color: '#fff1dc', intensity: 3.0, position: [2, 6, 9], target: [0, 0, 0] },
+    shadow: { mapSize: 2048, bias: -0.0004, normalBias: 0.03, radius: 3, margin: 0.3 },
+  },
 } as const;
 export type Balance = typeof BALANCE;

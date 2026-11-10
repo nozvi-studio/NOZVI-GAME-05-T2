@@ -3,6 +3,7 @@ import { officeLayout } from '@office/protocol';
 import { CameraRig } from './camera';
 import { KeyboardInput } from './input';
 import { Player } from './player';
+import { setupLighting } from './lighting';
 import { buildRoom } from './room';
 
 export class Game {
@@ -16,9 +17,9 @@ export class Game {
   private readonly resizeObserver: ResizeObserver;
   private readonly rig: CameraRig;
   private readonly debugHook: unknown;
+  private readonly disposeLighting: () => void;
 
   constructor(private readonly host: HTMLElement) {
-    this.scene.background = new THREE.Color('#dfe9f3');
     const room = buildRoom(officeLayout);
     this.scene.add(room);
     const occluders: THREE.Object3D[] = [];
@@ -30,6 +31,8 @@ export class Game {
     this.rig.yaw = this.player.state.heading;
     this.scene.updateMatrixWorld(true);
     this.rig.update(this.player.mesh.position, 0);
+    const lighting = setupLighting(this.renderer, this.scene, new THREE.Box3().setFromObject(room));
+    this.disposeLighting = lighting.dispose;
     if (import.meta.env.DEV) {
       this.debugHook = {
         getPlayer: () => ({ ...this.player.state }),
@@ -37,12 +40,6 @@ export class Game {
       };
       (window as unknown as { __office: unknown }).__office = this.debugHook;
     }
-    this.scene.add(new THREE.HemisphereLight('#ffffff', '#b8b0a0', 1.2));
-    const sun = new THREE.DirectionalLight('#fff4e0', 1.4);
-    sun.position.set(2, 6, 6);
-    sun.castShadow = true;
-    this.scene.add(sun);
-    this.renderer.shadowMap.enabled = true;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     host.appendChild(this.renderer.domElement);
     this.resizeObserver = new ResizeObserver(() => this.resize());
@@ -76,6 +73,7 @@ export class Game {
     const w = window as unknown as { __office?: unknown };
     if (this.debugHook !== undefined && w.__office === this.debugHook) delete w.__office;
     this.resizeObserver.disconnect();
+    this.disposeLighting();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }

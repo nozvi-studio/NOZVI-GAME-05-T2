@@ -54,7 +54,13 @@ export function buildRoom(layout: OfficeLayout): THREE.Group {
   ceiling.name = 'ceiling';
   ceiling.position.y = height;
   group.add(ceiling);
-  for (const wall of layout.walls) group.add(boxMesh(wall, layout.palette.walls ?? '#F5F6F8'));
+  for (const wall of layout.walls) {
+    const mesh = boxMesh(wall, layout.palette.walls ?? '#F5F6F8');
+    // Shell walls receive but do not cast: daylight enters through the south window, which is
+    // modelled as part of wall_south, and casting would black out the room interior.
+    mesh.castShadow = false;
+    group.add(mesh);
+  }
   for (const item of layout.items) group.add(boxMesh(item, colorFor(item, layout.palette)));
   return group;
 }
