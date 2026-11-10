@@ -13,7 +13,7 @@ Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTU
 - Owner core-first priority recorded in DECISIONS.
 - Proof-of-concepts in `spike/poc/` (gitignored): TV CSS3D pass 5/6, Colyseus 0.18 sync pass 8/8, Quaternius retarget pass after 2 fixes. Findings in DECISIONS.
 
-- **Phase 1 complete** (walkable office): 8 tasks in 4 batches, each re-verified by the PM; see `docs/plans/phase-1-execution.md`. 46 unit tests + 4 Playwright tests pass. FPS measured only under software rendering (13 FPS, not representative); real-hardware measurement pending.
+- **Phase 1 complete** (walkable office): 8 tasks in 4 batches, each re-verified by the PM; see `docs/plans/phase-1-execution.md`. 46 unit tests + 4 Playwright tests pass. Phase 1.1 lighting and camera polish accepted 2026-11-10. FPS measured only under software rendering (13 FPS, not representative); real-hardware measurement pending.
 
 ## Next (ordered)
 
