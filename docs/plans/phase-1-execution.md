@@ -69,3 +69,10 @@ Common contract terms for every batch:
 - Exit criteria: `pnpm check` passes locally (CI result recorded in STATUS); `walk.spec.ts` 4 passed with screenshots reviewed by PM; validator exits 0 against the moved JSON; STATUS updated.
 - Performance (software-rendered SwiftShader, 4 vCPU Xeon, 1280x720, not representative of REQ-PERF-001): 13.0 FPS average over 30 s; 72 draw calls/frame average (main pass ≤ 42, rest is the shadow pass); ~1.3k triangles.
 - Open for owner/lead: (1) real-hardware FPS measurement; (2) does the ≤ 45 draw-call budget include the shadow pass? PM recommendation: count all passes and limit shadow casters to large furniture in Phase 2; (3) camera can rise above the 2.7 m ceiling in open areas (plan does not treat the ceiling as an occluder), review in Phase 2; (4) Playwright clears `test-results/` per run, so set a separate evidence folder in Phase 2.
+
+## 8. Phase 1.1 — lighting and camera polish (owner approved 2026-11-10)
+
+- **Why:** Phase 1 screenshots read as dull grey blocks; walls render mid-grey although the palette is off-white, unlit faces render black, shadows are aliased, and the camera sits ~1 m behind the capsule at spawn.
+- **Scope:** renderer/lighting setup, shadow quality, camera framing (FOV, distance, ceiling clamp, near-camera player fade), spawn position inside the Entrance zone, a reusable visual-capture Playwright spec. **Not in scope:** furniture shapes or GLB assets (Phase 2), textures, post-processing.
+- **Acceptance:** 3 fixed camera poses captured next to the matching `except/` photos and reviewed by the PM; walls read off-white; no fully black faces; capsule under 20% of the frame at spawn; camera never above the ceiling; `pnpm check`, layout validator and `walk.spec.ts` stay green; main-pass draw calls unchanged or lower.
+- **Executor:** one opus subagent; PM re-verifies.
