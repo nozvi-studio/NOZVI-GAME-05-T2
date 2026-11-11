@@ -1,4 +1,6 @@
 export const BALANCE = {
+  interaction: { facingConeDeg: 90 },
+  activity: { drinkSeconds: 2.5, waveSeconds: 1.6, crossFadeSeconds: 0.25 },
   movement: { walkSpeed: 2.0, runSpeed: 4.0, capsuleRadius: 0.3, turnRate: 12 },
   camera: {
     fovDeg: 60,

@@ -131,7 +131,6 @@ export function normalizeOfficeCode(raw: string): string | null {
   return /^[A-Z0-9-]{4,12}$/.test(code) ? code : null;
 }
 
-// eslint-disable-next-line no-control-regex
 const FORBIDDEN = /[\u0000-\u001f\u007f<>]/;
 
 export function validateName(raw: string): string | null {
@@ -211,7 +210,7 @@ Return both in the result. Export `identity` from `src/index.ts`.
 - Produces from interaction: `findInteractionTarget(player: PlayerState, candidates: readonly Interactable[], coneDeg?: number): Interactable | null`.
 - `BALANCE` gains `interaction: { facingConeDeg: 90 }` and `activity: { drinkSeconds: 2.5, waveSeconds: 1.6, crossFadeSeconds: 0.25 }`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 `test/activity.test.ts`:
 
@@ -305,7 +304,7 @@ describe('findInteractionTarget', () => {
 
 **Run:** `pnpm --filter @office/protocol test`. Expected: FAIL.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 `balance.ts`: add these to `BALANCE`:
 
@@ -422,8 +421,8 @@ export function findInteractionTarget(
 
 Export all three from `src/index.ts`.
 
-- [ ] **Step 3: Verify** with **Run:** `pnpm --filter @office/protocol test` and `pnpm check`. Expected: PASS.
-- [ ] **Step 4: Commit** `feat(protocol): add activity state machine, seat registry and interaction targeting`
+- [x] **Step 3: Verify** with **Run:** `pnpm --filter @office/protocol test` and `pnpm check`. Expected: PASS.
+- [x] **Step 4: Commit** `feat(protocol): add activity state machine, seat registry and interaction targeting`
 
 ---
 

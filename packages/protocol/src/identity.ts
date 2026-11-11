@@ -13,7 +13,6 @@ export function normalizeOfficeCode(raw: string): string | null {
   return /^[A-Z0-9-]{4,12}$/.test(code) ? code : null;
 }
 
-// eslint-disable-next-line no-control-regex
 const FORBIDDEN = /[\u0000-\u001f\u007f<>]/;
 
 export function validateName(raw: string): string | null {
