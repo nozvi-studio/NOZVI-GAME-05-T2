@@ -45,6 +45,16 @@ const POSES: { name: string; pose?: Pose; note: string }[] = [
     pose: { x: -1.2, z: -3.35, heading: 0, pitch: 25 * DEG },
     note: 'back to the north wall: camera pulled in, player mesh faded',
   },
+  {
+    name: '06-desk-side',
+    pose: { x: -3.4, z: 2.05, heading: 180 * DEG, pitch: 35 * DEG },
+    note: 'side view of ws_1 looking north: chair must face its desk (to the right, +X)',
+  },
+  {
+    name: '07-sofa-side',
+    pose: { x: -2.1, z: 0.6, heading: 180 * DEG, pitch: 35 * DEG },
+    note: 'side view of the sofa looking north: seat must face the TV (to the left, -X)',
+  },
 ];
 
 test('captures fixed visual poses', async ({ page }) => {
@@ -61,6 +71,11 @@ test('captures fixed visual poses', async ({ page }) => {
         window as unknown as { __office?: { isLightingReady?(): boolean } }
       ).__office?.isLightingReady?.() === true,
   );
+  // Furniture GLBs load asynchronously; capture only after the swap finished.
+  const furniture = await page.waitForFunction(() =>
+    (window as unknown as { __office?: { getFurniture?(): unknown } }).__office?.getFurniture?.(),
+  );
+  console.log(`[visual] furniture: ${JSON.stringify(await furniture.jsonValue())}`);
   for (const { name, pose, note } of POSES) {
     if (pose) await setPose(page, pose);
     // Let the spring-damped camera settle before capturing.

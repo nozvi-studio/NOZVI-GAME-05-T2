@@ -6,6 +6,7 @@ import { KeyboardInput } from './input';
 import { Player } from './player';
 import { setupLighting } from './lighting';
 import { buildRoom } from './room';
+import { loadFurniture } from './assets/loadFurniture';
 
 export class Game {
   readonly scene = new THREE.Scene();
@@ -19,6 +20,7 @@ export class Game {
   private readonly rig: CameraRig;
   private readonly debugHook: unknown;
   private readonly disposeLighting: () => void;
+  private furniture: Awaited<ReturnType<typeof loadFurniture>> | undefined;
 
   constructor(private readonly host: HTMLElement) {
     const room = buildRoom(officeLayout);
@@ -26,6 +28,14 @@ export class Game {
     const occluders: THREE.Object3D[] = [];
     room.traverse((o) => {
       if (o.userData.occluder) occluders.push(o);
+    });
+    void loadFurniture(room, officeLayout).then((result) => {
+      this.furniture = result;
+      occluders.length = 0;
+      room.updateMatrixWorld(true);
+      room.traverse((o) => {
+        if (o.userData.occluder) occluders.push(o);
+      });
     });
     this.scene.add(this.player.mesh);
     this.rig = new CameraRig(this.camera, this.renderer.domElement, occluders);
@@ -51,6 +61,7 @@ export class Game {
         },
         getDrawCalls: () => this.measureDrawCalls(),
         isLightingReady: () => lightingReady,
+        getFurniture: () => this.furniture,
       };
       (window as unknown as { __office: unknown }).__office = this.debugHook;
     }

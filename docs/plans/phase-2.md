@@ -437,7 +437,7 @@ Export all three from `src/index.ts`.
   - `fitScale(modelSize: [number, number, number], target: [number, number, number]): [number, number, number]`.
   - `loadFurniture(room: THREE.Group, layout: OfficeLayout): Promise<{ loaded: number; failed: string[] }>`. It replaces box meshes in place, keeps the same `name`, sets `userData.occluder` and keeps the box when a load fails.
 
-- [ ] **Step 1: Copy assets (agy, local files from the gitignored spike)**
+- [x] **Step 1: Copy assets (agy, local files from the gitignored spike)**
 
 **Run:**
 
@@ -463,7 +463,7 @@ Then confirm that `ls apps/web/public/assets/furniture | wc -l` prints 18.
 - anim/*.glb — Quaternius Universal Animation Library, https://quaternius.com
 ```
 
-- [ ] **Step 2: Manifest**
+- [x] **Step 2: Manifest**
 
 ```ts
 export const FURNITURE: Record<string, string> = {
@@ -487,7 +487,7 @@ export const DESK_SCREEN = 'computerScreen.glb';
 export const COFFEE_MACHINE = 'kitchenCoffeeMachine.glb';
 ```
 
-- [ ] **Step 3: Failing fit test**
+- [x] **Step 3: Failing fit test**
 
 ```ts
 import { expect, it } from 'vitest';
@@ -503,7 +503,7 @@ it('guards zero-size axes', () => {
 
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
-- [ ] **Step 4: Implement `fit.ts` and `loadFurniture.ts`**
+- [x] **Step 4: Implement `fit.ts` and `loadFurniture.ts`**
 
 `fit.ts`:
 
@@ -596,12 +596,12 @@ Add `rotY?: number` to `LayoutBox` in `packages/protocol/src/layout/layout.ts`. 
 
 In `Game.ts`, after building the room, call `void loadFurniture(room, officeLayout).then((r) => { this.furniture = r; })`. Expose `getFurniture: () => this.furniture` in the dev hook. Rebuild the occluder list after the load, because occluders are read by reference: replace the `occluders` array contents with a fresh traverse.
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 **Run:** `pnpm --filter @office/web test` and `pnpm check`. Expected: PASS.
 **Run (agy):** start the dev server and wait until `window.__office.getFurniture()` is defined. Report `loaded` and `failed`; expect `failed: []`. Save Playwright screenshots of the Workstation, Pantry and Entertainment zones to `apps/web/test-results/task3-*.png`. **Lead review:** furniture orientation must match the seat directions (chairs face their desks, the sofa faces the TV). If a model faces the wrong way, add an entry `MODEL_YAW_OFFSET: Record<string, number>` in the manifest and add it to `rotY`, then re-shoot.
 
-- [ ] **Step 6: Commit** `feat(web): replace layout boxes with fitted CC0 furniture`
+- [x] **Step 6: Commit** `feat(web): replace layout boxes with fitted CC0 furniture`
 
 ---
 

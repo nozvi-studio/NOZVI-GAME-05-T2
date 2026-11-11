@@ -4,7 +4,14 @@ export type Vec2 = { x: number; z: number };
 export type Aabb = { x: number; z: number; w: number; d: number };
 export type Vec3 = [number, number, number];
 export type Collider = Aabb & { id: string; kind: string };
-export type LayoutBox = { id: string; type: string; position: Vec3; size: Vec3; material?: string };
+export type LayoutBox = {
+  id: string;
+  type: string;
+  position: Vec3;
+  size: Vec3;
+  material?: string;
+  rotY?: number;
+};
 export type Workstation = {
   id: string;
   seat: { id: string; position: Vec3; rotY: number };
