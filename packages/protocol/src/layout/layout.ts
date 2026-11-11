@@ -7,8 +7,18 @@ export type Collider = Aabb & { id: string; kind: string };
 export type LayoutBox = { id: string; type: string; position: Vec3; size: Vec3; material?: string };
 export type Workstation = {
   id: string;
-  seat: { position: Vec3; rotY: number };
+  seat: { id: string; position: Vec3; rotY: number };
   interactionPoint: Vec3;
+};
+export type SeatSocket = { id: string; position: Vec3; rotY: number; interactionPoint: Vec3 };
+export type Interactable = {
+  id: string;
+  type: string;
+  itemId: string;
+  position: Vec3;
+  interactionPoint: Vec3;
+  interactionRange: number;
+  workstationId?: string;
 };
 export type OfficeLayout = {
   room: { width: number; depth: number; height: number };
@@ -17,6 +27,8 @@ export type OfficeLayout = {
   walls: LayoutBox[];
   items: LayoutBox[];
   workstations: Workstation[];
+  interactables: Interactable[];
+  sofaSeats: SeatSocket[];
   colliders: Collider[];
   spawn: { zone: string; position: Vec3; rotY: number };
 };
@@ -33,16 +45,47 @@ export function parseLayout(input: unknown): OfficeLayout {
   const room = input.room;
   if (!isRecord(room) || !isRecord(room.dimensions)) fail('missing room.dimensions');
   const dims = room.dimensions as { width: number; depth: number; height: number };
-  const required = ['palette', 'zones', 'walls', 'items', 'workstations', 'colliders', 'spawn'];
+  const required = [
+    'palette',
+    'zones',
+    'walls',
+    'items',
+    'workstations',
+    'colliders',
+    'spawn',
+    'interactables',
+  ];
   for (const key of required) if (!(key in input)) fail(`missing ${key}`);
   const workstations = (input.workstations as Record<string, unknown>[]).map((ws) => {
-    const seat = ws.seatSocket as { position: Vec3; rotY: number };
+    const seat = ws.seatSocket as { id: string; position: Vec3; rotY: number };
     return {
       id: ws.id as string,
-      seat: { position: seat.position, rotY: seat.rotY },
+      seat: { id: seat.id, position: seat.position, rotY: seat.rotY },
       interactionPoint: ws.interactionPoint as Vec3,
     };
   });
+  const interactables = (input.interactables as Record<string, unknown>[]).map((i) => {
+    const out: Interactable = {
+      id: i.id as string,
+      type: i.type as string,
+      itemId: i.itemId as string,
+      position: i.position as Vec3,
+      interactionPoint: i.interactionPoint as Vec3,
+      interactionRange: i.interactionRange as number,
+    };
+    if (typeof i.workstationId === 'string') out.workstationId = i.workstationId;
+    return out;
+  });
+  // Chairs also carry seatSockets (the workstation seats); only the sofa's belong here.
+  const sofaSeats = (input.items as Record<string, unknown>[])
+    .filter((item) => item.type === 'sofa' && Array.isArray(item.seatSockets))
+    .flatMap((item) => item.seatSockets as SeatSocket[])
+    .map((s) => ({
+      id: s.id,
+      position: s.position,
+      rotY: s.rotY,
+      interactionPoint: s.interactionPoint,
+    }));
   return {
     room: { width: dims.width, depth: dims.depth, height: dims.height },
     palette: input.palette as Record<string, string>,
@@ -50,6 +93,8 @@ export function parseLayout(input: unknown): OfficeLayout {
     walls: input.walls as LayoutBox[],
     items: input.items as LayoutBox[],
     workstations,
+    interactables,
+    sofaSeats,
     colliders: input.colliders as Collider[],
     spawn: input.spawn as OfficeLayout['spawn'],
   };

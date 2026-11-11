@@ -20,3 +20,14 @@ describe('officeLayout', () => {
     expect(() => parseLayout({})).toThrow(/layout/i);
   });
 });
+
+describe('interactables', () => {
+  it('exposes 22 interactables including all chairs', () => {
+    expect(officeLayout.interactables).toHaveLength(22);
+    expect(officeLayout.interactables.filter((i) => i.type === 'chair')).toHaveLength(8);
+  });
+  it('exposes two sofa seats and seat ids', () => {
+    expect(officeLayout.sofaSeats.map((s) => s.id)).toEqual(['sofa_seat_1', 'sofa_seat_2']);
+    expect(officeLayout.workstations[0]!.seat.id).toBe('ws_1_seat');
+  });
+});

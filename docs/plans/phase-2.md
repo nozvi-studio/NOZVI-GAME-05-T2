@@ -67,7 +67,7 @@ apps/web/
   - `type Interactable = { id: string; type: string; itemId: string; position: Vec3; interactionPoint: Vec3; interactionRange: number; workstationId?: string }`.
   - `OfficeLayout` gains `interactables: Interactable[]` and `sofaSeats: SeatSocket[]`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 `test/identity.test.ts`:
 
@@ -113,7 +113,7 @@ describe('interactables', () => {
 
 **Run:** `pnpm --filter @office/protocol test`. Expected: FAIL.
 
-- [ ] **Step 2: Implement `identity.ts`**
+- [x] **Step 2: Implement `identity.ts`**
 
 ```ts
 export const AVATAR_IDS = ['men_suit', 'women_suit'] as const;
@@ -146,7 +146,7 @@ export function isAvatarId(value: unknown): value is AvatarId {
 }
 ```
 
-- [ ] **Step 3: Extend `layout.ts`**
+- [x] **Step 3: Extend `layout.ts`**
 
 Add these types after `Workstation`, and change `Workstation`'s seat to `{ id: string; position: Vec3; rotY: number }`:
 
@@ -178,8 +178,10 @@ const interactables = (input.interactables as Record<string, unknown>[]).map((i)
   if (typeof i.workstationId === 'string') out.workstationId = i.workstationId;
   return out;
 });
+// Chairs also carry seatSockets (the workstation seats); only the sofa's belong here.
 const sofaSeats = (input.items as Record<string, unknown>[])
-  .flatMap((item) => (Array.isArray(item.seatSockets) ? (item.seatSockets as SeatSocket[]) : []))
+  .filter((item) => item.type === 'sofa' && Array.isArray(item.seatSockets))
+  .flatMap((item) => item.seatSockets as SeatSocket[])
   .map((s) => ({
     id: s.id,
     position: s.position,
@@ -190,8 +192,8 @@ const sofaSeats = (input.items as Record<string, unknown>[])
 
 Return both in the result. Export `identity` from `src/index.ts`.
 
-- [ ] **Step 4: Verify** with **Run:** `pnpm --filter @office/protocol test` and `pnpm check`. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(protocol): add identity validation, avatar ids and layout interactables`
+- [x] **Step 4: Verify** with **Run:** `pnpm --filter @office/protocol test` and `pnpm check`. Expected: PASS.
+- [x] **Step 5: Commit** `feat(protocol): add identity validation, avatar ids and layout interactables`
 
 ---
 
