@@ -115,10 +115,36 @@ export class AvatarView {
       // GLTFLoader sanitizes the exported UpperArm.R / LowerArm.R names by removing dots.
       const arm = this.bones.find((b) => b.name === 'UpperArmR');
       const fore = this.bones.find((b) => b.name === 'LowerArmR');
+      const hand = fore?.children.find((b) => b.name === 'HandR');
       const t = performance.now() / 1000;
-      if (arm) arm.rotation.set(0, 0, -2.4);
-      if (fore) fore.rotation.set(0, 0, -0.4 + Math.sin(t * 10) * 0.4);
+      if (arm && fore && hand) {
+        this.root.updateWorldMatrix(true, true);
+        const heading = this.root.getWorldQuaternion(new THREE.Quaternion());
+        const up = new THREE.Vector3(0, 1, 0).applyQuaternion(heading);
+        const raised = new THREE.Vector3(0.35, 0.9, 0).normalize().applyQuaternion(heading);
+        this.pointBone(arm, fore, raised);
+        this.pointBone(fore, hand, up);
+        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(heading);
+        const inverseParent = fore.parent!.getWorldQuaternion(new THREE.Quaternion()).invert();
+        forward.applyQuaternion(inverseParent);
+        fore.quaternion.premultiply(
+          new THREE.Quaternion().setFromAxisAngle(forward, Math.sin(t * 10) * 0.4),
+        );
+        fore.updateWorldMatrix(false, true);
+      }
     }
+  }
+
+  private pointBone(bone: THREE.Bone, end: THREE.Object3D, direction: THREE.Vector3): void {
+    const current = end
+      .getWorldPosition(new THREE.Vector3())
+      .sub(bone.getWorldPosition(new THREE.Vector3()))
+      .normalize();
+    const worldRotation = bone.getWorldQuaternion(new THREE.Quaternion());
+    worldRotation.premultiply(new THREE.Quaternion().setFromUnitVectors(current, direction));
+    const inverseParent = bone.parent!.getWorldQuaternion(new THREE.Quaternion()).invert();
+    bone.quaternion.copy(worldRotation.premultiply(inverseParent));
+    bone.updateWorldMatrix(false, true);
   }
 
   hasFiniteBones(): boolean {

@@ -78,10 +78,7 @@ export class InteractionController {
     if (!t) return;
     if (t.type === 'chair') {
       const seat = deskSeat(t);
-      if (!seat || !this.seats.claim(seat.id, this.ownerId)) return;
-      this.seat = seat;
-      this.player.seatAt(seat);
-      this.player.setActivity(nextActivity(a, { type: 'sit', kind: 'desk' }));
+      if (seat) this.sitOn(seat, 'desk');
       return;
     }
     if (t.type === 'main_door') {
@@ -91,12 +88,14 @@ export class InteractionController {
     this.hooks.onAction?.(t);
   }
 
-  /** Called by Task 7 to seat the player on a sofa socket. */
+  /** Claims a socket only when the player can enter the seated activity. */
   sitOn(seat: Seat, kind: 'desk' | 'sofa'): boolean {
+    const activity = nextActivity(this.player.activity, { type: 'sit', kind });
+    if (activity === this.player.activity) return false;
     if (!this.seats.claim(seat.id, this.ownerId)) return false;
     this.seat = seat;
     this.player.seatAt(seat);
-    this.player.setActivity(nextActivity(this.player.activity, { type: 'sit', kind }));
+    this.player.setActivity(activity);
     return true;
   }
 

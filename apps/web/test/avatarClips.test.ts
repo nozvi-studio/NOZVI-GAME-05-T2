@@ -84,7 +84,37 @@ it.each(['men_suit', 'women_suit'] as const)(
     ] as const) {
       player.setActivity(activity);
       view.update(1 / 60);
-      if (activity === 'waving') expect(arm.rotation.z).toBeCloseTo(-2.4);
+      if (activity === 'waving') {
+        const hand = forearm.children.find((child) => child.name === 'HandR')!;
+        expect(hand).toBeInstanceOf(THREE.Bone);
+        view.root.rotation.y = 0.8;
+        const now = vi.spyOn(performance, 'now').mockReturnValue(0);
+        for (let i = 0; i < 3; i++) view.update(1 / 60);
+        view.root.updateMatrixWorld(true);
+        const shoulder = arm.getWorldPosition(new THREE.Vector3());
+        const elbow = forearm.getWorldPosition(new THREE.Vector3());
+        const handPosition = hand.getWorldPosition(new THREE.Vector3());
+        expect(handPosition.y - shoulder.y).toBeGreaterThan(0.2);
+        const heading = view.root.getWorldQuaternion(new THREE.Quaternion());
+        const raisedDirection = new THREE.Vector3(0.35, 0.9, 0)
+          .normalize()
+          .applyQuaternion(heading);
+        expect(elbow.clone().sub(shoulder).normalize().dot(raisedDirection)).toBeGreaterThan(0.99);
+        const beforeSwing = handPosition.clone().sub(elbow).normalize();
+        const up = new THREE.Vector3(0, 1, 0).applyQuaternion(heading);
+        expect(beforeSwing.dot(up)).toBeGreaterThan(0.99);
+        now.mockReturnValue((Math.PI / 20) * 1000);
+        view.update(1 / 60);
+        view.root.updateMatrixWorld(true);
+        const afterSwing = hand
+          .getWorldPosition(new THREE.Vector3())
+          .sub(forearm.getWorldPosition(new THREE.Vector3()))
+          .normalize();
+        expect(beforeSwing.angleTo(afterSwing)).toBeCloseTo(0.4);
+        expect(
+          hand.getWorldPosition(new THREE.Vector3()).y - arm.getWorldPosition(shoulder).y,
+        ).toBeGreaterThan(0.2);
+      }
       for (let i = 0; i < 180; i++) {
         view.update(1 / 60);
         expect(view.hasFiniteBones()).toBe(true);

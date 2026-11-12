@@ -1344,7 +1344,7 @@ Take screenshots of the join form and of the in-office nameplate.
 
 **Interfaces:** Uses `hooks.onAction(target)`, `controller.sitOn(seat, 'sofa')`, `BALANCE.activity` and `officeLayout.sofaSeats`.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 ```ts
 import { expect, it, vi } from 'vitest';
@@ -1398,7 +1398,7 @@ it('sofa seats the player on the first free sofa seat', () => {
 });
 ```
 
-- [ ] **Step 2: Implement `src/game/interaction/extras.ts`**
+- [x] **Step 2: Implement `src/game/interaction/extras.ts`**
 
 ```ts
 import { BALANCE, nextActivity, officeLayout, type Interactable } from '@office/protocol';
@@ -1432,12 +1432,12 @@ export function handleAction(
 - `onToast` shows the message for 1.5 s in `App.tsx`, using the same style as `Prompt`.
 - Add `G — Wave` as a permanent small hint in the bottom-left corner.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 **Run:** `pnpm --filter @office/web test` and `pnpm check`. Expected: PASS.
 **Run (agy):** teleport to the coffee approach facing north, press E and expect `getActivity()` to be `drinking`, then `idle` after 3 s. Press G and screenshot during the wave. Teleport to `(-1.2, -1.4, -Math.PI / 2)` facing the sofa, press E and screenshot while resting. **Lead review:** the right arm is raised during the wave and the avatar sits on the sofa facing the TV.
 
-- [ ] **Step 4: Commit** `feat(web): add coffee break, wave emote, sofa rest and cabinet feedback`
+- [x] **Step 4: Commit** `feat(web): add coffee break, wave emote, sofa rest and cabinet feedback`
 
 ---
 

@@ -1,6 +1,13 @@
 import * as THREE from 'three';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
-import { BALANCE, isSeated, officeLayout, SeatRegistry, type AvatarId } from '@office/protocol';
+import {
+  BALANCE,
+  isSeated,
+  nextActivity,
+  officeLayout,
+  SeatRegistry,
+  type AvatarId,
+} from '@office/protocol';
 import { CameraRig } from './camera';
 import { fadeOpacity } from './cameraMath';
 import { KeyboardInput } from './input';
@@ -11,6 +18,7 @@ import { loadFurniture } from './assets/loadFurniture';
 import { AvatarView } from './avatar/AvatarView';
 import { InteractionController, type Prompt } from './interaction/InteractionController';
 import { Nameplate } from './hud/Nameplate';
+import { handleAction } from './interaction/extras';
 
 export class Game {
   readonly scene = new THREE.Scene();
@@ -23,13 +31,28 @@ export class Game {
   readonly seats = new SeatRegistry();
   readonly controller = new InteractionController(this.player, this.seats, 'local', {
     onExit: () => this.onExit?.(),
+    onAction: (target) => {
+      const result = handleAction(target, this.player, this.controller);
+      // Feedback-only actions must not cancel a break that is still running.
+      if (result.timer > 0) this.actionTimer = result.timer;
+      if (result.message) this.onToast?.(result.message);
+    },
   });
+  private actionTimer = 0;
   onPrompt: ((prompt: Prompt) => void) | undefined;
+  onToast: ((message: string) => void) | undefined;
   onExit: (() => void) | undefined;
   onFrame: ((dt: number) => void) | undefined;
   private promptText: string | null = null;
   private readonly keydown = (e: KeyboardEvent): void => {
     if (e.code === 'KeyE' && !e.repeat) this.controller.press();
+    if (e.code === 'KeyG' && !e.repeat) {
+      const activity = nextActivity(this.player.activity, { type: 'wave' });
+      if (activity !== this.player.activity) {
+        this.player.setActivity(activity);
+        this.actionTimer = BALANCE.activity.waveSeconds;
+      }
+    }
     if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code) && isSeated(this.player.activity)) {
       this.controller.onMoveIntent();
     }
@@ -147,6 +170,14 @@ export class Game {
         this.controller.onMoveIntent();
       }
       this.player.update(input, this.rig.yaw, dt);
+      if (this.actionTimer > 0) {
+        this.actionTimer = Math.max(0, this.actionTimer - dt);
+        const activity = this.player.activity;
+        if (activity !== 'drinking' && activity !== 'waving') this.actionTimer = 0;
+        else if (this.actionTimer === 0) {
+          this.player.setActivity(nextActivity(activity, { type: 'actionDone' }));
+        }
+      }
       const prompt = this.controller.currentPrompt();
       const text = prompt?.text ?? null;
       if (text !== this.promptText) {
