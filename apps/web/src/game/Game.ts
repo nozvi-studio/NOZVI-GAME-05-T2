@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BALANCE, officeLayout } from '@office/protocol';
+import { BALANCE, officeLayout, type AvatarId } from '@office/protocol';
 import { CameraRig } from './camera';
 import { fadeOpacity } from './cameraMath';
 import { KeyboardInput } from './input';
@@ -7,6 +7,7 @@ import { Player } from './player';
 import { setupLighting } from './lighting';
 import { buildRoom } from './room';
 import { loadFurniture } from './assets/loadFurniture';
+import { AvatarView } from './avatar/AvatarView';
 
 export class Game {
   readonly scene = new THREE.Scene();
@@ -21,8 +22,12 @@ export class Game {
   private readonly debugHook: unknown;
   private readonly disposeLighting: () => void;
   private furniture: Awaited<ReturnType<typeof loadFurniture>> | undefined;
+  private disposed = false;
 
-  constructor(private readonly host: HTMLElement) {
+  constructor(
+    private readonly host: HTMLElement,
+    avatarId: AvatarId,
+  ) {
     const room = buildRoom(officeLayout);
     this.scene.add(room);
     const occluders: THREE.Object3D[] = [];
@@ -38,6 +43,11 @@ export class Game {
       });
     });
     this.scene.add(this.player.mesh);
+    void AvatarView.load(avatarId)
+      .then((view) => {
+        if (!this.disposed) this.player.setView(view);
+      })
+      .catch((error: unknown) => console.warn('Avatar loading failed; keeping capsule.', error));
     this.rig = new CameraRig(this.camera, this.renderer.domElement, occluders);
     this.rig.yaw = this.player.state.heading;
     this.scene.updateMatrixWorld(true);
@@ -62,6 +72,8 @@ export class Game {
         getDrawCalls: () => this.measureDrawCalls(),
         isLightingReady: () => lightingReady,
         getFurniture: () => this.furniture,
+        getActivity: () => this.player.activity,
+        avatarOk: () => this.player.viewFinite(),
       };
       (window as unknown as { __office: unknown }).__office = this.debugHook;
     }
@@ -107,6 +119,7 @@ export class Game {
   }
 
   dispose(): void {
+    this.disposed = true;
     this.renderer.setAnimationLoop(null);
     this.input.dispose();
     this.rig.dispose();

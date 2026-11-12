@@ -4,7 +4,7 @@ import { Game } from './game/Game';
 export function App() {
   const hostRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const game = new Game(hostRef.current!);
+    const game = new Game(hostRef.current!, 'men_suit');
     game.start();
     return () => game.dispose();
   }, []);

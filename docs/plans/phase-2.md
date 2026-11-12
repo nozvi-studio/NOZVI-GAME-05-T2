@@ -617,7 +617,7 @@ In `Game.ts`, after building the room, call `void loadFurniture(room, officeLayo
   - `class AvatarView { readonly root: THREE.Group; static load(avatarId: AvatarId): Promise<AvatarView>; setActivity(a: Activity): void; update(dt: number): void; hasFiniteBones(): boolean }`.
   - `Player` gains `activity: Activity`, `setView(view: AvatarView)` and `seatAt(socket: { position: Vec3; rotY: number })`.
 
-- [ ] **Step 1: Copy files (agy)**
+- [x] **Step 1: Copy files (agy)**
 
 **Run:**
 
@@ -631,7 +631,7 @@ cp spike/poc/avatar/public/models/AnimationLibrary_Godot_Standard.glb apps/web/p
 
 Codex then adds `// Ported from spike/poc/avatar/src/retarget.ts (validated in PoC, see DECISIONS).` as line 1 and fixes only lint and strict-type errors. The retargeting logic is not changed.
 
-- [ ] **Step 2: Failing test** (`test/avatarClips.test.ts`)
+- [x] **Step 2: Failing test** (`test/avatarClips.test.ts`)
 
 ```ts
 import { expect, it } from 'vitest';
@@ -663,7 +663,7 @@ it('maps every activity to a UAL clip that exists', () => {
 
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
-- [ ] **Step 3: Implement `AvatarView.ts`**
+- [x] **Step 3: Implement `AvatarView.ts`**
 
 ```ts
 import * as THREE from 'three';
@@ -796,7 +796,7 @@ export class AvatarView {
 }
 ```
 
-- [ ] **Step 4: Player uses the avatar**
+- [x] **Step 4: Player uses the avatar**
 
 In `player.ts`:
 
@@ -824,12 +824,12 @@ The mesh root stays at y = 0 when seated. DEC says `Sitting_Idle_Loop` aligns wi
 
 In `Game.ts`, take `avatarId: AvatarId` as a second constructor parameter, then call `void AvatarView.load(avatarId).then((v) => this.player.setView(v))`. Add `getActivity: () => this.player.activity` and `avatarOk: () => this.player.viewFinite()` to the dev hook. `viewFinite()` returns `view?.hasFiniteBones() ?? false`. `App.tsx` passes `'men_suit'` until Task 6.
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 **Run:** `pnpm --filter @office/web test` and `pnpm check`. Expected: PASS.
 **Run (agy):** for each of `men_suit` and `women_suit` (temporarily switch the id in `App.tsx`, then revert), wait 3 s after load, walk with W for 1 s, and assert that `window.__office.avatarOk()` is `true`. Save screenshots `task4-<id>-idle.png` and `task4-<id>-walk.png`. **Lead review:** the avatar is upright, the feet are on the floor, the walk cycle is visible and there are no stretched limbs.
 
-- [ ] **Step 6: Commit** `feat(web): add Quaternius avatars with retargeted UAL animation`
+- [x] **Step 6: Commit** `feat(web): add Quaternius avatars with retargeted UAL animation`
 
 ---
 
