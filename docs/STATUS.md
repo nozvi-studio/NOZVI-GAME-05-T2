@@ -1,6 +1,6 @@
 # STATUS — project memory
 
-Updated: 2026-11-09 by Claude Code (PM, cloud session) · Phase: Phase 1 done → Phase 2 next
+Updated: 2026-11-12 by Claude Code (lead) · Phase: Phase 2 implemented on `feat/phase-2`, e2e verification pending
 Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/SPEC.md` (implementation spec). `docs/GDD.md` is deprecated (casual template).
 
 ## Done
@@ -15,10 +15,13 @@ Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTU
 
 - **Phase 1 complete** (walkable office): 8 tasks in 4 batches, each re-verified by the PM; see `docs/plans/phase-1-execution.md`. 46 unit tests + 4 Playwright tests pass. Phase 1.1 lighting and camera polish accepted 2026-11-10. FPS measured only under software rendering (13 FPS, not representative); real-hardware measurement pending.
 
+- **Phase 2 implemented** on `feat/phase-2` (`docs/plans/phase-2.md`): Tasks 1-7 committed (protocol identity/activity/seats, CC0 furniture, Quaternius avatars, sit/work/stand, join screen + nameplate + exit, coffee/wave/sofa/cabinet). Task 8 e2e spec (`apps/web/e2e/sit.spec.ts`, shared `helpers.ts`) committed in `e0b2221`; its run result is not yet recorded.
+
 ## Next (ordered)
 
-1. Owner: measure FPS on a normal desktop (`pnpm --filter @office/web dev`, walk 30 s) and decide the draw-call budget question in `phase-1-execution.md` §7.
-2. **Phase 2** (`docs/plans/phase-2.md`, 8 tasks; Tasks 1-6 core, Task 7 secondary) — Codex implements per task; agy runs tests/Playwright and reports; lead reviews screenshots personally.
+1. agy: run unit tests and full Playwright suite on `feat/phase-2`; lead reviews screenshots personally.
+2. If green: merge `feat/phase-2` into `dev`.
+3. Owner: measure FPS on a normal desktop (`pnpm --filter @office/web dev`, walk 30 s) and decide the draw-call budget question in `phase-1-execution.md` §7 (deferred until after Phase 2 visuals).
 
 ## Open items
 
@@ -27,7 +30,7 @@ Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTU
 
 ## Working notes
 
-- Codex sandbox has no network: Codex writes code, agy installs dependencies and runs tests.
+- Claude writes code and plans (Codex no longer used); agy installs dependencies and runs tests.
 - agy has twice reported PASS on broken visuals — always open screenshots before accepting.
 - Machine is low on RAM: run one worker at a time; Claude Code may kill background tasks (`CLAUDE_CODE_DISABLE_BG_SHELL_PRESSURE_REAP=1` disables this).
 - Key spike artifact to reuse: `spike/poc/avatar/src/retarget.ts`.
