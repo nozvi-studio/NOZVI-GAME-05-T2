@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { join } from './helpers';
 
 // Evidence capture, not a pixel-diff test: writes fixed camera poses to visual-out/ for review
 // next to the reference photos in except/. Fails only on console errors (and, softly, on a
@@ -64,7 +65,7 @@ test('captures fixed visual poses', async ({ page }) => {
     if (m.type() === 'error') errors.push(m.text());
   });
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/');
+  await join(page);
   await page.waitForFunction(
     () =>
       (

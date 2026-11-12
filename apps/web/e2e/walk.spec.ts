@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { join } from './helpers';
 
 type P = { x: number; z: number; heading: number };
 const getPlayer = (page: Page) =>
@@ -27,11 +28,7 @@ async function hold(page: Page, key: string, ms: number, minFrames = 4) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
-  await page.waitForFunction(
-    () => 'getPlayer' in ((window as unknown as { __office?: object }).__office ?? {}),
-  );
-  await page.locator('canvas').click({ position: { x: 640, y: 360 } });
+  await join(page);
   // Software WebGL stalls for ~1-2 s on the first frames (shader compilation); wait for two
   // rendered frames so timed key holds measure steady-state movement.
   await page.evaluate(
