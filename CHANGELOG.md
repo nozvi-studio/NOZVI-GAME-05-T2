@@ -6,6 +6,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ### Added
 
+- Phase 2 desk interaction: exclusive seat claims, E to sit and toggle work, WASD to stand, contextual prompts, main-door exit callback and a dev teleport hook. Secondary furniture effects remain deferred to Task 7.
+
 - Architecture, decisions and proof-of-concept findings (docs/ARCHITECTURE.md, docs/DECISIONS.md).
 - Implementation spec with REQ-IDs and PRD traceability (docs/SPEC.md).
 - Validated 10 x 8 m office layout data and validator (docs/layout/).

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BALANCE, officeLayout, type AvatarId } from '@office/protocol';
+import { BALANCE, isSeated, officeLayout, SeatRegistry, type AvatarId } from '@office/protocol';
 import { CameraRig } from './camera';
 import { fadeOpacity } from './cameraMath';
 import { KeyboardInput } from './input';
@@ -8,6 +8,7 @@ import { setupLighting } from './lighting';
 import { buildRoom } from './room';
 import { loadFurniture } from './assets/loadFurniture';
 import { AvatarView } from './avatar/AvatarView';
+import { InteractionController, type Prompt } from './interaction/InteractionController';
 
 export class Game {
   readonly scene = new THREE.Scene();
@@ -15,7 +16,20 @@ export class Game {
   readonly renderer = new THREE.WebGLRenderer({ antialias: true });
   readonly player = new Player();
   readonly input = new KeyboardInput(window);
+  readonly seats = new SeatRegistry();
+  readonly controller = new InteractionController(this.player, this.seats, 'local', {
+    onExit: () => this.onExit?.(),
+  });
+  onPrompt: ((prompt: Prompt) => void) | undefined;
+  onExit: (() => void) | undefined;
   onFrame: ((dt: number) => void) | undefined;
+  private promptText: string | null = null;
+  private readonly keydown = (e: KeyboardEvent): void => {
+    if (e.code === 'KeyE' && !e.repeat) this.controller.press();
+    if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code) && isSeated(this.player.activity)) {
+      this.controller.onMoveIntent();
+    }
+  };
   private readonly timer = new THREE.Timer();
   private readonly resizeObserver: ResizeObserver;
   private readonly rig: CameraRig;
@@ -73,6 +87,10 @@ export class Game {
         isLightingReady: () => lightingReady,
         getFurniture: () => this.furniture,
         getActivity: () => this.player.activity,
+        teleport: (x: number, z: number, heading: number) => {
+          this.player.teleport(x, z, heading);
+          this.rig.yaw = heading;
+        },
         avatarOk: () => this.player.viewFinite(),
       };
       (window as unknown as { __office: unknown }).__office = this.debugHook;
@@ -82,6 +100,7 @@ export class Game {
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(host);
     this.resize();
+    window.addEventListener('keydown', this.keydown);
   }
 
   private resize(): void {
@@ -110,7 +129,17 @@ export class Game {
     this.renderer.setAnimationLoop(() => {
       this.timer.update();
       const dt = Math.min(this.timer.getDelta(), 0.1);
-      this.player.update(this.input.read(), this.rig.yaw, dt);
+      const input = this.input.read();
+      if (isSeated(this.player.activity) && (input.forward !== 0 || input.right !== 0)) {
+        this.controller.onMoveIntent();
+      }
+      this.player.update(input, this.rig.yaw, dt);
+      const prompt = this.controller.currentPrompt();
+      const text = prompt?.text ?? null;
+      if (text !== this.promptText) {
+        this.promptText = text;
+        this.onPrompt?.(prompt);
+      }
       this.rig.update(this.player.mesh.position, dt);
       this.player.setOpacity(fadeOpacity(this.rig.distanceToFocus));
       this.onFrame?.(dt);
@@ -122,6 +151,7 @@ export class Game {
     this.disposed = true;
     this.renderer.setAnimationLoop(null);
     this.input.dispose();
+    window.removeEventListener('keydown', this.keydown);
     this.rig.dispose();
     const w = window as unknown as { __office?: unknown };
     if (this.debugHook !== undefined && w.__office === this.debugHook) delete w.__office;

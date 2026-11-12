@@ -860,7 +860,7 @@ Prompt text per state:
 
 Task 7 implements the effects for the last three. Until then their `press()` does nothing.
 
-- [ ] **Step 1: Failing test** (pure, with a fake player)
+- [x] **Step 1: Failing test** (pure, with a fake player)
 
 ```ts
 import { describe, expect, it, vi } from 'vitest';
@@ -928,7 +928,7 @@ describe('InteractionController', () => {
 
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 ```ts
 import {
@@ -1044,7 +1044,7 @@ export class InteractionController {
 
 The test expects the prompt `E — Sit` for a free chair. The seated prompts combine both hints into one line, as written in the code above.
 
-- [ ] **Step 3: Wire into `Game.ts` and `App.tsx`**
+- [x] **Step 3: Wire into `Game.ts` and `App.tsx`**
 
 `Game.ts`:
 
@@ -1086,13 +1086,13 @@ export function Prompt({ prompt }: { prompt: P }) {
 
 `App.tsx`: hold `const [prompt, setPrompt] = useState<P>(null)`, set `game.onPrompt = setPrompt`, and render `<Prompt prompt={prompt} />` over the canvas host (`position: relative` wrapper).
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 **Run:** `pnpm --filter @office/web test` and `pnpm check`. Expected: PASS.
 **Run (agy):** in the dev app, `teleport(0.4, 2.05, Math.PI)`, press E, wait 2 s and screenshot `task5-seated.png`. Press E again and screenshot `task5-working.png`. Press W and screenshot `task5-stood.png`. Report `getActivity()` after each step: expect `sitting`, `working`, `idle`.
 **Lead review:** the avatar sits on the ws_5 chair facing the desk, the hips sit on the seat and nothing sinks through the chair.
 
-- [ ] **Step 5: Commit** `feat(web): sit at a free desk, toggle work and stand with E/WASD`
+- [x] **Step 5: Commit** `feat(web): sit at a free desk, toggle work and stand with E/WASD`
 
 ---
 
