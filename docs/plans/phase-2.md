@@ -67,7 +67,7 @@ apps/web/
   - `type Interactable = { id: string; type: string; itemId: string; position: Vec3; interactionPoint: Vec3; interactionRange: number; workstationId?: string }`.
   - `OfficeLayout` gains `interactables: Interactable[]` and `sofaSeats: SeatSocket[]`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 `test/identity.test.ts`:
 
@@ -113,7 +113,7 @@ describe('interactables', () => {
 
 **Run:** `pnpm --filter @office/protocol test`. Expected: FAIL.
 
-- [ ] **Step 2: Implement `identity.ts`**
+- [x] **Step 2: Implement `identity.ts`**
 
 ```ts
 export const AVATAR_IDS = ['men_suit', 'women_suit'] as const;
@@ -131,7 +131,6 @@ export function normalizeOfficeCode(raw: string): string | null {
   return /^[A-Z0-9-]{4,12}$/.test(code) ? code : null;
 }
 
-// eslint-disable-next-line no-control-regex
 const FORBIDDEN = /[\u0000-\u001f\u007f<>]/;
 
 export function validateName(raw: string): string | null {
@@ -146,7 +145,7 @@ export function isAvatarId(value: unknown): value is AvatarId {
 }
 ```
 
-- [ ] **Step 3: Extend `layout.ts`**
+- [x] **Step 3: Extend `layout.ts`**
 
 Add these types after `Workstation`, and change `Workstation`'s seat to `{ id: string; position: Vec3; rotY: number }`:
 
@@ -178,8 +177,10 @@ const interactables = (input.interactables as Record<string, unknown>[]).map((i)
   if (typeof i.workstationId === 'string') out.workstationId = i.workstationId;
   return out;
 });
+// Chairs also carry seatSockets (the workstation seats); only the sofa's belong here.
 const sofaSeats = (input.items as Record<string, unknown>[])
-  .flatMap((item) => (Array.isArray(item.seatSockets) ? (item.seatSockets as SeatSocket[]) : []))
+  .filter((item) => item.type === 'sofa' && Array.isArray(item.seatSockets))
+  .flatMap((item) => item.seatSockets as SeatSocket[])
   .map((s) => ({
     id: s.id,
     position: s.position,
@@ -190,8 +191,8 @@ const sofaSeats = (input.items as Record<string, unknown>[])
 
 Return both in the result. Export `identity` from `src/index.ts`.
 
-- [ ] **Step 4: Verify** with **Run:** `pnpm --filter @office/protocol test` and `pnpm check`. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(protocol): add identity validation, avatar ids and layout interactables`
+- [x] **Step 4: Verify** with **Run:** `pnpm --filter @office/protocol test` and `pnpm check`. Expected: PASS.
+- [x] **Step 5: Commit** `feat(protocol): add identity validation, avatar ids and layout interactables`
 
 ---
 
@@ -209,7 +210,7 @@ Return both in the result. Export `identity` from `src/index.ts`.
 - Produces from interaction: `findInteractionTarget(player: PlayerState, candidates: readonly Interactable[], coneDeg?: number): Interactable | null`.
 - `BALANCE` gains `interaction: { facingConeDeg: 90 }` and `activity: { drinkSeconds: 2.5, waveSeconds: 1.6, crossFadeSeconds: 0.25 }`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 `test/activity.test.ts`:
 
@@ -303,7 +304,7 @@ describe('findInteractionTarget', () => {
 
 **Run:** `pnpm --filter @office/protocol test`. Expected: FAIL.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 `balance.ts`: add these to `BALANCE`:
 
@@ -420,8 +421,8 @@ export function findInteractionTarget(
 
 Export all three from `src/index.ts`.
 
-- [ ] **Step 3: Verify** with **Run:** `pnpm --filter @office/protocol test` and `pnpm check`. Expected: PASS.
-- [ ] **Step 4: Commit** `feat(protocol): add activity state machine, seat registry and interaction targeting`
+- [x] **Step 3: Verify** with **Run:** `pnpm --filter @office/protocol test` and `pnpm check`. Expected: PASS.
+- [x] **Step 4: Commit** `feat(protocol): add activity state machine, seat registry and interaction targeting`
 
 ---
 
@@ -436,7 +437,7 @@ Export all three from `src/index.ts`.
   - `fitScale(modelSize: [number, number, number], target: [number, number, number]): [number, number, number]`.
   - `loadFurniture(room: THREE.Group, layout: OfficeLayout): Promise<{ loaded: number; failed: string[] }>`. It replaces box meshes in place, keeps the same `name`, sets `userData.occluder` and keeps the box when a load fails.
 
-- [ ] **Step 1: Copy assets (agy, local files from the gitignored spike)**
+- [x] **Step 1: Copy assets (agy, local files from the gitignored spike)**
 
 **Run:**
 
@@ -462,7 +463,7 @@ Then confirm that `ls apps/web/public/assets/furniture | wc -l` prints 18.
 - anim/*.glb — Quaternius Universal Animation Library, https://quaternius.com
 ```
 
-- [ ] **Step 2: Manifest**
+- [x] **Step 2: Manifest**
 
 ```ts
 export const FURNITURE: Record<string, string> = {
@@ -486,7 +487,7 @@ export const DESK_SCREEN = 'computerScreen.glb';
 export const COFFEE_MACHINE = 'kitchenCoffeeMachine.glb';
 ```
 
-- [ ] **Step 3: Failing fit test**
+- [x] **Step 3: Failing fit test**
 
 ```ts
 import { expect, it } from 'vitest';
@@ -502,7 +503,7 @@ it('guards zero-size axes', () => {
 
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
-- [ ] **Step 4: Implement `fit.ts` and `loadFurniture.ts`**
+- [x] **Step 4: Implement `fit.ts` and `loadFurniture.ts`**
 
 `fit.ts`:
 
@@ -595,12 +596,12 @@ Add `rotY?: number` to `LayoutBox` in `packages/protocol/src/layout/layout.ts`. 
 
 In `Game.ts`, after building the room, call `void loadFurniture(room, officeLayout).then((r) => { this.furniture = r; })`. Expose `getFurniture: () => this.furniture` in the dev hook. Rebuild the occluder list after the load, because occluders are read by reference: replace the `occluders` array contents with a fresh traverse.
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 **Run:** `pnpm --filter @office/web test` and `pnpm check`. Expected: PASS.
 **Run (agy):** start the dev server and wait until `window.__office.getFurniture()` is defined. Report `loaded` and `failed`; expect `failed: []`. Save Playwright screenshots of the Workstation, Pantry and Entertainment zones to `apps/web/test-results/task3-*.png`. **Lead review:** furniture orientation must match the seat directions (chairs face their desks, the sofa faces the TV). If a model faces the wrong way, add an entry `MODEL_YAW_OFFSET: Record<string, number>` in the manifest and add it to `rotY`, then re-shoot.
 
-- [ ] **Step 6: Commit** `feat(web): replace layout boxes with fitted CC0 furniture`
+- [x] **Step 6: Commit** `feat(web): replace layout boxes with fitted CC0 furniture`
 
 ---
 
@@ -616,7 +617,7 @@ In `Game.ts`, after building the room, call `void loadFurniture(room, officeLayo
   - `class AvatarView { readonly root: THREE.Group; static load(avatarId: AvatarId): Promise<AvatarView>; setActivity(a: Activity): void; update(dt: number): void; hasFiniteBones(): boolean }`.
   - `Player` gains `activity: Activity`, `setView(view: AvatarView)` and `seatAt(socket: { position: Vec3; rotY: number })`.
 
-- [ ] **Step 1: Copy files (agy)**
+- [x] **Step 1: Copy files (agy)**
 
 **Run:**
 
@@ -630,7 +631,7 @@ cp spike/poc/avatar/public/models/AnimationLibrary_Godot_Standard.glb apps/web/p
 
 Codex then adds `// Ported from spike/poc/avatar/src/retarget.ts (validated in PoC, see DECISIONS).` as line 1 and fixes only lint and strict-type errors. The retargeting logic is not changed.
 
-- [ ] **Step 2: Failing test** (`test/avatarClips.test.ts`)
+- [x] **Step 2: Failing test** (`test/avatarClips.test.ts`)
 
 ```ts
 import { expect, it } from 'vitest';
@@ -662,7 +663,7 @@ it('maps every activity to a UAL clip that exists', () => {
 
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
-- [ ] **Step 3: Implement `AvatarView.ts`**
+- [x] **Step 3: Implement `AvatarView.ts`**
 
 ```ts
 import * as THREE from 'three';
@@ -795,7 +796,7 @@ export class AvatarView {
 }
 ```
 
-- [ ] **Step 4: Player uses the avatar**
+- [x] **Step 4: Player uses the avatar**
 
 In `player.ts`:
 
@@ -823,12 +824,12 @@ The mesh root stays at y = 0 when seated. DEC says `Sitting_Idle_Loop` aligns wi
 
 In `Game.ts`, take `avatarId: AvatarId` as a second constructor parameter, then call `void AvatarView.load(avatarId).then((v) => this.player.setView(v))`. Add `getActivity: () => this.player.activity` and `avatarOk: () => this.player.viewFinite()` to the dev hook. `viewFinite()` returns `view?.hasFiniteBones() ?? false`. `App.tsx` passes `'men_suit'` until Task 6.
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 **Run:** `pnpm --filter @office/web test` and `pnpm check`. Expected: PASS.
 **Run (agy):** for each of `men_suit` and `women_suit` (temporarily switch the id in `App.tsx`, then revert), wait 3 s after load, walk with W for 1 s, and assert that `window.__office.avatarOk()` is `true`. Save screenshots `task4-<id>-idle.png` and `task4-<id>-walk.png`. **Lead review:** the avatar is upright, the feet are on the floor, the walk cycle is visible and there are no stretched limbs.
 
-- [ ] **Step 6: Commit** `feat(web): add Quaternius avatars with retargeted UAL animation`
+- [x] **Step 6: Commit** `feat(web): add Quaternius avatars with retargeted UAL animation`
 
 ---
 
@@ -859,7 +860,7 @@ Prompt text per state:
 
 Task 7 implements the effects for the last three. Until then their `press()` does nothing.
 
-- [ ] **Step 1: Failing test** (pure, with a fake player)
+- [x] **Step 1: Failing test** (pure, with a fake player)
 
 ```ts
 import { describe, expect, it, vi } from 'vitest';
@@ -927,7 +928,7 @@ describe('InteractionController', () => {
 
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 ```ts
 import {
@@ -1043,7 +1044,7 @@ export class InteractionController {
 
 The test expects the prompt `E — Sit` for a free chair. The seated prompts combine both hints into one line, as written in the code above.
 
-- [ ] **Step 3: Wire into `Game.ts` and `App.tsx`**
+- [x] **Step 3: Wire into `Game.ts` and `App.tsx`**
 
 `Game.ts`:
 
@@ -1085,13 +1086,13 @@ export function Prompt({ prompt }: { prompt: P }) {
 
 `App.tsx`: hold `const [prompt, setPrompt] = useState<P>(null)`, set `game.onPrompt = setPrompt`, and render `<Prompt prompt={prompt} />` over the canvas host (`position: relative` wrapper).
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 **Run:** `pnpm --filter @office/web test` and `pnpm check`. Expected: PASS.
 **Run (agy):** in the dev app, `teleport(0.4, 2.05, Math.PI)`, press E, wait 2 s and screenshot `task5-seated.png`. Press E again and screenshot `task5-working.png`. Press W and screenshot `task5-stood.png`. Report `getActivity()` after each step: expect `sitting`, `working`, `idle`.
 **Lead review:** the avatar sits on the ws_5 chair facing the desk, the hips sit on the seat and nothing sinks through the chair.
 
-- [ ] **Step 5: Commit** `feat(web): sit at a free desk, toggle work and stand with E/WASD`
+- [x] **Step 5: Commit** `feat(web): sit at a free desk, toggle work and stand with E/WASD`
 
 ---
 
@@ -1109,7 +1110,7 @@ export function Prompt({ prompt }: { prompt: P }) {
   - `class Nameplate { readonly object: CSS2DObject; set(name: string, status: string): void }`.
   - `Game` constructor becomes `(host, identity: { name: string; avatarId: AvatarId })`.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -1161,7 +1162,7 @@ describe('identityStorage', () => {
 
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
-- [ ] **Step 2: Implement `identityStorage.ts`**
+- [x] **Step 2: Implement `identityStorage.ts`**
 
 ```ts
 import { isAvatarId, type AvatarId } from '@office/protocol';
@@ -1202,7 +1203,7 @@ export function saveDraft(storage: Pick<Storage, 'setItem'> | null, d: JoinDraft
 }
 ```
 
-- [ ] **Step 3: `JoinScreen.tsx`**
+- [x] **Step 3: `JoinScreen.tsx`**
 
 ```tsx
 import { useState } from 'react';
@@ -1280,7 +1281,7 @@ export function JoinScreen({ onJoin }: { onJoin(r: JoinResult): void }) {
 }
 ```
 
-- [ ] **Step 4: Nameplate and App flow**
+- [x] **Step 4: Nameplate and App flow**
 
 `Nameplate.ts`:
 
@@ -1321,7 +1322,7 @@ export class Nameplate {
 - Otherwise render the game host and prompt. Construct `new Game(host, { name: joined.name, avatarId: joined.avatarId })`, with the effect depending on `joined`.
 - Set `game.onExit = () => setJoined(null)`.
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 **Run:** `pnpm --filter @office/web test` and `pnpm check`. Expected: PASS.
 **Run (agy):**
@@ -1333,7 +1334,7 @@ export class Nameplate {
 
 Take screenshots of the join form and of the in-office nameplate.
 
-- [ ] **Step 6: Commit** `feat(web): add join screen, identity storage, nameplate and exit door`
+- [x] **Step 6: Commit** `feat(web): add join screen, identity storage, nameplate and exit door`
 
 ---
 
@@ -1343,7 +1344,7 @@ Take screenshots of the join form and of the in-office nameplate.
 
 **Interfaces:** Uses `hooks.onAction(target)`, `controller.sitOn(seat, 'sofa')`, `BALANCE.activity` and `officeLayout.sofaSeats`.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 ```ts
 import { expect, it, vi } from 'vitest';
@@ -1397,7 +1398,7 @@ it('sofa seats the player on the first free sofa seat', () => {
 });
 ```
 
-- [ ] **Step 2: Implement `src/game/interaction/extras.ts`**
+- [x] **Step 2: Implement `src/game/interaction/extras.ts`**
 
 ```ts
 import { BALANCE, nextActivity, officeLayout, type Interactable } from '@office/protocol';
@@ -1431,12 +1432,12 @@ export function handleAction(
 - `onToast` shows the message for 1.5 s in `App.tsx`, using the same style as `Prompt`.
 - Add `G — Wave` as a permanent small hint in the bottom-left corner.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 **Run:** `pnpm --filter @office/web test` and `pnpm check`. Expected: PASS.
 **Run (agy):** teleport to the coffee approach facing north, press E and expect `getActivity()` to be `drinking`, then `idle` after 3 s. Press G and screenshot during the wave. Teleport to `(-1.2, -1.4, -Math.PI / 2)` facing the sofa, press E and screenshot while resting. **Lead review:** the right arm is raised during the wave and the avatar sits on the sofa facing the TV.
 
-- [ ] **Step 4: Commit** `feat(web): add coffee break, wave emote, sofa rest and cabinet feedback`
+- [x] **Step 4: Commit** `feat(web): add coffee break, wave emote, sofa rest and cabinet feedback`
 
 ---
 

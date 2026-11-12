@@ -2,15 +2,22 @@ import * as THREE from 'three';
 import {
   BALANCE,
   officeLayout,
+  nextActivity,
   stepPlayer,
+  type Activity,
   type MoveInput,
   type PlayerState,
+  type Vec3,
 } from '@office/protocol';
+import { AvatarView } from './avatar/AvatarView';
 
 export class Player {
   readonly mesh = new THREE.Group();
   state: PlayerState;
-  private readonly materials: THREE.MeshStandardMaterial[] = [];
+  activity: Activity = 'idle';
+  private view: AvatarView | null = null;
+  private seated: { position: Vec3; rotY: number } | null = null;
+  private readonly materials: THREE.Material[] = [];
   private opacity = 1;
 
   constructor() {
@@ -35,8 +42,56 @@ export class Player {
   }
 
   update(input: MoveInput, cameraYaw: number, dt: number): void {
-    this.state = stepPlayer(this.state, input, cameraYaw, dt, officeLayout.colliders);
+    const moving = input.forward !== 0 || input.right !== 0;
+    if (!this.seated) {
+      this.state = stepPlayer(this.state, input, cameraYaw, dt, officeLayout.colliders);
+      if (this.activity !== 'drinking' || moving) {
+        this.setActivity(nextActivity(this.activity, { type: moving ? 'move' : 'stop' }));
+      }
+    }
+    this.view?.update(dt);
     this.sync();
+  }
+
+  setView(view: AvatarView): void {
+    this.mesh.clear();
+    this.mesh.add(view.root);
+    this.view = view;
+    this.materials.length = 0;
+    view.root.traverse((o) => {
+      if (!(o as THREE.Mesh).isMesh) return;
+      const material = (o as THREE.Mesh).material;
+      this.materials.push(...(Array.isArray(material) ? material : [material]));
+    });
+    for (const m of this.materials) {
+      m.transparent = true;
+      m.opacity = this.opacity;
+    }
+    view.setActivity(this.activity);
+  }
+
+  setActivity(a: Activity): void {
+    this.activity = a;
+    this.view?.setActivity(a);
+  }
+
+  seatAt(socket: { position: Vec3; rotY: number }): void {
+    this.seated = socket;
+    this.state.x = socket.position[0];
+    this.state.z = socket.position[2];
+    this.state.heading = (socket.rotY * Math.PI) / 180;
+    this.sync();
+  }
+
+  standAt(point: Vec3): void {
+    this.seated = null;
+    this.state.x = point[0];
+    this.state.z = point[2];
+    this.sync();
+  }
+
+  viewFinite(): boolean {
+    return this.view?.hasFiniteBones() ?? false;
   }
 
   /**

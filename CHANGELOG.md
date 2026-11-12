@@ -6,6 +6,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ### Added
 
+- Phase 2 join form with name/code validation, avatar selection, safe identity draft storage, player name/activity labels and return to the form through the exit door.
+
+- Phase 2 desk interaction: exclusive seat claims, E to sit and toggle work, WASD to stand, contextual prompts, main-door exit callback and a dev teleport hook.
+
+- Phase 2 secondary interactions: timed coffee/water breaks, G to wave with a persistent hint, first-free sofa seating and cabinet feedback shown for 1.5 seconds.
+
 - Architecture, decisions and proof-of-concept findings (docs/ARCHITECTURE.md, docs/DECISIONS.md).
 - Implementation spec with REQ-IDs and PRD traceability (docs/SPEC.md).
 - Validated 10 x 8 m office layout data and validator (docs/layout/).
