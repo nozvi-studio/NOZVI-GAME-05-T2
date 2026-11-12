@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 import { BALANCE, isSeated, officeLayout, SeatRegistry, type AvatarId } from '@office/protocol';
 import { CameraRig } from './camera';
 import { fadeOpacity } from './cameraMath';
@@ -9,11 +10,14 @@ import { buildRoom } from './room';
 import { loadFurniture } from './assets/loadFurniture';
 import { AvatarView } from './avatar/AvatarView';
 import { InteractionController, type Prompt } from './interaction/InteractionController';
+import { Nameplate } from './hud/Nameplate';
 
 export class Game {
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(BALANCE.camera.fovDeg, 1, 0.05, 50);
   readonly renderer = new THREE.WebGLRenderer({ antialias: true });
+  private readonly labelRenderer = new CSS2DRenderer();
+  private readonly nameplate = new Nameplate();
   readonly player = new Player();
   readonly input = new KeyboardInput(window);
   readonly seats = new SeatRegistry();
@@ -40,7 +44,7 @@ export class Game {
 
   constructor(
     private readonly host: HTMLElement,
-    avatarId: AvatarId,
+    private readonly identity: { name: string; avatarId: AvatarId },
   ) {
     const room = buildRoom(officeLayout);
     this.scene.add(room);
@@ -57,9 +61,14 @@ export class Game {
       });
     });
     this.scene.add(this.player.mesh);
-    void AvatarView.load(avatarId)
+    this.player.mesh.add(this.nameplate.object);
+    void AvatarView.load(identity.avatarId)
       .then((view) => {
-        if (!this.disposed) this.player.setView(view);
+        if (!this.disposed) {
+          this.player.setView(view);
+          // setView clears the fallback mesh, including its attached nameplate.
+          this.player.mesh.add(this.nameplate.object);
+        }
       })
       .catch((error: unknown) => console.warn('Avatar loading failed; keeping capsule.', error));
     this.rig = new CameraRig(this.camera, this.renderer.domElement, occluders);
@@ -97,6 +106,9 @@ export class Game {
     }
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     host.appendChild(this.renderer.domElement);
+    this.labelRenderer.domElement.style.cssText =
+      'position:absolute;top:0;left:0;pointer-events:none';
+    host.appendChild(this.labelRenderer.domElement);
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(host);
     this.resize();
@@ -107,6 +119,7 @@ export class Game {
     const { clientWidth: w, clientHeight: h } = this.host;
     if (w === 0 || h === 0) return;
     this.renderer.setSize(w, h);
+    this.labelRenderer.setSize(w, h);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
   }
@@ -143,7 +156,18 @@ export class Game {
       this.rig.update(this.player.mesh.position, dt);
       this.player.setOpacity(fadeOpacity(this.rig.distanceToFocus));
       this.onFrame?.(dt);
+      const activity = this.player.activity;
+      const label =
+        activity === 'working'
+          ? 'Working'
+          : activity === 'drinking'
+            ? 'Break'
+            : activity === 'resting'
+              ? 'Resting'
+              : 'Online';
+      this.nameplate.set(this.identity.name, label);
       this.renderer.render(this.scene, this.camera);
+      this.labelRenderer.render(this.scene, this.camera);
     });
   }
 
@@ -159,5 +183,6 @@ export class Game {
     this.disposeLighting();
     this.renderer.dispose();
     this.renderer.domElement.remove();
+    this.labelRenderer.domElement.remove();
   }
 }

@@ -1110,7 +1110,7 @@ export function Prompt({ prompt }: { prompt: P }) {
   - `class Nameplate { readonly object: CSS2DObject; set(name: string, status: string): void }`.
   - `Game` constructor becomes `(host, identity: { name: string; avatarId: AvatarId })`.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -1162,7 +1162,7 @@ describe('identityStorage', () => {
 
 **Run:** `pnpm --filter @office/web test`. Expected: FAIL.
 
-- [ ] **Step 2: Implement `identityStorage.ts`**
+- [x] **Step 2: Implement `identityStorage.ts`**
 
 ```ts
 import { isAvatarId, type AvatarId } from '@office/protocol';
@@ -1203,7 +1203,7 @@ export function saveDraft(storage: Pick<Storage, 'setItem'> | null, d: JoinDraft
 }
 ```
 
-- [ ] **Step 3: `JoinScreen.tsx`**
+- [x] **Step 3: `JoinScreen.tsx`**
 
 ```tsx
 import { useState } from 'react';
@@ -1281,7 +1281,7 @@ export function JoinScreen({ onJoin }: { onJoin(r: JoinResult): void }) {
 }
 ```
 
-- [ ] **Step 4: Nameplate and App flow**
+- [x] **Step 4: Nameplate and App flow**
 
 `Nameplate.ts`:
 
@@ -1322,7 +1322,7 @@ export class Nameplate {
 - Otherwise render the game host and prompt. Construct `new Game(host, { name: joined.name, avatarId: joined.avatarId })`, with the effect depending on `joined`.
 - Set `game.onExit = () => setJoined(null)`.
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 **Run:** `pnpm --filter @office/web test` and `pnpm check`. Expected: PASS.
 **Run (agy):**
@@ -1334,7 +1334,7 @@ export class Nameplate {
 
 Take screenshots of the join form and of the in-office nameplate.
 
-- [ ] **Step 6: Commit** `feat(web): add join screen, identity storage, nameplate and exit door`
+- [x] **Step 6: Commit** `feat(web): add join screen, identity storage, nameplate and exit door`
 
 ---
 

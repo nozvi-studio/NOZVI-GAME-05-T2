@@ -26,6 +26,8 @@ Updated: 2026-11-09 · Keep under ~80 lines. One row per module, not per file.
 
 Phase 2 interaction: `apps/web/src/game/interaction/InteractionController.ts` owns targeting, desk claims and sit/work/stand transitions; `Game.ts` wires E/WASD and prompt callbacks; `apps/web/src/ui/Prompt.tsx` renders the prompt through `App.tsx`. Pure controller tests: `apps/web/test/interactionController.test.ts` (REQ-INT-001/002/005).
 
+Phase 2 identity: `apps/web/src/ui/JoinScreen.tsx` validates the join form; `identityStorage.ts` safely persists drafts (tests: `apps/web/test/identityStorage.test.ts`). `App.tsx` owns join/exit lifecycle; `apps/web/src/game/hud/Nameplate.ts` renders the player name and activity through Game's CSS2D overlay.
+
 ## Do not read (generated, vendored or binary)
 
 `dist/`, `build/`, `coverage/`, `node_modules/`, `assets/` binaries, `except/` images, `.token-ledger/`, lockfiles — unless the task is specifically about them.
