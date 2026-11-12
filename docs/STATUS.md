@@ -1,6 +1,6 @@
 # STATUS — project memory
 
-Updated: 2026-11-12 by Claude Code (lead) · Phase: Phase 2 implemented on `feat/phase-2`, e2e verification pending
+Updated: 2026-11-12 by Claude Code (lead) · Phase: Phase 2 merged into `dev` (e2e unverified); Phase 2.1 UI polish next
 Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/SPEC.md` (implementation spec). `docs/GDD.md` is deprecated (casual template).
 
 ## Done
@@ -15,22 +15,24 @@ Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTU
 
 - **Phase 1 complete** (walkable office): 8 tasks in 4 batches, each re-verified by the PM; see `docs/plans/phase-1-execution.md`. 46 unit tests + 4 Playwright tests pass. Phase 1.1 lighting and camera polish accepted 2026-11-10. FPS measured only under software rendering (13 FPS, not representative); real-hardware measurement pending.
 
-- **Phase 2 implemented** on `feat/phase-2` (`docs/plans/phase-2.md`): Tasks 1-7 committed (protocol identity/activity/seats, CC0 furniture, Quaternius avatars, sit/work/stand, join screen + nameplate + exit, coffee/wave/sofa/cabinet). Task 8 e2e spec (`apps/web/e2e/sit.spec.ts`, shared `helpers.ts`) committed in `e0b2221`; its run result is not yet recorded.
+- **Phase 2 implemented** on `feat/phase-2` (`docs/plans/phase-2.md`): Tasks 1-7 committed (protocol identity/activity/seats, CC0 furniture, Quaternius avatars, sit/work/stand, join screen + nameplate + exit, coffee/wave/sofa/cabinet). Task 8 e2e spec (`apps/web/e2e/sit.spec.ts`, shared `helpers.ts`) committed in `e0b2221`.
+- 2026-11-12 verification: unit tests 94/94 pass. Playwright e2e has NO valid result: first run hit another project's dev server on 5173; e2e now uses a dedicated server on 127.0.0.1:5180, but later runs hung in webServer setup or were killed for low RAM. Owner chose to merge into `dev` without e2e evidence.
 
 ## Next (ordered)
 
-1. agy: run unit tests and full Playwright suite on `feat/phase-2`; lead reviews screenshots personally.
-2. If green: merge `feat/phase-2` into `dev`.
-3. Owner: measure FPS on a normal desktop (`pnpm --filter @office/web dev`, walk 30 s) and decide the draw-call budget question in `phase-1-execution.md` §7 (deferred until after Phase 2 visuals).
+1. Phase 2.1 (`docs/plans/phase-2.1.md`, to be written): owner UI feedback + e2e speed-up (merge walk tests into one join, replace fixed waits with condition waits, per-file run command). Get one green e2e run there.
+2. Owner: measure FPS on a normal desktop and decide the draw-call budget (`phase-1-execution.md` §7).
+3. Phase 3 — Multiplayer Foundation.
 
 ## Open items
 
-- Find a truly embed-blocked YouTube video id to verify the TV error path.
+- TV error path (Phase 4): use a non-existent or private video id; oEmbed 401 identifies embed-blocked ids.
 - Hosting accounts (Cloudflare Pages, Render) needed only at Phase 5.
 
 ## Working notes
 
 - Claude writes code and plans (Codex no longer used); agy installs dependencies and runs tests.
 - agy has twice reported PASS on broken visuals — always open screenshots before accepting.
+- e2e under agy + software WebGL exceeds RAM and gets reaped; prefer the owner running `npx playwright test` in the foreground.
 - Machine is low on RAM: run one worker at a time; Claude Code may kill background tasks (`CLAUDE_CODE_DISABLE_BG_SHELL_PRESSURE_REAP=1` disables this).
 - Key spike artifact to reuse: `spike/poc/avatar/src/retarget.ts`.
