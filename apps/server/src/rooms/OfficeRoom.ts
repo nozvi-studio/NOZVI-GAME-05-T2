@@ -3,6 +3,7 @@ import {
   BALANCE,
   EmployeeState,
   JOIN_ERROR_STATUS,
+  MSG,
   OfficeState,
   officeLayout,
   normalizeOfficeCode,
@@ -11,6 +12,7 @@ import {
   type JoinOptions,
 } from '@office/protocol';
 import { JoinRateLimiter } from '../joinRateLimiter';
+import { MovementSim, startMovementLoop } from '../sim/movement';
 
 export function joinError(code: JoinErrorCode): ServerError {
   return new ServerError(JOIN_ERROR_STATUS[code], code);
@@ -37,6 +39,8 @@ function socketAddress(context: AuthContext | undefined): string {
 export class OfficeRoom extends Room<{ state: OfficeState }> {
   override maxClients = BALANCE.net.maxClients;
   override state = new OfficeState();
+  /** REQ-NET-002, REQ-NET-003: the only path by which a client changes its position. */
+  readonly movement = new MovementSim();
 
   override onCreate(options: { officeCode?: unknown }): void {
     const code =
@@ -47,6 +51,14 @@ export class OfficeRoom extends Room<{ state: OfficeState }> {
     if (matchMaker.getLocalRoomById(code)) throw joinError('room_full');
     this.roomId = code;
     this.patchRate = BALANCE.net.patchMs;
+    // A client can only queue inputs for its own employee; no message sets position.
+    this.onMessage(MSG.input, (client, raw: unknown) => {
+      this.movement.enqueue(client.sessionId, raw);
+    });
+    startMovementLoop(
+      (tick, delayMs) => this.setTimestep(tick, delayMs),
+      () => this.movement.tick(this.state.employees, officeLayout.colliders),
+    );
   }
 
   override onAuth(_client: Client, options: unknown, context: AuthContext): JoinOptions {
@@ -66,10 +78,12 @@ export class OfficeRoom extends Room<{ state: OfficeState }> {
     employee.z = z;
     employee.heading = (officeLayout.spawn.rotY * Math.PI) / 180;
     this.state.employees.set(client.sessionId, employee);
+    this.movement.add(client.sessionId, employee.lastSeq);
   }
 
   override onLeave(client: Client): void {
     // The 20 s reconnect window arrives with T-1051; until then any leave removes at once.
+    this.movement.remove(client.sessionId);
     this.state.employees.delete(client.sessionId);
   }
 }

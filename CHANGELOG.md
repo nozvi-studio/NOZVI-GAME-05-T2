@@ -6,6 +6,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ### Added
 
+- Server-authoritative movement (T-1034): `input` messages validated and queued per client (capped at `BALANCE.net.inputQueueMax`, stale seqs ignored), one input applied per client per 50 ms tick through `applyInput` with layout colliders, replicated `lastSeq` and walking/idle activity.
+
 - Colyseus server (T-1033): `OfficeRoom` per normalized office code, 10 clients max with `room_full` for the 11th and no overflow room, typed join validation, join rate limit per address, `/health` on the same port, `ALLOWED_ORIGINS` CORS.
 
 - Phase 3 wire contract (T-1050): pinned Colyseus 0.18.12 / SDK 0.18.9 / schema 5.0.45, `packages/protocol/src/net/` (room schema, input/intent/join validators, typed join errors, fixed-step `applyInput`), `BALANCE.net`, `PROTOCOL_VERSION` 2.

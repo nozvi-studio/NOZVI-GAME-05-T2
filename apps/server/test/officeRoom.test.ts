@@ -1,8 +1,16 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AddressInfo } from 'node:net';
 import { Client, type Room } from '@colyseus/sdk';
-import { matchMaker } from '@colyseus/core';
-import { JOIN_ERROR_STATUS, OFFICE_ROOM, PROTOCOL_VERSION, BALANCE } from '@office/protocol';
+import { Room as ServerRoom, matchMaker } from '@colyseus/core';
+import {
+  JOIN_ERROR_STATUS,
+  MSG,
+  OFFICE_ROOM,
+  PROTOCOL_VERSION,
+  BALANCE,
+  type EmployeeState,
+  type OfficeState,
+} from '@office/protocol';
 import { createApp } from '../src/app';
 import { JoinRateLimiter } from '../src/joinRateLimiter';
 import { roomServices, type OfficeRoom } from '../src/rooms/OfficeRoom';
@@ -135,5 +143,52 @@ describe('OfficeRoom', () => {
     const res = await fetch(`${endpoint}/health`);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ status: 'ok' });
+  });
+});
+
+async function waitFor(check: () => boolean, timeoutMs = 2000): Promise<void> {
+  const start = Date.now();
+  while (!check()) {
+    if (Date.now() - start > timeoutMs) throw new Error('condition not met in time');
+    await new Promise((r) => setTimeout(r, 10));
+  }
+}
+
+describe('OfficeRoom movement', () => {
+  it('runs the movement loop on a 50 ms timestep', async () => {
+    const spy = vi.spyOn(ServerRoom.prototype, 'setTimestep');
+    try {
+      await join('tick-01');
+      expect(spy).toHaveBeenCalledWith(expect.any(Function), 1000 / BALANCE.net.tickHz);
+      expect(1000 / BALANCE.net.tickHz).toBe(50);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('replicates the position, lastSeq and activity produced by client inputs', async () => {
+    const a = (await join('move-01')) as Room<OfficeState>;
+    const b = (await join('move-01', { name: 'Bao' })) as Room<OfficeState>;
+    const seen = (room: Room<OfficeState>): EmployeeState | undefined =>
+      room.state?.employees?.get(a.sessionId);
+    await waitFor(() => seen(b) !== undefined);
+    const startZ = seen(b)!.z;
+    // yaw 0 walks +z from the entrance spawn.
+    for (let seq = 1; seq <= 5; seq++) {
+      a.send(MSG.input, { seq, forward: 1, right: 0, run: false, yaw: 0 });
+    }
+    await waitFor(() => seen(b)?.lastSeq === 5);
+    const e = seen(b)!;
+    expect(e.z).toBeCloseTo(startZ + 5 * BALANCE.movement.walkSpeed * (1 / BALANCE.net.tickHz), 9);
+    expect(e.activity).toBe('walking');
+    expect(local('MOVE-01').state.employees.get(b.sessionId)!.lastSeq).toBe(0);
+
+    // A malformed input and a replayed seq change nothing.
+    a.send(MSG.input, { seq: 6, forward: Number.NaN, right: 0, run: false, yaw: 0 });
+    a.send(MSG.input, { seq: 5, forward: 1, right: 0, run: false, yaw: 0 });
+    a.send(MSG.input, { seq: 7, forward: 0, right: 0, run: false, yaw: 0 });
+    await waitFor(() => seen(b)?.lastSeq === 7);
+    expect(seen(b)!.z).toBe(e.z);
+    expect(seen(b)!.activity).toBe('idle');
   });
 });
