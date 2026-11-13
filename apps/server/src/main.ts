@@ -1,4 +1,6 @@
-import { createHealthServer } from './health';
+import { createApp, parseAllowedOrigins } from './app';
 
 const port = Number(process.env.PORT ?? 2567);
-createHealthServer().listen(port, () => console.log(`server listening on ${port}`));
+const { game } = createApp({ allowedOrigins: parseAllowedOrigins(process.env.ALLOWED_ORIGINS) });
+await game.listen(port);
+console.log(`server listening on ${port}`);

@@ -37,6 +37,22 @@ export const JOIN_ERRORS = [
   'rate_limited',
 ] as const;
 export type JoinErrorCode = (typeof JOIN_ERRORS)[number];
+/**
+ * Numeric codes the server attaches to a rejected join (`ServerError.code`). The error
+ * message is always the `JoinErrorCode` string; clients must match on the message,
+ * because a rejection raised while creating the room reaches the client as HTTP 500.
+ */
+export const JOIN_ERROR_STATUS: Readonly<Record<JoinErrorCode, number>> = {
+  room_full: 4101,
+  invalid_identity: 4102,
+  version_mismatch: 4103,
+  rate_limited: 4104,
+};
+export function isJoinErrorCode(v: unknown): v is JoinErrorCode {
+  return typeof v === 'string' && (JOIN_ERRORS as readonly string[]).includes(v);
+}
+/** Colyseus room name registered by the server. */
+export const OFFICE_ROOM = 'office';
 
 /** Every seat id in the office layout: desk seats and sofa seats. */
 export const SEAT_IDS: ReadonlySet<string> = new Set([
