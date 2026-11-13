@@ -15,6 +15,7 @@ Only files listed here exist. Status: Draft / Approved / Deprecated.
 | STATUS    | `docs/STATUS.md`                           | Current state, next steps, blockers                                        | —          |
 | CODEMAP   | `docs/CODEMAP.md`                          | Where code lives, module boundaries, entry points                          | —          |
 | DEC       | `docs/DECISIONS.md`                        | Technical/design trade-offs (ADR-lite)                                     | —          |
+| DEPLOY    | `docs/DEPLOY.md`                           | Vercel (web) + Render (server) deployment steps                            | Draft      |
 | —         | `CHANGELOG.md`                             | History                                                                    | —          |
 | PRD-SRS   | `PRD/SoftwareRequirementsSpecification.md` | Detailed functional requirements (Vietnamese source)                       | Draft      |
 | PRD-ARCH  | `PRD/TechnicalArchitecture.md`             | Stack, architecture, asset pipeline (Vietnamese source)                    | Draft      |

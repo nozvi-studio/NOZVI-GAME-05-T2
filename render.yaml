@@ -1,0 +1,19 @@
+# Render Blueprint for the Colyseus game server (one free web service).
+# The web client is hosted on Vercel; see docs/DEPLOY.md.
+services:
+  - type: web
+    name: virtual-office-server
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false
+    startCommand: pnpm --filter @office/server start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      # Comma-separated browser origins allowed to call the matchmaker,
+      # e.g. https://<project>.vercel.app. Set it in the Render dashboard.
+      - key: ALLOWED_ORIGINS
+        sync: false
