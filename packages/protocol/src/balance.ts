@@ -35,6 +35,8 @@ export const BALANCE = {
     maxClients: 10,
     /** Per-client cap on queued inputs (0.5 s at 20 Hz); extra inputs are dropped. */
     inputQueueMax: 10,
+    /** Per-client cap on intents waiting for earlier inputs to apply; extra intents are dropped. */
+    intentQueueMax: 4,
     joinsPerMinutePerIp: 10,
   },
   rendering: {

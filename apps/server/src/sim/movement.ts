@@ -61,6 +61,21 @@ export class MovementSim {
     return true;
   }
 
+  /** Highest seq accepted (applied or queued) for a client, or null when untracked. */
+  acceptedSeq(id: string): number | null {
+    return this.queues.get(id)?.highestSeq ?? null;
+  }
+
+  /** Tracked client ids, in the order they were added (earlier joins first). */
+  ids(): IterableIterator<string> {
+    return this.queues.keys();
+  }
+
+  /** Removes and returns the oldest queued input for a client, if any. */
+  next(id: string): InputMessage | undefined {
+    return this.queues.get(id)?.inputs.shift();
+  }
+
   /** Number of inputs waiting for a client (for tests and diagnostics). */
   queued(id: string): number {
     return this.queues.get(id)?.inputs.length ?? 0;
@@ -68,9 +83,9 @@ export class MovementSim {
 
   /** Advances every tracked body by at most one queued input. */
   tick(bodies: { get(id: string): MovementBody | undefined }, colliders: readonly Aabb[]): void {
-    for (const [id, queue] of this.queues) {
+    for (const id of this.queues.keys()) {
       const body = bodies.get(id);
-      const input = queue.inputs.shift();
+      const input = this.next(id);
       if (!body || !input) continue;
       stepBody(body, input, colliders);
     }
