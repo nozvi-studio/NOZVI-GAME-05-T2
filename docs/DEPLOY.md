@@ -6,8 +6,9 @@ Order: deploy the server first, then the web client (it needs the server URL at 
 
 ## CI/CD (GitHub Actions)
 
-- `.github/workflows/ci.yml`: `pnpm check` on every push and PR; Playwright e2e (one retry, report uploaded on failure) on PRs and on pushes to `main` / `dev`.
-- `.github/workflows/deploy.yml`: when `ci` succeeds on `main`, deploys the same commit to Render (deploy hook), waits for `/health`, then builds and deploys the web client to Vercel with the Vercel CLI. **Actions → deploy → Run workflow** deploys any branch by hand.
+- `.github/workflows/ci.yml`: `pnpm check` on every push and PR; Playwright e2e (one retry, report uploaded on failure) on PRs and on `main`.
+- `.github/workflows/deploy.yml`: on every push to **`dev`** it runs the full CI (check + e2e) and, if it passes, deploys that commit to Render (deploy hook), waits for `/health`, then builds and deploys the web client to Vercel (production) with the Vercel CLI. **Actions → deploy → Run workflow** redeploys by hand (the button appears once `deploy.yml` is on the default branch).
+- Render's service must track the `dev` branch (Render → service → Settings → Build & Deploy → Branch).
 - Render auto-deploy is off (`render.yaml`) and Vercel's Git auto-deploy is off (`vercel.json`), so only the workflow deploys production.
 
 One-time setup after steps 1 to 3 below, in GitHub → repo **Settings → Secrets and variables → Actions** (or the `production` environment):
@@ -24,7 +25,7 @@ Missing values make the deploy job fail with a message naming the missing one; C
 
 ## 1. Server on Render
 
-1. render.com → **New → Blueprint** → connect GitHub → pick `nozvi-studio/NOZVI-GAME-05-T2` and the branch to deploy. Render reads `render.yaml` at the repo root.
+1. render.com → **New → Blueprint** → connect GitHub → pick `nozvi-studio/NOZVI-GAME-05-T2` and the **`dev`** branch. Render reads `render.yaml` at the repo root.
 2. When asked for `ALLOWED_ORIGINS`, leave it empty for now (any origin is allowed while it is empty).
 3. Apply. The first build takes a few minutes. Check `https://<service>.onrender.com/health` returns `{"status":"ok"}`.
 

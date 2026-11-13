@@ -1,11 +1,14 @@
 name: ci
 on:
   push:
+    # dev is checked by deploy.yml, which runs this workflow before deploying.
+    branches-ignore: [dev]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -21,7 +24,7 @@ jobs:
       - run: pnpm check
 
   e2e:
-    # Browser + game server end to end. Runs on PRs and on the long-lived branches.
+    # Browser + game server end to end. Runs on PRs, on main, and for dev via deploy.yml.
     if: github.event_name != 'push' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
     needs: check
     runs-on: ubuntu-latest

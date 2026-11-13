@@ -1,12 +1,9 @@
 name: deploy
-# Production deploy after CI passes on main: server to Render, then web to Vercel.
-# Manual runs (Actions → deploy → Run workflow) deploy the chosen ref without waiting for CI.
-# Setup and required secrets: docs/DEPLOY.md.
+# Deploy on every push to dev: full CI (check + e2e) first, then the server to Render,
+# then the web client to Vercel. Setup and required secrets: docs/DEPLOY.md.
 on:
-  workflow_run:
-    workflows: [ci]
-    types: [completed]
-    branches: [main]
+  push:
+    branches: [dev]
   workflow_dispatch:
 
 concurrency:
@@ -14,15 +11,18 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   server:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    needs: ci
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
     env:
       RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
       SERVER_URL: ${{ vars.SERVER_URL }}
-      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      SHA: ${{ github.sha }}
     steps:
       - name: Check configuration
         run: |
@@ -57,7 +57,7 @@ jobs:
           done
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: pnpm }
