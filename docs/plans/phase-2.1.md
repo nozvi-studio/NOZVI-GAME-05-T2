@@ -12,13 +12,13 @@
 
 ## Tasks
 
-| #   | Task                                                                                                  | Owner / state                                          |
-| --- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| 1   | Widen the room to 12 x 9.6 x 2.7 m (T-1014)                                                           | Assigned to `t1-opus` in Meridian; not started         |
-| 2   | Remaining owner UI feedback                                                                           | Not yet listed by the owner; add tasks once it is      |
+| #   | Task                                                                                                         | Owner / state                                            |
+| --- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| 1   | Widen the room to 12 x 9.6 x 2.7 m (T-1014)                                                                  | Assigned to `t1-opus` in Meridian; not started           |
+| 2   | Remaining owner UI feedback                                                                                  | Not yet listed by the owner; add tasks once it is        |
 | 3   | e2e speed-up: merge walk tests into one join, replace fixed waits with condition waits, per-file run command | Not created; run after task 1 because coordinates change |
-| 4   | One green e2e run, run in the foreground by the owner (`npx playwright test`)                         | Depends on task 3                                      |
-| 5   | Owner measures FPS on a normal desktop and decides the draw-call budget (`phase-1-execution.md` §7)   | Owner                                                  |
+| 4   | One green e2e run, run in the foreground by the owner (`npx playwright test`)                                | Depends on task 3                                        |
+| 5   | Owner measures FPS on a normal desktop and decides the draw-call budget (`phase-1-execution.md` §7)          | Owner                                                    |
 
 ## Task 1 acceptance (T-1014)
 
