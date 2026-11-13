@@ -1,6 +1,6 @@
 # STATUS — project memory
 
-Updated: 2026-11-12 by Claude Code (lead) · Phase: Phase 2 merged into `dev` (e2e unverified); Phase 2.1 UI polish next
+Updated: 2026-11-13 by Claude Code · Phase: Phase 2 merged into `dev` (e2e unverified); Phase 2.1 planned (room widening assigned)
 Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/SPEC.md` (implementation spec). `docs/GDD.md` is deprecated (casual template).
 
 ## Done
@@ -20,7 +20,7 @@ Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTU
 
 ## Next (ordered)
 
-1. Phase 2.1 (`docs/plans/phase-2.1.md`, to be written): owner UI feedback + e2e speed-up (merge walk tests into one join, replace fixed waits with condition waits, per-file run command). Get one green e2e run there.
+1. Phase 2.1 (`docs/plans/phase-2.1.md`, Meridian FEAT-46): widen the room to 12 x 9.6 m (T-1014, assigned to `t1-opus`, not started), owner UI feedback, and e2e speed-up (merge walk tests into one join, replace fixed waits with condition waits, per-file run command). Get one green e2e run there.
 2. Owner: measure FPS on a normal desktop and decide the draw-call budget (`phase-1-execution.md` §7).
 3. Phase 3 — Multiplayer Foundation.
 
