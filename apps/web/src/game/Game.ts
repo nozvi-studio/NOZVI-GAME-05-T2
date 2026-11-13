@@ -19,7 +19,9 @@ import { AvatarView } from './avatar/AvatarView';
 import { InteractionController, type Prompt } from './interaction/InteractionController';
 import { Nameplate } from './hud/Nameplate';
 import { handleAction } from './interaction/extras';
-import { bindPrediction, type OfficeRoomHandle } from '../net';
+import { activityLabel } from './hud/activityLabel';
+import { RemoteAvatars } from './remote/RemoteAvatars';
+import { bindPrediction, employeeSource, type OfficeRoomHandle } from '../net';
 
 export class Game {
   readonly scene = new THREE.Scene();
@@ -67,6 +69,7 @@ export class Game {
   private disposed = false;
   /** Disconnects local prediction from the room (inputs out, patches in). */
   private readonly unbindPrediction: () => void;
+  private readonly remotes: RemoteAvatars;
 
   constructor(
     private readonly host: HTMLElement,
@@ -76,6 +79,7 @@ export class Game {
   ) {
     this.unbindPrediction = bindPrediction(netRoom, this.player.predictor);
     const room = buildRoom(officeLayout);
+    this.remotes = new RemoteAvatars(this.scene, employeeSource(netRoom), netRoom.sessionId);
     this.scene.add(room);
     const occluders: THREE.Object3D[] = [];
     room.traverse((o) => {
@@ -130,6 +134,8 @@ export class Game {
           this.rig.yaw = heading;
         },
         avatarOk: () => this.player.viewFinite(),
+        getRemotes: () => this.remotes.list(),
+        getRemoteCount: () => this.remotes.count,
       };
       (window as unknown as { __office: unknown }).__office = this.debugHook;
     }
@@ -193,16 +199,8 @@ export class Game {
       this.rig.update(this.player.mesh.position, dt);
       this.player.setOpacity(fadeOpacity(this.rig.distanceToFocus));
       this.onFrame?.(dt);
-      const activity = this.player.activity;
-      const label =
-        activity === 'working'
-          ? 'Working'
-          : activity === 'drinking'
-            ? 'Break'
-            : activity === 'resting'
-              ? 'Resting'
-              : 'Online';
-      this.nameplate.set(this.identity.name, label);
+      this.remotes.update(dt);
+      this.nameplate.set(this.identity.name, activityLabel(this.player.activity));
       this.renderer.render(this.scene, this.camera);
       this.labelRenderer.render(this.scene, this.camera);
     });
@@ -215,6 +213,7 @@ export class Game {
     this.input.dispose();
     window.removeEventListener('keydown', this.keydown);
     this.rig.dispose();
+    this.remotes.dispose();
     const w = window as unknown as { __office?: unknown };
     if (this.debugHook !== undefined && w.__office === this.debugHook) delete w.__office;
     this.resizeObserver.disconnect();

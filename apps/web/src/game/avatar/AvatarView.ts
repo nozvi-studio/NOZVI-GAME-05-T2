@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { BALANCE, type Activity, type AvatarId } from '@office/protocol';
 import { findSkinnedMesh, retargetClipFromRestPose } from './retarget';
 
@@ -24,6 +25,33 @@ function loadUal() {
   return ualPromise;
 }
 
+type Template = { scene: THREE.Object3D; clips: THREE.AnimationClip[] };
+const templates = new Map<AvatarId, Promise<Template>>();
+
+async function loadTemplate(avatarId: AvatarId): Promise<Template> {
+  const [gltf, ual] = await Promise.all([
+    loader.loadAsync(`/assets/avatars/${avatarId}.glb`),
+    loadUal(),
+  ]);
+  const target = findSkinnedMesh(gltf.scene);
+  if (!target) throw new Error(`No skinned mesh in ${avatarId}`);
+  target.skeleton.pose();
+  const names = new Set(
+    Object.values(CLIP_FOR)
+      .map((c) => c.clip)
+      .concat('Sitting_Enter', 'Sitting_Exit'),
+  );
+  const clips = ual.clips
+    .filter((c) => names.has(c.name))
+    .map((c) => retargetClipFromRestPose(target, ual.mesh, c, avatarId === 'women_suit'));
+  gltf.scene.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh) o.castShadow = true;
+    // The exported skin bounds do not follow animated bones (also disabled in the PoC).
+    if ((o as THREE.SkinnedMesh).isSkinnedMesh) o.frustumCulled = false;
+  });
+  return { scene: gltf.scene, clips };
+}
+
 export class AvatarView {
   readonly root = new THREE.Group();
   private readonly mixer: THREE.AnimationMixer;
@@ -36,6 +64,7 @@ export class AvatarView {
     model: THREE.Object3D,
     private readonly bones: THREE.Bone[],
     clips: THREE.AnimationClip[],
+    private readonly materials: THREE.Material[] = [],
   ) {
     this.root.add(model);
     this.mixer = new THREE.AnimationMixer(model);
@@ -43,28 +72,41 @@ export class AvatarView {
     this.play('idle');
   }
 
+  /**
+   * Loads, prepares and retargets each avatar GLB once per `avatarId`; every view after that is
+   * a skeleton-aware clone sharing geometry, textures and clips. Materials are cloned per view
+   * because players fade their own materials. A failed load is not cached, so a later call
+   * retries.
+   */
   static async load(avatarId: AvatarId): Promise<AvatarView> {
-    const [gltf, ual] = await Promise.all([
-      loader.loadAsync(`/assets/avatars/${avatarId}.glb`),
-      loadUal(),
-    ]);
-    const target = findSkinnedMesh(gltf.scene);
-    if (!target) throw new Error(`No skinned mesh in ${avatarId}`);
-    target.skeleton.pose();
-    const names = new Set(
-      Object.values(CLIP_FOR)
-        .map((c) => c.clip)
-        .concat('Sitting_Enter', 'Sitting_Exit'),
-    );
-    const clips = ual.clips
-      .filter((c) => names.has(c.name))
-      .map((c) => retargetClipFromRestPose(target, ual.mesh, c, avatarId === 'women_suit'));
-    gltf.scene.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh) o.castShadow = true;
-      // The exported skin bounds do not follow animated bones (also disabled in the PoC).
-      if ((o as THREE.SkinnedMesh).isSkinnedMesh) o.frustumCulled = false;
+    let template = templates.get(avatarId);
+    if (!template) {
+      template = loadTemplate(avatarId);
+      templates.set(avatarId, template);
+      template.catch(() => {
+        if (templates.get(avatarId) === template) templates.delete(avatarId);
+      });
+    }
+    const { scene, clips } = await template;
+    const model = cloneSkinned(scene);
+    const materials: THREE.Material[] = [];
+    model.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const own = (m: THREE.Material) => {
+        const copy = m.clone();
+        materials.push(copy);
+        return copy;
+      };
+      mesh.material = Array.isArray(mesh.material) ? mesh.material.map(own) : own(mesh.material);
     });
-    return new AvatarView(gltf.scene, target.skeleton.bones, clips);
+    const target = findSkinnedMesh(model)!;
+    return new AvatarView(model, target.skeleton.bones, clips, materials);
+  }
+
+  /** Test hook: forgets cached templates so the next load parses the GLB again. */
+  static clearCache(): void {
+    templates.clear();
   }
 
   setActivity(a: Activity): void {
@@ -145,6 +187,18 @@ export class AvatarView {
     const inverseParent = bone.parent!.getWorldQuaternion(new THREE.Quaternion()).invert();
     bone.quaternion.copy(worldRotation.premultiply(inverseParent));
     bone.updateWorldMatrix(false, true);
+  }
+
+  /**
+   * Stops animation, detaches the model and frees this view's own materials. Geometry and
+   * textures belong to the shared per-avatar template and stay alive for later clones.
+   */
+  dispose(): void {
+    this.mixer.stopAllAction();
+    this.mixer.uncacheRoot(this.mixer.getRoot());
+    this.root.removeFromParent();
+    for (const m of this.materials) m.dispose();
+    this.materials.length = 0;
   }
 
   hasFiniteBones(): boolean {

@@ -134,6 +134,7 @@ function frameLoop(activity: Activity, duration: number) {
     rig: { yaw: 0, update() {}, distanceToFocus: 4 },
     identity: { name: 'Test' },
     nameplate: { set() {} },
+    remotes: { update() {} },
     renderer: { setAnimationLoop: (callback: () => void) => (frame = callback), render() {} },
     labelRenderer: { render() {} },
   };
