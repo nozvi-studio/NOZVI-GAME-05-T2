@@ -12,7 +12,9 @@ pnpm --filter web dev        # web client
 pnpm check                   # format, lint, typecheck, unit tests, build
 ```
 
-End-to-end tests (Playwright, software WebGL; run in the foreground, one worker):
+The game always connects to a server (no offline mode): run `pnpm --filter @office/server dev` next to the web client. The client uses `VITE_SERVER_URL` (default `http://localhost:2567`).
+
+End-to-end tests (Playwright, software WebGL; run in the foreground, one worker). Playwright starts the game server on port 2580 and the web dev server on 5180; the server allows 10 joins per minute per address, so `--repeat-each` runs may hit `rate_limited`:
 
 ```bash
 pnpm --filter web e2e                          # full suite

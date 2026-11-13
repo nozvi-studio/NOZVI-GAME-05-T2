@@ -3,15 +3,28 @@ import { Game } from './game/Game';
 import type { Prompt as P } from './game/interaction/InteractionController';
 import { Prompt } from './ui/Prompt';
 import { JoinScreen, type JoinResult } from './ui/JoinScreen';
+import { Connection, serverUrl, type OfficeRoomHandle } from './net';
+
+type Session = { identity: JoinResult; room: OfficeRoomHandle };
 
 export function App() {
   const hostRef = useRef<HTMLDivElement>(null);
   const [prompt, setPrompt] = useState<P>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [joined, setJoined] = useState<JoinResult | null>(null);
+  const [joined, setJoined] = useState<Session | null>(null);
+  const [connection] = useState(() => new Connection(serverUrl(import.meta.env)));
+  const join = async (identity: JoinResult) => {
+    const room = await connection.join(identity);
+    setJoined({ identity, room });
+  };
   useEffect(() => {
     if (!joined) return;
-    const game = new Game(hostRef.current!, { name: joined.name, avatarId: joined.avatarId });
+    const { identity, room } = joined;
+    const game = new Game(
+      hostRef.current!,
+      { name: identity.name, avatarId: identity.avatarId },
+      room,
+    );
     let toastTimer: ReturnType<typeof setTimeout> | undefined;
     game.onPrompt = setPrompt;
     game.onToast = (message) => {
@@ -20,6 +33,8 @@ export function App() {
       toastTimer = setTimeout(() => setToast(null), 1500);
     };
     game.onExit = () => {
+      // Main-door exit is a consented leave (REQ-MOVE-002).
+      void connection.leave();
       setPrompt(null);
       setToast(null);
       setJoined(null);
@@ -29,8 +44,10 @@ export function App() {
       clearTimeout(toastTimer);
       game.dispose();
     };
-  }, [joined]);
-  if (!joined) return <JoinScreen onJoin={setJoined} />;
+  }, [joined, connection]);
+  // Leave the room if the app unmounts while joined.
+  useEffect(() => () => void connection.leave(), [connection]);
+  if (!joined) return <JoinScreen onJoin={join} />;
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={hostRef} data-testid="game-host" style={{ width: '100%', height: '100%' }} />

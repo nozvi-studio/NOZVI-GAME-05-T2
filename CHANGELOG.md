@@ -6,6 +6,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ### Added
 
+- Client connection layer and networked join (T-1035): `apps/web/src/net/` Colyseus wrapper with join/leave, status and typed errors; join screen shows connecting, room full, server unreachable, invalid identity, version mismatch and rate limited with retry; the joined room reaches `Game`; door exit leaves the room; server URL from `VITE_SERVER_URL`; e2e starts the game server next to the web dev server.
+
 - Server-authoritative movement (T-1034): `input` messages validated and queued per client (capped at `BALANCE.net.inputQueueMax`, stale seqs ignored), one input applied per client per 50 ms tick through `applyInput` with layout colliders, replicated `lastSeq` and walking/idle activity.
 
 - Colyseus server (T-1033): `OfficeRoom` per normalized office code, 10 clients max with `room_full` for the 11th and no overflow room, typed join validation, join rate limit per address, `/health` on the same port, `ALLOWED_ORIGINS` CORS.
