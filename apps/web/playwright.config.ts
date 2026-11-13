@@ -23,7 +23,7 @@ export default defineConfig({
     {
       command: 'pnpm --filter @office/server start',
       url: `http://127.0.0.1:${SERVER_PORT}/health`,
-      env: { PORT: String(SERVER_PORT) },
+      env: { PORT: String(SERVER_PORT), JOIN_LIMIT_PER_MINUTE: '1000' },
       reuseExistingServer: false,
       timeout: 60_000,
     },
