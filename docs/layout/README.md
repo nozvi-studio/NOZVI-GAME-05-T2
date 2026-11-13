@@ -26,6 +26,16 @@ and coffee table have a 0.75 m gap. Storage moves north of the eastern pod;
 the utility door and AC move farther south along the east wall. The entrance
 door shifts 0.1 m east; the spawn position stays unchanged.
 
+Phase 2.1 (T-1014) widened the room again, to 12 x 9.6 x 2.7 m (+20% per
+horizontal dimension), stretching evenly about the room center. Floor positions
+(zones, approach points, spawn, lights) scale by 1.2. Each furniture assembly
+moves rigidly by 0.2 x its own center, so components, colliders and seat
+sockets keep their offsets; each back-to-back desk pair moves as one block so
+the desks stay joined. Wall-mounted items (main door, TV, AC, utility door,
+window) keep their wall offset and only scale along the wall. Furniture and
+avatar sizes are unchanged. Free-standing pieces that sat against a wall now sit
+up to about 0.2 m off it. Top-down render: `office-top-down.png`.
+
 - Kept: exactly eight desks and green chairs, north main entrance and original
   spawn, south window/blinds wall, west wall TV, north pantry/fridge/cabinets,
   east utility door and AC, shoe rack, intercom, breaker box, and every palette hex.

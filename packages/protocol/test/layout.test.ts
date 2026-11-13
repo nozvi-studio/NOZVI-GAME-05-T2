@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { officeLayout, parseLayout } from '../src/layout/layout';
 
 describe('officeLayout', () => {
-  it('has the 10 x 8 x 2.7 m room', () => {
-    expect(officeLayout.room).toEqual({ width: 10, depth: 8, height: 2.7 });
+  it('has the 12 x 9.6 x 2.7 m room', () => {
+    expect(officeLayout.room).toEqual({ width: 12, depth: 9.6, height: 2.7 });
   });
   it('has eight workstations with seat sockets', () => {
     expect(officeLayout.workstations).toHaveLength(8);

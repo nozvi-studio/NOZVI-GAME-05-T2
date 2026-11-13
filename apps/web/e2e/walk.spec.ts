@@ -67,18 +67,18 @@ test('S, A and D move in their camera-relative directions', async ({ page }) => 
 });
 
 test('walls stop the player', async ({ page }) => {
-  // Back the player into the north wall (inner face z = -3.9, capsule radius 0.3) from 0.9 m
+  // Back the player into the north wall (inner face z = -4.7, capsule radius 0.3) from 0.9 m
   // away. The spawn now faces west with over 5 m of open floor behind it, so start from a fixed pose.
   await page.evaluate(() =>
     (window as unknown as { __office: { setPose(p: object): void } }).__office.setPose({
       x: -0.4,
-      z: -3,
+      z: -3.8,
       heading: 0,
     }),
   );
   await hold(page, 's', 4000, 12);
   const p = await getPlayer(page);
-  expect(p.z).toBeGreaterThan(-4 + 0.3 - 0.01);
-  expect(p.z).toBeLessThan(-3.9 + 0.3 + 0.05);
+  expect(p.z).toBeGreaterThan(-4.8 + 0.3 - 0.01);
+  expect(p.z).toBeLessThan(-4.7 + 0.3 + 0.05);
   await page.screenshot({ path: 'test-results/walk-wall.png' });
 });

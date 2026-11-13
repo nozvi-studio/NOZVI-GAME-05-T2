@@ -30,7 +30,7 @@ function fakePlayer(state: PlayerState) {
 describe('InteractionController', () => {
   it('sits at the faced free desk, toggles work and stands', () => {
     const seats = new SeatRegistry();
-    const p = fakePlayer({ x: 0.4, z: 2.05, heading: Math.PI });
+    const p = fakePlayer({ x: 0.66, z: 2.46, heading: Math.PI });
     const c = new InteractionController(p, seats, 'me', { onExit: vi.fn() });
     expect(c.currentPrompt()?.text).toBe('E — Sit');
     c.press();
@@ -48,14 +48,14 @@ describe('InteractionController', () => {
     c.press();
     c.onMoveIntent();
     expect(p.activity).toBe('idle');
-    expect([p.state.x, p.state.z]).toEqual([0.4, 2.05]);
+    expect([p.state.x, p.state.z]).toEqual([0.66, 2.46]);
     expect(seats.occupant('ws_5_seat')).toBeNull();
     expect(c.currentPrompt()?.text).toBe('E — Sit');
   });
   it('refuses a taken desk', () => {
     const seats = new SeatRegistry();
     seats.claim('ws_5_seat', 'other');
-    const p = fakePlayer({ x: 0.4, z: 2.05, heading: Math.PI });
+    const p = fakePlayer({ x: 0.66, z: 2.46, heading: Math.PI });
     const c = new InteractionController(p, seats, 'me', { onExit: vi.fn() });
     expect(c.currentPrompt()).toEqual({ text: 'Desk taken', available: false });
     c.press();
@@ -64,7 +64,7 @@ describe('InteractionController', () => {
   });
   it('leaves through the main door', () => {
     const onExit = vi.fn();
-    const p = fakePlayer({ x: -0.4, z: -3, heading: Math.PI });
+    const p = fakePlayer({ x: -0.46, z: -3.8, heading: Math.PI });
     const c = new InteractionController(p, new SeatRegistry(), 'me', { onExit });
     expect(c.currentPrompt()).toEqual({ text: 'E — Leave office', available: true });
     c.press();
