@@ -1,6 +1,6 @@
 # STATUS — project memory
 
-Updated: 2026-11-13 by Claude Code · Phase: Phase 2.1 — T-1014 merged; T-1044 e2e speed-up done on `feat/T-1044-e2e-speedup` (first green e2e run)
+Updated: 2026-11-13 by Claude Code · Phase: Phase 3 (FEAT-51) — all 11 tasks implemented on `feat/phase-3`; T-1041 verification on `feat/T-1041-verification`; owner checks pending
 Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/SPEC.md` (implementation spec). `docs/GDD.md` is deprecated (casual template).
 
 ## Done
@@ -19,11 +19,13 @@ Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTU
 - 2026-11-12 verification: unit tests 94/94 pass. Playwright e2e has NO valid result: first run hit another project's dev server on 5173; e2e now uses a dedicated server on 127.0.0.1:5180, but later runs hung in webServer setup or were killed for low RAM. Owner chose to merge into `dev` without e2e evidence.
 - **Phase 2.1 T-1044** (e2e speed-up, branch `feat/T-1044-e2e-speedup`): `walk.spec.ts` shares one join (serial, one page) and holds keys until the player has moved 0.5 m (or, for the wall check, until it stops) instead of fixed `waitForTimeout`. Per-file commands in README. 2026-11-13, Claude Code cloud container (Linux, Chromium 1243 SwiftShader, 1 worker): `pnpm --filter web e2e e2e/walk.spec.ts --repeat-each=5` 15/15 pass (1.2 min); **first full green run `pnpm --filter web e2e`: 6/6 pass (1.1 min)** — sit, visual and walk specs.
 
+- **Phase 3 implemented** on `feat/phase-3` (`docs/plans/phase-3.md`, Meridian FEAT-51): Colyseus server (OfficeRoom per code, 20 Hz authoritative movement, server-owned activity and seats, 20 s reconnect window), client connection, fixed-step prediction, remote avatars, replicated seats, employee list and entrance board, reconnect banner. T-1041 verification results and the acceptance record: plan §10: ten-client check passes (9 bots + 1 browser, 11th refused); the 10-minute network-profile soak shows remote jumps in 0.6% of frames, in line with retransmit spikes longer than the 100 ms interpolation delay.
+
 ## Next (ordered)
 
-1. Phase 2.1 leftovers (`docs/plans/phase-2.1.md` closing note; Meridian FEAT-46): room widening T-1014 is done and merged into `dev` (`1df1931`); branch `feat/phase-2.1` closed. e2e speed-up T-1044 and the first green e2e run are done on `feat/T-1044-e2e-speedup` (awaiting review/merge; this unblocks Phase 3 client tasks once merged). Still open: owner UI feedback once listed. Note: Meridian auto-marked FEAT-46 delivered after T-1014 alone.
-2. Owner: measure FPS on a normal desktop and decide the draw-call budget (`phase-1-execution.md` §7).
-3. Phase 3 — Multiplayer Foundation: plan drafted in `docs/plans/phase-3.md` (Meridian FEAT-51: tasks T-1033 to T-1041, plus two task proposals and the tech spec `phase-3-multiplayer-tech-spec` awaiting owner approval). Server tasks 1-4 may start in parallel with Phase 2.1; client tasks wait for it. Owner must approve the Colyseus install and confirm the five defaults in plan §6.
+1. Owner: review and merge `feat/T-1041-verification` into `feat/phase-3`, then `feat/phase-3` into `dev`.
+2. Owner-only Phase 3 checks (plan §10): FPS and draw calls on a normal desktop with ten employees, the draw-call budget decision (still open; ten employees measure about 350 calls under SwiftShader against the 45-call target), a LAN playtest with real browsers, and one foreground Playwright run.
+3. Phase 4 — shared TV (not planned yet).
 
 ## Open items
 

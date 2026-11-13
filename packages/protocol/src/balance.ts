@@ -42,6 +42,24 @@ export const BALANCE = {
     reconcileEpsilon: 0.001,
     /** Client reconciliation: a larger correction is blended in over this many seconds. */
     correctionBlendSeconds: 0.15,
+    /**
+     * REQ-NET-004 test network profile, dev only: applied to every outgoing server message
+     * when the server starts with NET_PROFILE=test (off by default). WebSocket runs on TCP,
+     * so a lost segment is never a missing message: it is resent after about one
+     * retransmission timeout and holds back everything behind it (a delay spike).
+     */
+    testProfile: {
+      /** Added delay approximating the full round trip (the uplink is not delayed). */
+      rttMs: 100,
+      /** Uniform jitter of +/- this many ms around rttMs. */
+      jitterMs: 20,
+      /** Share of messages that pay the retransmission delay (simulated 1% loss). */
+      lossPercent: 1,
+      /** Extra delay of a "lost" message (Linux minimum TCP retransmission timeout). */
+      retransmitMs: 200,
+      /** Length of the manual soak run (`e2e/netProfile.spec.ts`). */
+      runMinutes: 10,
+    },
   },
   rendering: {
     /** 'agx' or 'aces' (THREE.AgXToneMapping / THREE.ACESFilmicToneMapping). */

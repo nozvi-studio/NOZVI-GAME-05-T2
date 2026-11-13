@@ -8,6 +8,7 @@ describe('e2e bot wire constants', () => {
       room: OFFICE_ROOM,
       protocolVersion: PROTOCOL_VERSION,
       maxClients: BALANCE.net.maxClients,
+      netProfileMinutes: BALANCE.net.testProfile.runMinutes,
     });
   });
 });
