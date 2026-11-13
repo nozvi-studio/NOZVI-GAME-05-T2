@@ -50,8 +50,12 @@ function fakeNameplate() {
   const plate = {
     object: new THREE.Object3D(),
     text: ['', ''] as [string, string],
+    reconnecting: false,
     disposed: false,
-    set: (name: string, status: string) => (plate.text = [name, status]),
+    set: (name: string, status: string, reconnecting = false) => {
+      plate.text = [name, status];
+      plate.reconnecting = reconnecting;
+    },
     dispose: () => {
       plate.disposed = true;
       plate.object.removeFromParent();
@@ -211,6 +215,41 @@ describe('RemoteAvatars (REQ-NET-004, REQ-UI-001)', () => {
     await Promise.resolve();
     expect(t.views[0]!.disposed).toBe(true);
     expect(t.scene.children.some((o) => o.name === 'remote:d')).toBe(false);
+  });
+
+  it('shows a reconnecting marker while the employee is held (T-1051)', () => {
+    const t = setup();
+    const e = t.employee('Ann');
+    e.activity = 'working';
+    t.source.add!('a', e);
+    t.remotes.update(0.016);
+    expect(t.plates[0]!.text).toEqual(['Ann', 'Working']);
+    t.source.change(e, { connected: false });
+    t.remotes.update(0.016);
+    expect(t.plates[0]!.text).toEqual(['Ann', 'Reconnecting…']);
+    expect(t.plates[0]!.reconnecting).toBe(true);
+    expect(t.remotes.list()[0]).toMatchObject({ connected: false, status: 'Reconnecting…' });
+    t.source.change(e, { connected: true });
+    t.remotes.update(0.016);
+    expect(t.plates[0]!.text).toEqual(['Ann', 'Working']);
+    expect(t.plates[0]!.reconnecting).toBe(false);
+  });
+
+  it('rebuilds every remote avatar from a resumed room (T-1051)', () => {
+    const t = setup();
+    t.source.add!('a', t.employee('Ann'));
+    t.source.add!('b', t.employee('Bob'));
+    expect(t.remotes.count).toBe(2);
+    const next = new FakeSource();
+    t.remotes.rebind(next);
+    // The old source is unsubscribed and its avatars are gone until the new state arrives.
+    expect(t.source.add).toBeUndefined();
+    expect(t.remotes.count).toBe(0);
+    expect(t.plates.every((p) => p.disposed)).toBe(true);
+    next.add!('a', t.employee('Ann', 3));
+    expect(t.remotes.count).toBe(1);
+    expect(t.remotes.list()[0]).toMatchObject({ sessionId: 'a', x: 3 });
+    expect(t.scene.getObjectByName('remote:b')).toBeUndefined();
   });
 
   it('keeps the capsule when the model fails to load', async () => {

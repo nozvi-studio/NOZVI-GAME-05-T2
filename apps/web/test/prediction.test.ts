@@ -150,6 +150,25 @@ describe('Predictor reconciliation', () => {
     expect(predictor.pending).toHaveLength(0);
   });
 
+  it('resyncs to the server position after a resumed session, without a blend (T-1051)', () => {
+    const predictor = new Predictor(spawn, colliders);
+    const walk: InputSample = { forward: 1, right: 0, run: false, yaw: 0 };
+    // Inputs produced while the connection was down never reached the server.
+    for (let i = 0; i < 8; i++) predictor.advance(FIXED_DT, walk);
+    expect(predictor.pending).toHaveLength(8);
+    predictor.resync();
+    expect(predictor.pending).toHaveLength(0);
+    const server = { ...spawn, x: spawn.x + 0.5, lastSeq: 2 };
+    expect(predictor.reconcile(server)).toBe(true);
+    expect(predictor.state).toEqual({ x: server.x, z: server.z, heading: server.heading });
+    expect(predictor.present(still)).toEqual(predictor.state);
+    // Seqs keep counting up, so the server (highest accepted = lastSeq) accepts them.
+    const [next] = predictor.advance(FIXED_DT, still);
+    expect(next!.seq).toBe(9);
+    // Later patches reconcile as usual again.
+    expect(predictor.reconcile({ ...server, lastSeq: 9 })).toBe(false);
+  });
+
   it('ignores server patches after a dev teleport', () => {
     const predictor = new Predictor(spawn, colliders);
     predictor.advance(FIXED_DT, still);

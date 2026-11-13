@@ -165,9 +165,12 @@ test('a remote employee walks smoothly with walking animation, faces its heading
   await expectRemotes(alice, ['Bảo & Co']);
   await expect(alice.getByTestId('game-host').getByText('Walker', { exact: true })).toHaveCount(0);
 
-  // A page leaving removes its avatar and nameplate on the other page.
-  await bob.context().close();
-  await expect.poll(async () => (await remotes(alice)).length, { timeout: 15_000 }).toBe(0);
+  // The door exit is a consented leave: the avatar and nameplate go at once on the other
+  // page, well inside the 20 s window an unexpected drop would hold them (reconnect.spec).
+  await bob.evaluate('window.__office.teleport(-0.4, -3, Math.PI)');
+  await bob.keyboard.press('e');
+  await expect(bob.getByTestId('join')).toBeVisible();
+  await expect.poll(async () => (await remotes(alice)).length, { timeout: 5_000 }).toBe(0);
   await expect(alice.getByTestId('game-host').getByText('Bảo & Co', { exact: true })).toHaveCount(
     0,
   );

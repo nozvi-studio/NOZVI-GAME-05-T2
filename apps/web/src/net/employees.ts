@@ -11,6 +11,8 @@ export type ReplicatedEmployee = {
   readonly activity: string;
   /** Seat held ('' = none); a seated employee is drawn on the seat socket. */
   readonly seatId: string;
+  /** False while the server holds a dropped employee's reservation; absent means true. */
+  readonly connected?: boolean;
 };
 
 /** Add / remove / change notifications for `room.state.employees`; each returns an unsubscribe. */

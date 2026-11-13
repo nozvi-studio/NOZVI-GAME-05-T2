@@ -22,6 +22,11 @@ export function joinError(code: JoinErrorCode): ServerError {
 /** Shared by every OfficeRoom in this process; replaced in tests to control the clock. */
 export const roomServices = {
   joinLimiter: new JoinRateLimiter(BALANCE.net.joinsPerMinutePerIp),
+  /**
+   * How long an unexpectedly dropped employee and its seat are held. Tests shorten it;
+   * the shipped value is `BALANCE.net.reconnectSeconds`.
+   */
+  reconnectSeconds: BALANCE.net.reconnectSeconds as number,
 };
 
 /**
@@ -89,9 +94,29 @@ export class OfficeRoom extends Room<{ state: OfficeState }> {
     this.sim.add(client.sessionId, employee.lastSeq);
   }
 
+  /**
+   * REQ-NET-005: an unexpected drop (any close code except a consented leave) keeps the
+   * employee and its seat for `reconnectSeconds`, marked `connected = false`. Queued inputs
+   * and intents are discarded so the held avatar stands still. If the window expires the
+   * framework calls `onLeave`, which removes both.
+   */
+  override onDrop(client: Client): void {
+    const employee = this.state.employees.get(client.sessionId);
+    if (!employee) return;
+    employee.connected = false;
+    this.sim.suspend(client.sessionId, employee.lastSeq);
+    // Expiry is handled through onLeave; the rejection itself needs no handler here.
+    this.allowReconnection(client, roomServices.reconnectSeconds).catch(() => undefined);
+  }
+
+  /** The same session is back within the window: the client receives the full state. */
+  override onReconnect(client: Client): void {
+    const employee = this.state.employees.get(client.sessionId);
+    if (employee) employee.connected = true;
+  }
+
+  /** A consented leave, or the end of an unanswered reconnect window: remove at once. */
   override onLeave(client: Client): void {
-    // The 20 s reconnect window arrives with T-1051; until then any leave removes the
-    // employee and frees its seat at once.
     this.sim.remove(client.sessionId);
     this.state.employees.delete(client.sessionId);
   }

@@ -266,3 +266,115 @@ describe('OfficeRoom activity and seats', () => {
     expect(local('FAR-01').sim.activity.seats.occupant(DESK)).toBeNull();
   });
 });
+
+describe('OfficeRoom disconnect and reconnect', () => {
+  const DESK = 'ws_1_seat';
+  const ws1 = officeLayout.workstations.find((w) => w.seat.id === DESK)!;
+  const shipped = roomServices.reconnectSeconds;
+
+  afterAll(() => {
+    roomServices.reconnectSeconds = shipped;
+  });
+
+  /** Closes the socket without consent; the SDK's own auto-reconnect is switched off. */
+  async function drop(room: Room): Promise<void> {
+    room.reconnection.enabled = false;
+    await room.leave(false);
+  }
+
+  async function seatAt(code: string, room: Room<OfficeState>): Promise<void> {
+    const e = local(code).state.employees.get(room.sessionId)!;
+    e.x = ws1.interactionPoint[0];
+    e.z = ws1.interactionPoint[2];
+    room.send(MSG.intent, { type: 'sit', seatId: DESK });
+    await waitFor(() => e.seatId === DESK);
+  }
+
+  async function reconnect(token: string): Promise<Room<OfficeState>> {
+    const room = (await new Client(endpoint).reconnect(token)) as Room<OfficeState>;
+    joined.push(room);
+    return room;
+  }
+
+  it('ships a 20 s window', () => {
+    expect(shipped).toBe(BALANCE.net.reconnectSeconds);
+    expect(BALANCE.net.reconnectSeconds).toBe(20);
+  });
+
+  it('holds a dropped employee and its seat, then restores the same session with full state', async () => {
+    roomServices.reconnectSeconds = 5;
+    const a = (await join('drop-01')) as Room<OfficeState>;
+    const b = (await join('drop-01', { name: 'Bao' })) as Room<OfficeState>;
+    await seatAt('DROP-01', a);
+    const room = local('DROP-01');
+    const held = room.state.employees.get(a.sessionId)!;
+    const token = a.reconnectionToken;
+
+    // Dropped within the first seconds of the room: the SDK would refuse to auto-reconnect.
+    await drop(a);
+    await waitFor(() => b.state.employees?.get(a.sessionId)?.connected === false);
+    expect(room.state.employees.size).toBe(2);
+    expect(held).toMatchObject({ seatId: DESK, activity: 'sitting', connected: false });
+    expect(room.sim.activity.seats.occupant(DESK)).toBe(a.sessionId);
+
+    const back = await reconnect(token);
+    expect(back.sessionId).toBe(a.sessionId);
+    await waitFor(() => back.state.employees?.get(b.sessionId) !== undefined);
+    expect(back.state.employees.size).toBe(2);
+    expect(back.state.employees.get(a.sessionId)).toMatchObject({
+      seatId: DESK,
+      activity: 'sitting',
+      connected: true,
+      x: held.x,
+      z: held.z,
+    });
+    await waitFor(() => b.state.employees?.get(a.sessionId)?.connected === true);
+    expect(room.state.employees.size).toBe(2);
+
+    // Input seqs keep counting after the reconnect.
+    back.send(MSG.input, { seq: held.lastSeq + 1, forward: 1, right: 0, run: false, yaw: 0 });
+    await waitFor(() => held.lastSeq === 1 && held.activity === 'walking');
+    expect(room.sim.activity.seats.occupant(DESK)).toBeNull();
+  });
+
+  it('discards inputs queued before the drop so the held avatar stands still', async () => {
+    const a = (await join('still-01')) as Room<OfficeState>;
+    const room = local('STILL-01');
+    room.sim.input(a.sessionId, { seq: 1, forward: 1, right: 0, run: false, yaw: 0 });
+    room.sim.input(a.sessionId, { seq: 2, forward: 1, right: 0, run: false, yaw: 0 });
+    room.sim.suspend(a.sessionId, 0);
+    expect(room.sim.movement.queued(a.sessionId)).toBe(0);
+    // A later seq is accepted again after the reconnect.
+    expect(room.sim.input(a.sessionId, { seq: 3, forward: 0, right: 0, run: false, yaw: 0 })).toBe(
+      true,
+    );
+  });
+
+  it('removes the employee, its list entry and its seat when the window expires', async () => {
+    roomServices.reconnectSeconds = 0.3;
+    const a = (await join('expire-01')) as Room<OfficeState>;
+    const b = (await join('expire-01', { name: 'Bao' })) as Room<OfficeState>;
+    await seatAt('EXPIRE-01', a);
+    const room = local('EXPIRE-01');
+    const token = a.reconnectionToken;
+    await drop(a);
+    await waitFor(() => room.state.employees.get(a.sessionId)?.connected === false);
+    await waitFor(() => !room.state.employees.has(a.sessionId), 3000);
+    await waitFor(() => b.state.employees?.get(a.sessionId) === undefined);
+    expect(room.sim.activity.seats.occupant(DESK)).toBeNull();
+    await expect(reconnect(token)).rejects.toBeDefined();
+    expect(room.state.employees.size).toBe(1);
+  });
+
+  it('removes the employee and frees its seat at once on a consented leave', async () => {
+    roomServices.reconnectSeconds = 20;
+    const a = (await join('bye-01')) as Room<OfficeState>;
+    const b = (await join('bye-01', { name: 'Bao' })) as Room<OfficeState>;
+    await seatAt('BYE-01', a);
+    const room = local('BYE-01');
+    await a.leave(true);
+    await waitFor(() => !room.state.employees.has(a.sessionId), 500);
+    expect(room.sim.activity.seats.occupant(DESK)).toBeNull();
+    await waitFor(() => b.state.employees?.get(a.sessionId) === undefined, 500);
+  });
+});

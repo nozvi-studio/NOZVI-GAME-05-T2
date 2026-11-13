@@ -1,12 +1,12 @@
 import type { Activity } from '@office/protocol';
 import type { EmployeeSource, ReplicatedEmployee } from '../net';
-import { activityLabel } from '../game/hud/activityLabel';
+import { presenceLabel } from '../game/hud/activityLabel';
 
 /** One row of the online employee list (REQ-UI-003). */
 export type RosterEntry = {
   readonly sessionId: string;
   readonly name: string;
-  /** Shared activity label, the same text the nameplate shows. */
+  /** Shared activity label, the same text the nameplate shows ("Reconnecting…" while held). */
   readonly label: string;
   /** False while the server holds a disconnected employee's reservation. */
   readonly connected: boolean;
@@ -16,12 +16,11 @@ export type RosterEntry = {
 type Tracked = { employee: ReplicatedEmployee; entry: RosterEntry; unsubscribe: () => void };
 
 function entryFor(sessionId: string, e: ReplicatedEmployee, isLocal: boolean): RosterEntry {
-  // `connected` is in the schema but not in ReplicatedEmployee; absent means connected.
-  const connected = (e as { connected?: boolean }).connected !== false;
+  const connected = e.connected !== false;
   return {
     sessionId,
     name: e.name,
-    label: activityLabel(e.activity as Activity),
+    label: presenceLabel(e.activity as Activity, connected),
     connected,
     isLocal,
   };
@@ -45,12 +44,27 @@ export class EmployeeRoster {
   private readonly tracked = new Map<string, Tracked>();
   private snapshot: readonly RosterEntry[] = [];
   private readonly listeners = new Set<() => void>();
-  private readonly unsubscribe: (() => void)[];
+  private unsubscribe: (() => void)[] = [];
 
   constructor(
     source: EmployeeSource,
     private readonly localSessionId: string,
   ) {
+    this.bind(source);
+  }
+
+  /**
+   * REQ-NET-005: after a reconnect the room handle is new; rebuild the list from its full
+   * state. Listeners stay subscribed and are notified once.
+   */
+  rebind(source: EmployeeSource): void {
+    this.unbind();
+    this.bind(source);
+    this.publish();
+  }
+
+  private bind(source: EmployeeSource): void {
+    const localSessionId = this.localSessionId;
     this.unsubscribe = [
       source.onAdd((sessionId, employee) => {
         this.tracked.get(sessionId)?.unsubscribe();
@@ -85,10 +99,15 @@ export class EmployeeRoster {
   }
 
   dispose(): void {
+    this.unbind();
+    this.listeners.clear();
+  }
+
+  private unbind(): void {
     for (const off of this.unsubscribe) off();
+    this.unsubscribe = [];
     for (const tracked of this.tracked.values()) tracked.unsubscribe();
     this.tracked.clear();
-    this.listeners.clear();
   }
 
   private refresh(sessionId: string): void {

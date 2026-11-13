@@ -122,6 +122,9 @@ test('leaving removes the entry and lowers the count without a reload', async ()
   await leaveAll(bots);
   await expectListed(alice, ['Alice', MARKUP_NAME]);
   await expectListed(eve, ['Alice', MARKUP_NAME]);
-  await eve.context().close();
+  // The door exit is a consented leave (closing the tab would be a drop held for 20 s).
+  await eve.evaluate('window.__office.teleport(-0.4, -3, Math.PI)');
+  await eve.keyboard.press('e');
+  await expect(eve.getByTestId('join')).toBeVisible();
   await expectListed(alice, ['Alice']);
 });

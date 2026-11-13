@@ -9,7 +9,7 @@ import {
 import { AvatarView, CLIP_FOR } from '../avatar/AvatarView';
 import { seatPose, seatSocket } from '../interaction/seats';
 import { Nameplate } from '../hud/Nameplate';
-import { activityLabel } from '../hud/activityLabel';
+import { presenceLabel } from '../hud/activityLabel';
 
 /** The parts of `AvatarView` a remote avatar uses. */
 export type RemoteView = {
@@ -21,7 +21,7 @@ export type RemoteView = {
 /** The parts of `Nameplate` a remote avatar uses. */
 export type RemoteNameplate = {
   readonly object: THREE.Object3D;
-  set(name: string, status: string): void;
+  set(name: string, status: string, reconnecting?: boolean): void;
   dispose(): void;
 };
 export type RemoteAvatarsDeps = {
@@ -41,6 +41,10 @@ export type RemoteInfo = {
   activity: Activity;
   seatId: string;
   model: 'avatar' | 'capsule';
+  /** False while the server holds this employee's reconnect reservation. */
+  connected: boolean;
+  /** The nameplate status text as drawn. */
+  status: string;
 };
 
 type Remote = {
@@ -51,6 +55,7 @@ type Remote = {
   readonly nameplate: RemoteNameplate;
   readonly unsubscribe: () => void;
   activity: Activity;
+  status: string;
   /** The seat seen in the last snapshot; a change restarts interpolation. */
   seatId: string;
   view: RemoteView | null;
@@ -101,19 +106,39 @@ function disposeMeshes(meshes: THREE.Mesh[]): void {
 export class RemoteAvatars {
   private readonly remotes = new Map<string, Remote>();
   private readonly deps: RemoteAvatarsDeps;
-  private readonly unsubscribe: (() => void)[];
+  private unsubscribe: (() => void)[] = [];
 
   constructor(
     private readonly parent: THREE.Object3D,
-    private readonly source: EmployeeSource,
+    private source: EmployeeSource,
     private readonly localSessionId: string,
     deps: Partial<RemoteAvatarsDeps> = {},
   ) {
     this.deps = { ...DEFAULT_DEPS, ...deps };
+    this.bind(source);
+  }
+
+  /**
+   * REQ-NET-005: after a reconnect the room handle is new. Every remote avatar is rebuilt
+   * from its full state, so nobody who left during the drop stays behind.
+   */
+  rebind(source: EmployeeSource): void {
+    this.unbind();
+    this.source = source;
+    this.bind(source);
+  }
+
+  private bind(source: EmployeeSource): void {
     this.unsubscribe = [
       source.onAdd((id, employee) => this.add(id, employee)),
       source.onRemove((id) => this.remove(id)),
     ];
+  }
+
+  private unbind(): void {
+    for (const off of this.unsubscribe) off();
+    this.unsubscribe = [];
+    for (const id of [...this.remotes.keys()]) this.remove(id);
   }
 
   get count(): number {
@@ -147,6 +172,7 @@ export class RemoteAvatars {
       nameplate,
       unsubscribe: this.source.onChange(employee, snapshot),
       activity: toActivity(employee.activity),
+      status: '',
       seatId,
       view: null,
       disposed: false,
@@ -196,7 +222,9 @@ export class RemoteAvatars {
     remote.activity = toActivity(remote.employee.activity);
     remote.view?.setActivity(remote.activity);
     remote.view?.update(dt);
-    remote.nameplate.set(remote.employee.name, activityLabel(remote.activity));
+    const reconnecting = remote.employee.connected === false;
+    remote.status = presenceLabel(remote.activity, remote.employee.connected);
+    remote.nameplate.set(remote.employee.name, remote.status, reconnecting);
   }
 
   /** Called once per rendered frame with the frame time in seconds. */
@@ -215,11 +243,12 @@ export class RemoteAvatars {
       activity: r.activity,
       seatId: r.seatId,
       model: r.view ? 'avatar' : 'capsule',
+      connected: r.employee.connected !== false,
+      status: r.status,
     }));
   }
 
   dispose(): void {
-    for (const off of this.unsubscribe) off();
-    for (const id of [...this.remotes.keys()]) this.remove(id);
+    this.unbind();
   }
 }

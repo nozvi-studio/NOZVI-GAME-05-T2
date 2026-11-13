@@ -109,6 +109,11 @@ export class ActivitySim {
     this.pending.set(id, []);
   }
 
+  /** Drops a client's queued intents; its seat and timers stay (a dropped connection). */
+  clearQueue(id: string): void {
+    if (this.pending.has(id)) this.pending.set(id, []);
+  }
+
   /** Forgets a client and frees its seat. */
   remove(id: string): void {
     this.pending.delete(id);
@@ -238,6 +243,17 @@ export class OfficeSim {
   remove(id: string): void {
     this.movement.remove(id);
     this.activity.remove(id);
+  }
+
+  /**
+   * REQ-NET-005: a dropped connection keeps the employee and its seat, but inputs and
+   * intents it queued are discarded so the held avatar stands still. Seqs above `lastSeq`
+   * are accepted again after a reconnect (the client keeps counting up from its own seq).
+   */
+  suspend(id: string, lastSeq: number): void {
+    if (this.movement.acceptedSeq(id) === null) return;
+    this.movement.add(id, lastSeq);
+    this.activity.clearQueue(id);
   }
 
   input(id: string, raw: unknown): boolean {

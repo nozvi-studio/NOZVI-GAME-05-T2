@@ -10,13 +10,19 @@ import {
   type ConnectionStatus,
   type JoinClient,
   type OfficeRoomHandle,
+  type ReconnectClock,
+  type TokenStore,
 } from '../src/net';
 
 const identity = { name: 'An', officeCode: 'TEST-01', avatarId: 'men_suit' } as const;
 
-function fakeRoom() {
+let rooms = 0;
+function fakeRoom(sessionId = 'S1') {
   let leaveCb: ((code: number) => void) | undefined;
   const room = {
+    sessionId,
+    reconnectionToken: `TEST-01:token${++rooms}`,
+    reconnection: { enabled: true },
     leave: vi.fn(async () => 1000),
     onLeave: (cb: (code: number) => void) => {
       leaveCb = cb;
@@ -26,12 +32,75 @@ function fakeRoom() {
   return room as typeof room & OfficeRoomHandle;
 }
 
-function setup(joinOrCreate: JoinClient['joinOrCreate'], timeoutMs = 1000) {
-  const client = { joinOrCreate: vi.fn(joinOrCreate) };
-  const connection = new Connection('http://test', () => client, timeoutMs);
+function memoryTokens(available = true): TokenStore & { value: string | null } {
+  return {
+    value: null,
+    save(token) {
+      if (available) this.value = token;
+      return available;
+    },
+    load() {
+      return this.value;
+    },
+    clear() {
+      this.value = null;
+    },
+  };
+}
+
+function setup(
+  joinOrCreate: JoinClient['joinOrCreate'],
+  timeoutMs = 1000,
+  options: {
+    reconnect?: JoinClient['reconnect'];
+    tokens?: TokenStore;
+    clock?: ReconnectClock;
+  } = {},
+) {
+  const client = {
+    joinOrCreate: vi.fn(joinOrCreate),
+    reconnect: vi.fn(
+      options.reconnect ?? (async () => Promise.reject(new MatchMakeError('expired', 4212))),
+    ),
+  };
+  const tokens = options.tokens ?? memoryTokens();
+  const connection = new Connection('http://test', () => client, timeoutMs, {
+    tokens,
+    ...(options.clock ? { clock: options.clock } : {}),
+  });
   const statuses: ConnectionStatus[] = [];
   connection.onStatus((s) => statuses.push(s));
-  return { client, connection, statuses };
+  return { client, connection, statuses, tokens };
+}
+
+/** Controlled clock for the reconnect backoff. */
+function fakeClock(): ReconnectClock & { advance(ms: number): Promise<void> } {
+  let time = 0;
+  let timers: { at: number; cb: () => void }[] = [];
+  return {
+    now: () => time,
+    setTimeout: (cb, ms) => {
+      const t = { at: time + ms, cb };
+      timers.push(t);
+      return t;
+    },
+    clearTimeout: (h) => {
+      timers = timers.filter((t) => t !== h);
+    },
+    async advance(ms) {
+      const end = time + ms;
+      for (;;) {
+        const due = timers.filter((t) => t.at <= end).sort((a, b) => a.at - b.at)[0];
+        if (!due) break;
+        timers = timers.filter((t) => t !== due);
+        time = due.at;
+        due.cb();
+        for (let i = 0; i < 10; i++) await Promise.resolve();
+      }
+      time = end;
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+    },
+  };
 }
 
 describe('toConnectionError', () => {
@@ -125,14 +194,137 @@ describe('Connection', () => {
     expect(statuses).toEqual(['connecting', 'connected', 'idle']);
   });
 
-  it('reports an unexpected room leave as an unreachable error', async () => {
+  it('keeps the token, disables SDK auto-reconnect and clears the token on leave', async () => {
     const room = fakeRoom();
-    const { connection } = setup(async () => room);
+    const tokens = memoryTokens();
+    const { connection } = setup(async () => room, 1000, { tokens });
+    await connection.join(identity);
+    expect(room.reconnection.enabled).toBe(false);
+    expect(tokens.value).toBe(room.reconnectionToken);
+    await connection.leave();
+    expect(tokens.value).toBeNull();
+  });
+
+  it('reports an unexpected room leave as reconnecting, then resumes the same session', async () => {
+    const clock = fakeClock();
+    const room = fakeRoom();
+    const back = fakeRoom();
+    let up = false;
+    const { connection, client, statuses } = setup(async () => room, 1000, {
+      clock,
+      reconnect: async () => {
+        if (!up) throw new TypeError('Failed to fetch');
+        return back;
+      },
+    });
+    const resumed: OfficeRoomHandle[] = [];
+    connection.onRoom((r) => resumed.push(r));
     await connection.join(identity);
     room.drop();
-    expect(connection.status).toBe('error');
+    expect(connection.status).toBe('reconnecting');
     expect(connection.error?.code).toBe('unreachable');
     expect(connection.room).toBeNull();
+    await clock.advance(1000);
+    expect(client.reconnect).toHaveBeenCalledWith(room.reconnectionToken, expect.anything());
+    expect(connection.status).toBe('reconnecting');
+    up = true;
+    await clock.advance(2000);
+    expect(connection.status).toBe('connected');
+    expect(connection.room).toBe(back);
+    expect(connection.error).toBeNull();
+    expect(resumed).toEqual([back]);
+    expect(statuses).toEqual(['connecting', 'connected', 'reconnecting', 'connected']);
+    // A second drop starts a new backoff with the new token.
+    back.drop();
+    expect(connection.status).toBe('reconnecting');
+  });
+
+  it('gives up after the 1/2/4/8 s attempts and goes lost', async () => {
+    const clock = fakeClock();
+    const room = fakeRoom();
+    const { connection, client } = setup(async () => room, 1000, {
+      clock,
+      reconnect: async () => Promise.reject(new TypeError('Failed to fetch')),
+    });
+    await connection.join(identity);
+    room.drop();
+    await clock.advance(15_000);
+    expect(client.reconnect).toHaveBeenCalledTimes(4);
+    expect(connection.status).toBe('lost');
+  });
+
+  it('goes lost at once when the server refuses the token', async () => {
+    const clock = fakeClock();
+    const room = fakeRoom();
+    const { connection, client } = setup(async () => room, 1000, { clock });
+    await connection.join(identity);
+    room.drop();
+    await clock.advance(1000);
+    expect(client.reconnect).toHaveBeenCalledTimes(1);
+    expect(connection.status).toBe('lost');
+  });
+
+  it('goes straight to lost without storage, and Rejoin still resumes the held session', async () => {
+    const room = fakeRoom();
+    const back = fakeRoom();
+    const { connection, client } = setup(async () => room, 1000, {
+      tokens: memoryTokens(false),
+      reconnect: async () => back,
+    });
+    await connection.join(identity);
+    room.drop();
+    expect(connection.status).toBe('lost');
+    expect(client.reconnect).not.toHaveBeenCalled();
+    await expect(connection.rejoin()).resolves.toBe(back);
+    expect(client.reconnect).toHaveBeenCalledWith(room.reconnectionToken, expect.anything());
+    expect(client.joinOrCreate).toHaveBeenCalledTimes(1);
+    expect(connection.status).toBe('connected');
+  });
+
+  it('Rejoin joins afresh with the same identity once the reservation is gone', async () => {
+    const clock = fakeClock();
+    const room = fakeRoom();
+    const fresh = fakeRoom('S2');
+    let next: OfficeRoomHandle = room;
+    const { connection, client } = setup(async () => next, 1000, { clock });
+    await connection.join(identity);
+    room.drop();
+    await clock.advance(1000);
+    expect(connection.status).toBe('lost');
+    next = fresh;
+    await expect(connection.rejoin()).resolves.toBe(fresh);
+    expect(client.joinOrCreate).toHaveBeenCalledTimes(2);
+    expect(client.joinOrCreate).toHaveBeenLastCalledWith(
+      OFFICE_ROOM,
+      { ...identity, protocolVersion: PROTOCOL_VERSION },
+      expect.anything(),
+    );
+    expect(connection.status).toBe('connected');
+  });
+
+  it('Rejoin stays lost while the server is unreachable', async () => {
+    const room = fakeRoom();
+    const { connection, client } = setup(async () => room, 1000, {
+      tokens: memoryTokens(false),
+      reconnect: async () => Promise.reject(new TypeError('Failed to fetch')),
+    });
+    await connection.join(identity);
+    room.drop();
+    await expect(connection.rejoin()).rejects.toMatchObject({ code: 'unreachable' });
+    expect(connection.status).toBe('lost');
+    expect(client.joinOrCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it('a consented leave during the backoff stops retrying', async () => {
+    const clock = fakeClock();
+    const room = fakeRoom();
+    const { connection, client } = setup(async () => room, 1000, { clock });
+    await connection.join(identity);
+    room.drop();
+    await connection.leave();
+    await clock.advance(30_000);
+    expect(client.reconnect).not.toHaveBeenCalled();
+    expect(connection.status).toBe('idle');
   });
 
   it('times out as unreachable and leaves a room that arrives late', async () => {

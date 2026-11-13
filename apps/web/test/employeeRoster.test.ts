@@ -134,6 +134,31 @@ describe('EmployeeRoster', () => {
     expect(counter.rows.find((e) => e.name === 'Alice')!.connected).toBe(false);
   });
 
+  it('marks a held employee as reconnecting and rebuilds from a resumed room (T-1051)', () => {
+    const first = new FakeSource();
+    const roster = new EmployeeRoster(first, 'me');
+    first.join('me', 'Me');
+    const alice = first.join('a', 'Alice', 'working');
+    first.join('b', 'Bob');
+    first.patch(alice, { connected: false });
+    expect(roster.getSnapshot().find((e) => e.name === 'Alice')).toMatchObject({
+      connected: false,
+      label: 'Reconnecting…',
+    });
+    let notified = 0;
+    roster.subscribe(() => notified++);
+    // Bob left while this client was away: the resumed room's full state no longer has him.
+    const second = new FakeSource();
+    second.join('me', 'Me');
+    second.join('a', 'Alice', 'working');
+    roster.rebind(second);
+    expect(notified).toBeGreaterThan(0);
+    expect(rows(roster.getSnapshot())).toEqual(['Me|Online|you', 'Alice|Working']);
+    expect(first.listenerCount()).toBe(0);
+    first.join('c', 'Cy');
+    expect(roster.count).toBe(2);
+  });
+
   it('stops listening on dispose', () => {
     const source = new FakeSource();
     const roster = new EmployeeRoster(source, 'me');

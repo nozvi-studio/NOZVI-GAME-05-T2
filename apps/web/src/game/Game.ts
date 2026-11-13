@@ -46,7 +46,9 @@ export class Game {
   private furniture: Awaited<ReturnType<typeof loadFurniture>> | undefined;
   private disposed = false;
   /** Disconnects local prediction from the room (inputs out, patches in). */
-  private readonly unbindPrediction: () => void;
+  private unbindPrediction: () => void;
+  /** Joined office room; replaced by `attachRoom` when the session is resumed. */
+  private room: OfficeRoomHandle;
   private readonly remotes: RemoteAvatars;
   /** Employee list for the 2D panel and the entrance board (REQ-UI-003). */
   readonly roster: EmployeeRoster;
@@ -57,11 +59,18 @@ export class Game {
     private readonly host: HTMLElement,
     private readonly identity: { name: string; avatarId: AvatarId },
     /** Joined office room; owned by the connection, which leaves it on exit. */
-    readonly netRoom: OfficeRoomHandle,
+    netRoom: OfficeRoomHandle,
   ) {
+    this.room = netRoom;
+    // Occupancy always reads the current room, also after a resumed session.
+    const current = () => this.room;
     this.controller = new InteractionController(
       this.player,
-      roomOccupancy(netRoom),
+      roomOccupancy({
+        get state() {
+          return current().state;
+        },
+      }),
       netRoom.sessionId,
       {
         onExit: () => this.onExit?.(),
@@ -72,25 +81,23 @@ export class Game {
         },
       },
     );
-    this.unbindPrediction = bindPrediction(netRoom, this.player.predictor, (self) =>
-      this.player.applyServer(self),
-    );
-    const room = buildRoom(officeLayout);
+    this.unbindPrediction = this.bindRoom(netRoom);
+    const office = buildRoom(officeLayout);
     this.remotes = new RemoteAvatars(this.scene, employeeSource(netRoom), netRoom.sessionId);
-    this.scene.add(room);
+    this.scene.add(office);
     this.roster = new EmployeeRoster(employeeSource(netRoom), netRoom.sessionId);
     this.scene.add(this.board.mesh);
     this.board.set(this.roster.count);
     this.unbindBoard = this.roster.subscribe(() => this.board.set(this.roster.count));
     const occluders: THREE.Object3D[] = [];
-    room.traverse((o) => {
+    office.traverse((o) => {
       if (o.userData.occluder) occluders.push(o);
     });
-    void loadFurniture(room, officeLayout).then((result) => {
+    void loadFurniture(office, officeLayout).then((result) => {
       this.furniture = result;
       occluders.length = 0;
-      room.updateMatrixWorld(true);
-      room.traverse((o) => {
+      office.updateMatrixWorld(true);
+      office.traverse((o) => {
         if (o.userData.occluder) occluders.push(o);
       });
     });
@@ -109,7 +116,11 @@ export class Game {
     this.rig.yaw = this.player.state.heading;
     this.scene.updateMatrixWorld(true);
     this.rig.update(this.player.mesh.position, 0);
-    const lighting = setupLighting(this.renderer, this.scene, new THREE.Box3().setFromObject(room));
+    const lighting = setupLighting(
+      this.renderer,
+      this.scene,
+      new THREE.Box3().setFromObject(office),
+    );
     this.disposeLighting = lighting.dispose;
     if (import.meta.env.DEV) {
       let lightingReady = false;
@@ -154,6 +165,35 @@ export class Game {
     this.resizeObserver.observe(host);
     this.resize();
     window.addEventListener('keydown', this.keydown);
+  }
+
+  /** The joined office room (the latest handle after a resumed session). */
+  get netRoom(): OfficeRoomHandle {
+    return this.room;
+  }
+
+  /** The connection dropped: stop sending inputs until a session is attached again. */
+  detachRoom(): void {
+    this.unbindPrediction();
+    this.unbindPrediction = () => undefined;
+  }
+
+  /**
+   * REQ-NET-005: the same session was resumed on a new room handle. Prediction is rebound
+   * and resynced to the server position, and the remote avatars and the employee list are
+   * rebuilt from the full state the server sends on reconnect.
+   */
+  attachRoom(netRoom: OfficeRoomHandle): void {
+    this.unbindPrediction();
+    this.room = netRoom;
+    this.player.predictor.resync();
+    this.unbindPrediction = this.bindRoom(netRoom);
+    this.remotes.rebind(employeeSource(netRoom));
+    this.roster.rebind(employeeSource(netRoom));
+  }
+
+  private bindRoom(netRoom: OfficeRoomHandle): () => void {
+    return bindPrediction(netRoom, this.player.predictor, (self) => this.player.applyServer(self));
   }
 
   private sendIntent(intent: IntentMessage): void {

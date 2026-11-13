@@ -4,3 +4,4 @@ export * from './localSync';
 export * from './interpolation';
 export * from './employees';
 export * from './occupancy';
+export * from './reconnect';

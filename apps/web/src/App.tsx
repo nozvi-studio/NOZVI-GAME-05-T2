@@ -1,11 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Game } from './game/Game';
 import type { Prompt as P } from './game/interaction/InteractionController';
 import { Prompt } from './ui/Prompt';
 import { EmployeeList } from './ui/EmployeeList';
 import type { EmployeeRoster } from './ui/employeeRoster';
 import { JoinScreen, type JoinResult } from './ui/JoinScreen';
-import { Connection, serverUrl, type OfficeRoomHandle } from './net';
+import { ConnectionBanner } from './ui/ConnectionBanner';
+import {
+  Connection,
+  serverUrl,
+  toConnectionError,
+  type ConnectionError,
+  type OfficeRoomHandle,
+} from './net';
 
 type Session = { identity: JoinResult; room: OfficeRoomHandle };
 
@@ -16,9 +23,31 @@ export function App() {
   const [joined, setJoined] = useState<Session | null>(null);
   const [roster, setRoster] = useState<EmployeeRoster | null>(null);
   const [connection] = useState(() => new Connection(serverUrl(import.meta.env)));
+  const [rejoinError, setRejoinError] = useState<ConnectionError | null>(null);
+  const status = useSyncExternalStore(
+    (onChange) => connection.onStatus(onChange),
+    () => connection.status,
+  );
+  const reconnect = useSyncExternalStore(
+    (onChange) => connection.reconnection.subscribe(onChange),
+    () => connection.reconnection.state,
+  );
   const join = async (identity: JoinResult) => {
     const room = await connection.join(identity);
     setJoined({ identity, room });
+  };
+  // REQ-NET-006: resume the held session or join afresh with the same identity.
+  const rejoin = () => {
+    if (!joined) return;
+    setRejoinError(null);
+    connection.rejoin().then(
+      (room) => {
+        // A resumed session reaches the game through onRoom; a fresh one needs a new game.
+        if (room.sessionId !== joined.room.sessionId)
+          setJoined({ identity: joined.identity, room });
+      },
+      (err: unknown) => setRejoinError(toConnectionError(err)),
+    );
   };
   useEffect(() => {
     if (!joined) return;
@@ -42,9 +71,19 @@ export function App() {
       setToast(null);
       setJoined(null);
     };
+    // REQ-NET-005: stop sending while the connection is down; a resumed session (same
+    // sessionId, new room handle) is reattached with a full resync.
+    const offStatus = connection.onStatus((s) => {
+      if (s === 'reconnecting' || s === 'lost') game.detachRoom();
+    });
+    const offRoom = connection.onRoom((resumed) => {
+      if (resumed.sessionId === game.netRoom.sessionId) game.attachRoom(resumed);
+    });
     game.start();
     setRoster(game.roster);
     return () => {
+      offStatus();
+      offRoom();
       setRoster(null);
       clearTimeout(toastTimer);
       game.dispose();
@@ -58,6 +97,12 @@ export function App() {
       <div ref={hostRef} data-testid="game-host" style={{ width: '100%', height: '100%' }} />
       <Prompt prompt={prompt} />
       {roster && <EmployeeList roster={roster} />}
+      <ConnectionBanner
+        status={status}
+        reconnect={reconnect}
+        error={rejoinError}
+        onRejoin={rejoin}
+      />
       {toast && (
         <div role="status" style={{ position: 'absolute', bottom: 48, left: 0, right: 0 }}>
           <Prompt prompt={{ text: toast, available: true }} />

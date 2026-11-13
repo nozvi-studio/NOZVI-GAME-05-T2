@@ -56,6 +56,8 @@ export class Predictor {
   private blendLeft = 0;
   private detachedValue = false;
   private seatedValue = false;
+  /** Set by `resync`: the next snapshot is taken as is, without a blend. */
+  private snapNext = false;
   private readonly step: number;
   private readonly epsilon: number;
   private readonly blendSeconds: number;
@@ -137,6 +139,12 @@ export class Predictor {
    */
   reconcile(server: ServerSnapshot): boolean {
     if (this.detachedValue) return false;
+    if (this.snapNext) {
+      this.snapNext = false;
+      const replayed = this.replay(server);
+      if (!this.seatedValue) this.reset(replayed);
+      return true;
+    }
     const replayed = this.replay(server);
     if (this.seatedValue) return false;
     const dx = this.fixed.x - replayed.x;
@@ -148,6 +156,16 @@ export class Predictor {
     this.blendLeft = this.blendSeconds;
     this.fixed = replayed;
     return true;
+  }
+
+  /**
+   * REQ-NET-005: the session was resumed after a drop. The server discarded every input it
+   * had not applied, so the pending ones are dropped too and the next snapshot resets the
+   * fixed state to the server position without a blend. Seqs keep counting up.
+   */
+  resync(): void {
+    this.pendingInputs.length = 0;
+    this.snapNext = true;
   }
 
   /** Moves the fixed state locally without a blend; reconciliation continues. */
