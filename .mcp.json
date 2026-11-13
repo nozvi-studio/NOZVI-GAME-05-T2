@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "meridian": {
+      "type": "http",
+      "url": "https://work.asol.vn/api/mcp",
+      "headersHelper": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/mcp-auth.ps1"
+    }
+  }
+}
