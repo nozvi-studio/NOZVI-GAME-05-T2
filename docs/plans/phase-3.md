@@ -1,6 +1,6 @@
 # Phase 3 — Multiplayer Foundation
 
-> Status: Draft plan, 2026-11-13. Branch: `feat/phase-3` (create from `dev` after Phase 2.1 merges). Tracked in Meridian as FEAT-51; task ids are in §4 (tasks marked "not created" still have to be entered). This plan lists design, scope and acceptance; step-by-step implementation detail belongs in each task.
+> Status: Draft plan, 2026-11-13. Branch: `feat/phase-3` (create from `dev` after Phase 2.1 merges). Tracked in Meridian as FEAT-51 with tech spec doc `phase-3-multiplayer-tech-spec`; task ids are in §4 ("proposal" means it awaits owner approval in Meridian). This plan lists design, scope and acceptance; step-by-step implementation detail belongs in each task.
 
 **Goal:** 3 to 10 employees join the same office code and see each other move, sit, work and take breaks in real time, with no ghost avatars after a disconnect (`PRD/RoadMap.md` Phase 3).
 
@@ -62,17 +62,17 @@ Decision: one input equals one fixed 50 ms step on both sides.
 
 | #   | Meridian | Task                                                                 | Size | Depends on | Requirements                         |
 | --- | -------- | -------------------------------------------------------------------- | ---- | ---------- | ------------------------------------ |
-| 1   | pending   | Pin Colyseus packages; wire contract, schema and `BALANCE.net`       | M    | owner OK   | REQ-NET-007, REQ-NET-008, REQ-NFR-004 |
+| 1   | proposal | Pin Colyseus packages; wire contract, schema and `BALANCE.net`       | M    | owner OK   | REQ-NET-007, REQ-NET-008, REQ-NFR-004 |
 | 2   | T-1033   | Server: `OfficeRoom`, room per office code, join validation, capacity | M    | 1          | REQ-NET-001, REQ-UI-002, REQ-NFR-005 |
-| 3   | not created   | Server: authoritative fixed-step movement at 20 Hz                   | M    | 2          | REQ-NET-002, REQ-NET-003             |
-| 4   | not created   | Server: authoritative activity and seats                             | M    | 3          | REQ-NET-002, REQ-INT-002             |
-| 5   | not created   | Client: connection layer and networked join flow                     | M    | 2, P2.1    | REQ-UI-002, REQ-NET-008              |
-| 6   | not created   | Client: fixed-step prediction and reconciliation                     | L    | 3, 5       | REQ-NET-003, REQ-NET-004             |
-| 7   | not created   | Client: remote avatars with interpolation and nameplates             | L    | 5          | REQ-NET-004, REQ-UI-001              |
-| 8   | not created   | Client: replicated seats and activities                              | M    | 4, 6, 7    | REQ-NET-002, REQ-INT-002             |
-| 9   | not created   | Online employee list and entrance count board                        | S    | 7          | REQ-UI-003                           |
-| 10  | not created   | Disconnect, 20 s reconnect, backoff and rejoin                       | L    | 8          | REQ-NET-005, REQ-NET-006, REQ-UI-003 |
-| 11  | not created   | Multi-client verification, draw-call measurement, docs               | M    | 9, 10      | REQ-NET-001, REQ-NET-004             |
+| 3   | T-1034   | Server: authoritative fixed-step movement at 20 Hz                   | M    | 2          | REQ-NET-002, REQ-NET-003             |
+| 4   | T-1036   | Server: authoritative activity and seats                             | M    | 3          | REQ-NET-002, REQ-INT-002             |
+| 5   | T-1035   | Client: connection layer and networked join flow                     | M    | 2, P2.1    | REQ-UI-002, REQ-NET-008              |
+| 6   | T-1037   | Client: fixed-step prediction and reconciliation                     | L    | 3, 5       | REQ-NET-003, REQ-NET-004             |
+| 7   | T-1038   | Client: remote avatars with interpolation and nameplates             | L    | 5          | REQ-NET-004, REQ-UI-001              |
+| 8   | T-1039   | Client: replicated seats and activities                              | M    | 4, 6, 7    | REQ-NET-002, REQ-INT-002             |
+| 9   | T-1040   | Online employee list and entrance count board                        | S    | 7          | REQ-UI-003                           |
+| 10  | proposal | Disconnect, 20 s reconnect, backoff and rejoin                       | L    | 8          | REQ-NET-005, REQ-NET-006, REQ-UI-003 |
+| 11  | T-1041   | Multi-client verification, draw-call measurement, docs               | M    | 9, 10      | REQ-NET-001, REQ-NET-004             |
 
 **Milestone A (after task 7):** two browsers on one office code see each other walk. Stop here for a short LAN playtest with two or three colleagues before investing in tasks 8 to 10. If remote movement looks wrong, fix it before adding seats and reconnect on top.
 
