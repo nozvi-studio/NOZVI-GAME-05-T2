@@ -79,9 +79,9 @@ test('pages on the same code see each other with name and model; another code se
   await expectRemotes(bob, ['Alice']);
   expect((await remotes(alice))[0]!.avatarId).toBe('women_suit');
   expect((await remotes(bob))[0]!.avatarId).toBe('men_suit');
-  // The replicated name is shown as text (& stays literal).
-  await expect(alice.getByText('Bảo & Co', { exact: true })).toBeVisible();
-  await expect(bob.getByText('Alice', { exact: true })).toBeVisible();
+  // The replicated nameplate is shown as text (& stays literal); the panel lists it too.
+  await expect(alice.getByTestId('game-host').getByText('Bảo & Co', { exact: true })).toBeVisible();
+  await expect(bob.getByTestId('game-host').getByText('Alice', { exact: true })).toBeVisible();
 
   const carol = await joinAs(browser, 'Carol', 'REMOTE-02', 'men_suit');
   try {
@@ -163,10 +163,12 @@ test('a remote employee walks smoothly with walking animation, faces its heading
     await bot.leave(true);
   }
   await expectRemotes(alice, ['Bảo & Co']);
-  await expect(alice.getByText('Walker', { exact: true })).toHaveCount(0);
+  await expect(alice.getByTestId('game-host').getByText('Walker', { exact: true })).toHaveCount(0);
 
   // A page leaving removes its avatar and nameplate on the other page.
   await bob.context().close();
   await expect.poll(async () => (await remotes(alice)).length, { timeout: 15_000 }).toBe(0);
-  await expect(alice.getByText('Bảo & Co', { exact: true })).toHaveCount(0);
+  await expect(alice.getByTestId('game-host').getByText('Bảo & Co', { exact: true })).toHaveCount(
+    0,
+  );
 });

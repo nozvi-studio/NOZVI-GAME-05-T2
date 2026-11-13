@@ -6,6 +6,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ### Added
 
+- Online employee list and entrance count board (T-1040): `apps/web/src/ui/EmployeeList.tsx` panel lists every employee in the room with the shared activity label, local player first and marked "(you)", names as text; driven by the plain-TS `ui/employeeRoster.ts` store (`useSyncExternalStore`, notifies only on join, leave, name, label or connection change); decorative `game/hud/EntranceBoard.ts` on the entrance wall shows "Online: N" (one unlit plane with a canvas texture, +1 draw call, no shadow); dev hook `getBoardText()`; e2e `employees.spec.ts`.
+
 - Client prediction and reconciliation (T-1037): the local player moves in fixed 50 ms steps through the shared `applyInput`, sends `input` with seq from 1 (at most 20 per second), renders a partial step for no added input lag, and on each patch replays unacknowledged inputs from the server state; corrections above `BALANCE.net.reconcileEpsilon` blend over `BALANCE.net.correctionBlendSeconds`; the dev teleport hook detaches from server patches.
 
 - Remote avatars (T-1038): `apps/web/src/game/remote/RemoteAvatars.ts` adds one avatar and nameplate per remote employee and disposes both on leave; poses come from the pure `apps/web/src/net/interpolation.ts` buffer 100 ms in the past (shortest-arc heading, last pose held when dry); avatar GLBs load once per `avatarId` and are cloned; shared `activityLabel`; dev hook `getRemotes()` / `getRemoteCount()`; two-page e2e `remote.spec.ts`.

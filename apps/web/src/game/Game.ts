@@ -21,6 +21,8 @@ import { Nameplate } from './hud/Nameplate';
 import { handleAction } from './interaction/extras';
 import { activityLabel } from './hud/activityLabel';
 import { RemoteAvatars } from './remote/RemoteAvatars';
+import { EntranceBoard } from './hud/EntranceBoard';
+import { EmployeeRoster } from '../ui/employeeRoster';
 import { bindPrediction, employeeSource, type OfficeRoomHandle } from '../net';
 
 export class Game {
@@ -70,6 +72,10 @@ export class Game {
   /** Disconnects local prediction from the room (inputs out, patches in). */
   private readonly unbindPrediction: () => void;
   private readonly remotes: RemoteAvatars;
+  /** Employee list for the 2D panel and the entrance board (REQ-UI-003). */
+  readonly roster: EmployeeRoster;
+  private readonly board = new EntranceBoard(officeLayout);
+  private readonly unbindBoard: () => void;
 
   constructor(
     private readonly host: HTMLElement,
@@ -81,6 +87,10 @@ export class Game {
     const room = buildRoom(officeLayout);
     this.remotes = new RemoteAvatars(this.scene, employeeSource(netRoom), netRoom.sessionId);
     this.scene.add(room);
+    this.roster = new EmployeeRoster(employeeSource(netRoom), netRoom.sessionId);
+    this.scene.add(this.board.mesh);
+    this.board.set(this.roster.count);
+    this.unbindBoard = this.roster.subscribe(() => this.board.set(this.roster.count));
     const occluders: THREE.Object3D[] = [];
     room.traverse((o) => {
       if (o.userData.occluder) occluders.push(o);
@@ -136,6 +146,7 @@ export class Game {
         avatarOk: () => this.player.viewFinite(),
         getRemotes: () => this.remotes.list(),
         getRemoteCount: () => this.remotes.count,
+        getBoardText: () => this.board.text,
       };
       (window as unknown as { __office: unknown }).__office = this.debugHook;
     }
@@ -214,6 +225,9 @@ export class Game {
     window.removeEventListener('keydown', this.keydown);
     this.rig.dispose();
     this.remotes.dispose();
+    this.unbindBoard();
+    this.roster.dispose();
+    this.board.dispose();
     const w = window as unknown as { __office?: unknown };
     if (this.debugHook !== undefined && w.__office === this.debugHook) delete w.__office;
     this.resizeObserver.disconnect();

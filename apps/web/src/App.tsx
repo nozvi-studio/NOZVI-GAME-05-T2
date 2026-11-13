@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Game } from './game/Game';
 import type { Prompt as P } from './game/interaction/InteractionController';
 import { Prompt } from './ui/Prompt';
+import { EmployeeList } from './ui/EmployeeList';
+import type { EmployeeRoster } from './ui/employeeRoster';
 import { JoinScreen, type JoinResult } from './ui/JoinScreen';
 import { Connection, serverUrl, type OfficeRoomHandle } from './net';
 
@@ -12,6 +14,7 @@ export function App() {
   const [prompt, setPrompt] = useState<P>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [joined, setJoined] = useState<Session | null>(null);
+  const [roster, setRoster] = useState<EmployeeRoster | null>(null);
   const [connection] = useState(() => new Connection(serverUrl(import.meta.env)));
   const join = async (identity: JoinResult) => {
     const room = await connection.join(identity);
@@ -40,7 +43,9 @@ export function App() {
       setJoined(null);
     };
     game.start();
+    setRoster(game.roster);
     return () => {
+      setRoster(null);
       clearTimeout(toastTimer);
       game.dispose();
     };
@@ -52,6 +57,7 @@ export function App() {
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={hostRef} data-testid="game-host" style={{ width: '100%', height: '100%' }} />
       <Prompt prompt={prompt} />
+      {roster && <EmployeeList roster={roster} />}
       {toast && (
         <div role="status" style={{ position: 'absolute', bottom: 48, left: 0, right: 0 }}>
           <Prompt prompt={{ text: toast, available: true }} />
