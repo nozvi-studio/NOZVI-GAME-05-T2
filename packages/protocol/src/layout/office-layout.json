@@ -3,12 +3,13 @@
   "provenance": {
     "source": "layout-6x8.md (photo-derived floor plan supplied with task)",
     "sourceDimensions": [6, 2.7, 8],
-    "enlargement": "Add 4 m along X; preserve depth, height, palette and photo landmarks. Repack north functional zones and move both four-desk pods into the south half, with 0.9 m minimum exposed circulation gaps."
+    "enlargement": "Add 4 m along X; preserve depth, height, palette and photo landmarks. Repack north functional zones and move both four-desk pods into the south half, with 0.9 m minimum exposed circulation gaps.",
+    "expansion20": "Phase 2.1 (T-1014): widened 10 x 8 m to 12 x 9.6 m. Floor positions scaled by 1.2 about the room center; each assembly moves rigidly with its own center; wall-mounted items keep their wall offset; sizes unchanged."
   },
   "room": {
     "dimensions": {
-      "width": 10,
-      "depth": 8,
+      "width": 12,
+      "depth": 9.6,
       "height": 2.7
     },
     "coordinateSystem": {
@@ -55,67 +56,67 @@
     {
       "id": "Workstation",
       "bounds": {
-        "minX": -5,
-        "maxX": 5,
-        "minZ": 0.2,
-        "maxZ": 4
+        "minX": -6,
+        "maxX": 6,
+        "minZ": 0.24,
+        "maxZ": 4.8
       }
     },
     {
       "id": "Pantry",
       "bounds": {
-        "minX": 0.4,
-        "maxX": 5,
-        "minZ": -4,
-        "maxZ": -2.4
+        "minX": 0.48,
+        "maxX": 6,
+        "minZ": -4.8,
+        "maxZ": -2.88
       }
     },
     {
       "id": "Storage",
       "bounds": {
-        "minX": 0.4,
-        "maxX": 5,
-        "minZ": -2.4,
-        "maxZ": 0.2
+        "minX": 0.48,
+        "maxX": 6,
+        "minZ": -2.88,
+        "maxZ": 0.24
       }
     },
     {
       "id": "Entrance",
       "bounds": {
-        "minX": -5,
-        "maxX": 0.4,
-        "minZ": -4,
-        "maxZ": -2.4
+        "minX": -6,
+        "maxX": 0.48,
+        "minZ": -4.8,
+        "maxZ": -2.88
       }
     },
     {
       "id": "Entertainment",
       "bounds": {
-        "minX": -5,
-        "maxX": 0.4,
-        "minZ": -2.4,
-        "maxZ": 0.2
+        "minX": -6,
+        "maxX": 0.48,
+        "minZ": -2.88,
+        "maxZ": 0.24
       }
     }
   ],
   "shell": {
     "floor": {
       "position": [0, 0, 0],
-      "size": [10, 0, 8],
+      "size": [12, 0, 9.6],
       "material": "floor",
       "tileSize": 0.6
     },
     "ceiling": {
       "position": [0, 2.7, 0],
-      "size": [10, 0, 8],
+      "size": [12, 0, 9.6],
       "material": "ceiling"
     },
     "windows": [
       {
         "id": "south_window",
         "wall": "wall_south",
-        "position": [0, 1.35, 3.95],
-        "size": [9.6, 2.4, 0.1],
+        "position": [0, 1.35, 4.75],
+        "size": [11.6, 2.4, 0.1],
         "rotY": 0,
         "blinds": "white_vertical",
         "colliderId": "wall_south"
@@ -125,7 +126,7 @@
       {
         "id": "ambient_daylight",
         "type": "daylight",
-        "position": [0, 2.4, 3.8]
+        "position": [0, 2.4, 4.56]
       },
       {
         "id": "ceiling_light",
@@ -137,43 +138,43 @@
   "walls": [
     {
       "id": "wall_north_west",
-      "position": [-2.925, 1.35, -3.95],
-      "size": [4.15, 2.7, 0.1],
+      "position": [-3.455, 1.35, -4.75],
+      "size": [5.09, 2.7, 0.1],
       "colliderId": "wall_north_west",
       "material": "walls"
     },
     {
       "id": "wall_north_east",
-      "position": [2.625, 1.35, -3.95],
-      "size": [4.75, 2.7, 0.1],
+      "position": [3.095, 1.35, -4.75],
+      "size": [5.81, 2.7, 0.1],
       "colliderId": "wall_north_east",
       "material": "walls"
     },
     {
       "id": "wall_south",
-      "position": [0, 1.35, 3.95],
-      "size": [10, 2.7, 0.1],
+      "position": [0, 1.35, 4.75],
+      "size": [12, 2.7, 0.1],
       "colliderId": "wall_south",
       "material": "walls"
     },
     {
       "id": "wall_west",
-      "position": [-4.95, 1.35, 0],
-      "size": [0.1, 2.7, 7.8],
+      "position": [-5.95, 1.35, 0],
+      "size": [0.1, 2.7, 9.4],
       "colliderId": "wall_west",
       "material": "walls"
     },
     {
       "id": "wall_east_north",
-      "position": [4.95, 1.35, -1.5],
-      "size": [0.1, 2.7, 4.8],
+      "position": [5.95, 1.35, -1.76],
+      "size": [0.1, 2.7, 5.88],
       "colliderId": "wall_east_north",
       "material": "walls"
     },
     {
       "id": "wall_east_south",
-      "position": [4.95, 1.35, 2.9],
-      "size": [0.1, 2.7, 2],
+      "position": [5.95, 1.35, 3.44],
+      "size": [0.1, 2.7, 2.52],
       "colliderId": "wall_east_south",
       "material": "walls"
     }
@@ -183,7 +184,7 @@
       "id": "ws_1_desk",
       "type": "desk",
       "zone": "Workstation",
-      "position": [-2.8, 0.375, 1],
+      "position": [-3.3, 0.375, 1.2],
       "size": [0.6, 0.75, 1.2],
       "rotY": 90,
       "colliderId": "collider_ws_1_desk",
@@ -192,56 +193,56 @@
         {
           "id": "ws_1_computer",
           "type": "computer",
-          "position": [-2.8, 1.02, 1],
+          "position": [-3.3, 1.02, 1.2],
           "size": [0.12, 0.5, 0.55],
           "rotY": 90
         },
         {
           "id": "ws_1_keyboard",
           "type": "keyboard",
-          "position": [-2.98, 0.77, 1],
+          "position": [-3.48, 0.77, 1.2],
           "size": [0.12, 0.04, 0.35],
           "rotY": 90
         },
         {
           "id": "ws_1_mouse",
           "type": "mouse",
-          "position": [-2.98, 0.77, 1.3],
+          "position": [-3.48, 0.77, 1.5],
           "size": [0.08, 0.04, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_1_lamp",
           "type": "desk_lamp",
-          "position": [-2.8, 0.95, 0.55],
+          "position": [-3.3, 0.95, 0.75],
           "size": [0.16, 0.4, 0.16],
           "rotY": 0
         },
         {
           "id": "ws_1_stationery",
           "type": "stationery",
-          "position": [-2.8, 0.8, 1.47],
+          "position": [-3.3, 0.8, 1.67],
           "size": [0.12, 0.1, 0.12],
           "rotY": 0
         },
         {
           "id": "ws_1_decor",
           "type": "decorative_object",
-          "position": [-2.8, 0.85, 1.32],
+          "position": [-3.3, 0.85, 1.52],
           "size": [0.1, 0.2, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_1_divider",
           "type": "desk_divider",
-          "position": [-2.52, 0.9, 1],
+          "position": [-3.02, 0.9, 1.2],
           "size": [0.02, 0.3, 1.1],
           "rotY": 0
         },
         {
           "id": "ws_1_desk_frame",
           "type": "desk_frame",
-          "position": [-2.8, 0.375, 1],
+          "position": [-3.3, 0.375, 1.2],
           "size": [0.6, 0.75, 1.2],
           "rotY": 90
         }
@@ -251,17 +252,17 @@
       "id": "ws_1_chair",
       "type": "chair",
       "zone": "Workstation",
-      "position": [-3.4, 0.475, 1],
+      "position": [-3.9, 0.475, 1.2],
       "size": [0.5, 0.95, 0.5],
       "rotY": 90,
       "colliderId": "collider_ws_1_chair",
       "seatSockets": [
         {
           "id": "ws_1_seat",
-          "position": [-3.4, 0.45, 1],
+          "position": [-3.9, 0.45, 1.2],
           "rotY": 90,
           "activity": "sit_work",
-          "interactionPoint": [-3.4, 0, 2.05]
+          "interactionPoint": [-3.9, 0, 2.46]
         }
       ],
       "material": "chairBack"
@@ -270,7 +271,7 @@
       "id": "ws_2_desk",
       "type": "desk",
       "zone": "Workstation",
-      "position": [-2.2, 0.375, 1],
+      "position": [-2.7, 0.375, 1.2],
       "size": [0.6, 0.75, 1.2],
       "rotY": 270,
       "colliderId": "collider_ws_2_desk",
@@ -279,56 +280,56 @@
         {
           "id": "ws_2_computer",
           "type": "computer",
-          "position": [-2.2, 1.02, 1],
+          "position": [-2.7, 1.02, 1.2],
           "size": [0.12, 0.5, 0.55],
           "rotY": 270
         },
         {
           "id": "ws_2_keyboard",
           "type": "keyboard",
-          "position": [-2.02, 0.77, 1],
+          "position": [-2.52, 0.77, 1.2],
           "size": [0.12, 0.04, 0.35],
           "rotY": 270
         },
         {
           "id": "ws_2_mouse",
           "type": "mouse",
-          "position": [-2.02, 0.77, 1.3],
+          "position": [-2.52, 0.77, 1.5],
           "size": [0.08, 0.04, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_2_lamp",
           "type": "desk_lamp",
-          "position": [-2.2, 0.95, 0.55],
+          "position": [-2.7, 0.95, 0.75],
           "size": [0.16, 0.4, 0.16],
           "rotY": 0
         },
         {
           "id": "ws_2_stationery",
           "type": "stationery",
-          "position": [-2.2, 0.8, 1.47],
+          "position": [-2.7, 0.8, 1.67],
           "size": [0.12, 0.1, 0.12],
           "rotY": 0
         },
         {
           "id": "ws_2_decor",
           "type": "decorative_object",
-          "position": [-2.2, 0.85, 1.32],
+          "position": [-2.7, 0.85, 1.52],
           "size": [0.1, 0.2, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_2_divider",
           "type": "desk_divider",
-          "position": [-2.48, 0.9, 1],
+          "position": [-2.98, 0.9, 1.2],
           "size": [0.02, 0.3, 1.1],
           "rotY": 0
         },
         {
           "id": "ws_2_desk_frame",
           "type": "desk_frame",
-          "position": [-2.2, 0.375, 1],
+          "position": [-2.7, 0.375, 1.2],
           "size": [0.6, 0.75, 1.2],
           "rotY": 270
         }
@@ -338,17 +339,17 @@
       "id": "ws_2_chair",
       "type": "chair",
       "zone": "Workstation",
-      "position": [-1.6, 0.475, 1],
+      "position": [-2.1, 0.475, 1.2],
       "size": [0.5, 0.95, 0.5],
       "rotY": 270,
       "colliderId": "collider_ws_2_chair",
       "seatSockets": [
         {
           "id": "ws_2_seat",
-          "position": [-1.6, 0.45, 1],
+          "position": [-2.1, 0.45, 1.2],
           "rotY": 270,
           "activity": "sit_work",
-          "interactionPoint": [-1.6, 0, 2.05]
+          "interactionPoint": [-2.1, 0, 2.46]
         }
       ],
       "material": "chairBack"
@@ -357,7 +358,7 @@
       "id": "ws_3_desk",
       "type": "desk",
       "zone": "Workstation",
-      "position": [-2.8, 0.375, 3.1],
+      "position": [-3.3, 0.375, 3.72],
       "size": [0.6, 0.75, 1.2],
       "rotY": 90,
       "colliderId": "collider_ws_3_desk",
@@ -366,56 +367,56 @@
         {
           "id": "ws_3_computer",
           "type": "computer",
-          "position": [-2.8, 1.02, 3.1],
+          "position": [-3.3, 1.02, 3.72],
           "size": [0.12, 0.5, 0.55],
           "rotY": 90
         },
         {
           "id": "ws_3_keyboard",
           "type": "keyboard",
-          "position": [-2.98, 0.77, 3.1],
+          "position": [-3.48, 0.77, 3.72],
           "size": [0.12, 0.04, 0.35],
           "rotY": 90
         },
         {
           "id": "ws_3_mouse",
           "type": "mouse",
-          "position": [-2.98, 0.77, 3.4],
+          "position": [-3.48, 0.77, 4.02],
           "size": [0.08, 0.04, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_3_lamp",
           "type": "desk_lamp",
-          "position": [-2.8, 0.95, 2.65],
+          "position": [-3.3, 0.95, 3.27],
           "size": [0.16, 0.4, 0.16],
           "rotY": 0
         },
         {
           "id": "ws_3_stationery",
           "type": "stationery",
-          "position": [-2.8, 0.8, 3.57],
+          "position": [-3.3, 0.8, 4.19],
           "size": [0.12, 0.1, 0.12],
           "rotY": 0
         },
         {
           "id": "ws_3_decor",
           "type": "decorative_object",
-          "position": [-2.8, 0.85, 3.42],
+          "position": [-3.3, 0.85, 4.04],
           "size": [0.1, 0.2, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_3_divider",
           "type": "desk_divider",
-          "position": [-2.52, 0.9, 3.1],
+          "position": [-3.02, 0.9, 3.72],
           "size": [0.02, 0.3, 1.1],
           "rotY": 0
         },
         {
           "id": "ws_3_desk_frame",
           "type": "desk_frame",
-          "position": [-2.8, 0.375, 3.1],
+          "position": [-3.3, 0.375, 3.72],
           "size": [0.6, 0.75, 1.2],
           "rotY": 90
         }
@@ -425,17 +426,17 @@
       "id": "ws_3_chair",
       "type": "chair",
       "zone": "Workstation",
-      "position": [-3.4, 0.475, 3.1],
+      "position": [-3.9, 0.475, 3.72],
       "size": [0.5, 0.95, 0.5],
       "rotY": 90,
       "colliderId": "collider_ws_3_chair",
       "seatSockets": [
         {
           "id": "ws_3_seat",
-          "position": [-3.4, 0.45, 3.1],
+          "position": [-3.9, 0.45, 3.72],
           "rotY": 90,
           "activity": "sit_work",
-          "interactionPoint": [-3.4, 0, 2.05]
+          "interactionPoint": [-3.9, 0, 2.46]
         }
       ],
       "material": "chairBack"
@@ -444,7 +445,7 @@
       "id": "ws_4_desk",
       "type": "desk",
       "zone": "Workstation",
-      "position": [-2.2, 0.375, 3.1],
+      "position": [-2.7, 0.375, 3.72],
       "size": [0.6, 0.75, 1.2],
       "rotY": 270,
       "colliderId": "collider_ws_4_desk",
@@ -453,56 +454,56 @@
         {
           "id": "ws_4_computer",
           "type": "computer",
-          "position": [-2.2, 1.02, 3.1],
+          "position": [-2.7, 1.02, 3.72],
           "size": [0.12, 0.5, 0.55],
           "rotY": 270
         },
         {
           "id": "ws_4_keyboard",
           "type": "keyboard",
-          "position": [-2.02, 0.77, 3.1],
+          "position": [-2.52, 0.77, 3.72],
           "size": [0.12, 0.04, 0.35],
           "rotY": 270
         },
         {
           "id": "ws_4_mouse",
           "type": "mouse",
-          "position": [-2.02, 0.77, 3.4],
+          "position": [-2.52, 0.77, 4.02],
           "size": [0.08, 0.04, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_4_lamp",
           "type": "desk_lamp",
-          "position": [-2.2, 0.95, 2.65],
+          "position": [-2.7, 0.95, 3.27],
           "size": [0.16, 0.4, 0.16],
           "rotY": 0
         },
         {
           "id": "ws_4_stationery",
           "type": "stationery",
-          "position": [-2.2, 0.8, 3.57],
+          "position": [-2.7, 0.8, 4.19],
           "size": [0.12, 0.1, 0.12],
           "rotY": 0
         },
         {
           "id": "ws_4_decor",
           "type": "decorative_object",
-          "position": [-2.2, 0.85, 3.42],
+          "position": [-2.7, 0.85, 4.04],
           "size": [0.1, 0.2, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_4_divider",
           "type": "desk_divider",
-          "position": [-2.48, 0.9, 3.1],
+          "position": [-2.98, 0.9, 3.72],
           "size": [0.02, 0.3, 1.1],
           "rotY": 0
         },
         {
           "id": "ws_4_desk_frame",
           "type": "desk_frame",
-          "position": [-2.2, 0.375, 3.1],
+          "position": [-2.7, 0.375, 3.72],
           "size": [0.6, 0.75, 1.2],
           "rotY": 270
         }
@@ -512,17 +513,17 @@
       "id": "ws_4_chair",
       "type": "chair",
       "zone": "Workstation",
-      "position": [-1.6, 0.475, 3.1],
+      "position": [-2.1, 0.475, 3.72],
       "size": [0.5, 0.95, 0.5],
       "rotY": 270,
       "colliderId": "collider_ws_4_chair",
       "seatSockets": [
         {
           "id": "ws_4_seat",
-          "position": [-1.6, 0.45, 3.1],
+          "position": [-2.1, 0.45, 3.72],
           "rotY": 270,
           "activity": "sit_work",
-          "interactionPoint": [-1.6, 0, 2.05]
+          "interactionPoint": [-2.1, 0, 2.46]
         }
       ],
       "material": "chairBack"
@@ -531,7 +532,7 @@
       "id": "ws_5_desk",
       "type": "desk",
       "zone": "Workstation",
-      "position": [1, 0.375, 1],
+      "position": [1.26, 0.375, 1.2],
       "size": [0.6, 0.75, 1.2],
       "rotY": 90,
       "colliderId": "collider_ws_5_desk",
@@ -540,56 +541,56 @@
         {
           "id": "ws_5_computer",
           "type": "computer",
-          "position": [1, 1.02, 1],
+          "position": [1.26, 1.02, 1.2],
           "size": [0.12, 0.5, 0.55],
           "rotY": 90
         },
         {
           "id": "ws_5_keyboard",
           "type": "keyboard",
-          "position": [0.82, 0.77, 1],
+          "position": [1.08, 0.77, 1.2],
           "size": [0.12, 0.04, 0.35],
           "rotY": 90
         },
         {
           "id": "ws_5_mouse",
           "type": "mouse",
-          "position": [0.82, 0.77, 1.3],
+          "position": [1.08, 0.77, 1.5],
           "size": [0.08, 0.04, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_5_lamp",
           "type": "desk_lamp",
-          "position": [1, 0.95, 0.55],
+          "position": [1.26, 0.95, 0.75],
           "size": [0.16, 0.4, 0.16],
           "rotY": 0
         },
         {
           "id": "ws_5_stationery",
           "type": "stationery",
-          "position": [1, 0.8, 1.47],
+          "position": [1.26, 0.8, 1.67],
           "size": [0.12, 0.1, 0.12],
           "rotY": 0
         },
         {
           "id": "ws_5_decor",
           "type": "decorative_object",
-          "position": [1, 0.85, 1.32],
+          "position": [1.26, 0.85, 1.52],
           "size": [0.1, 0.2, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_5_divider",
           "type": "desk_divider",
-          "position": [1.28, 0.9, 1],
+          "position": [1.54, 0.9, 1.2],
           "size": [0.02, 0.3, 1.1],
           "rotY": 0
         },
         {
           "id": "ws_5_desk_frame",
           "type": "desk_frame",
-          "position": [1, 0.375, 1],
+          "position": [1.26, 0.375, 1.2],
           "size": [0.6, 0.75, 1.2],
           "rotY": 90
         }
@@ -599,17 +600,17 @@
       "id": "ws_5_chair",
       "type": "chair",
       "zone": "Workstation",
-      "position": [0.4, 0.475, 1],
+      "position": [0.66, 0.475, 1.2],
       "size": [0.5, 0.95, 0.5],
       "rotY": 90,
       "colliderId": "collider_ws_5_chair",
       "seatSockets": [
         {
           "id": "ws_5_seat",
-          "position": [0.4, 0.45, 1],
+          "position": [0.66, 0.45, 1.2],
           "rotY": 90,
           "activity": "sit_work",
-          "interactionPoint": [0.4, 0, 2.05]
+          "interactionPoint": [0.66, 0, 2.46]
         }
       ],
       "material": "chairBack"
@@ -618,7 +619,7 @@
       "id": "ws_6_desk",
       "type": "desk",
       "zone": "Workstation",
-      "position": [1.6, 0.375, 1],
+      "position": [1.86, 0.375, 1.2],
       "size": [0.6, 0.75, 1.2],
       "rotY": 270,
       "colliderId": "collider_ws_6_desk",
@@ -627,56 +628,56 @@
         {
           "id": "ws_6_computer",
           "type": "computer",
-          "position": [1.6, 1.02, 1],
+          "position": [1.86, 1.02, 1.2],
           "size": [0.12, 0.5, 0.55],
           "rotY": 270
         },
         {
           "id": "ws_6_keyboard",
           "type": "keyboard",
-          "position": [1.78, 0.77, 1],
+          "position": [2.04, 0.77, 1.2],
           "size": [0.12, 0.04, 0.35],
           "rotY": 270
         },
         {
           "id": "ws_6_mouse",
           "type": "mouse",
-          "position": [1.78, 0.77, 1.3],
+          "position": [2.04, 0.77, 1.5],
           "size": [0.08, 0.04, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_6_lamp",
           "type": "desk_lamp",
-          "position": [1.6, 0.95, 0.55],
+          "position": [1.86, 0.95, 0.75],
           "size": [0.16, 0.4, 0.16],
           "rotY": 0
         },
         {
           "id": "ws_6_stationery",
           "type": "stationery",
-          "position": [1.6, 0.8, 1.47],
+          "position": [1.86, 0.8, 1.67],
           "size": [0.12, 0.1, 0.12],
           "rotY": 0
         },
         {
           "id": "ws_6_decor",
           "type": "decorative_object",
-          "position": [1.6, 0.85, 1.32],
+          "position": [1.86, 0.85, 1.52],
           "size": [0.1, 0.2, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_6_divider",
           "type": "desk_divider",
-          "position": [1.32, 0.9, 1],
+          "position": [1.58, 0.9, 1.2],
           "size": [0.02, 0.3, 1.1],
           "rotY": 0
         },
         {
           "id": "ws_6_desk_frame",
           "type": "desk_frame",
-          "position": [1.6, 0.375, 1],
+          "position": [1.86, 0.375, 1.2],
           "size": [0.6, 0.75, 1.2],
           "rotY": 270
         }
@@ -686,17 +687,17 @@
       "id": "ws_6_chair",
       "type": "chair",
       "zone": "Workstation",
-      "position": [2.2, 0.475, 1],
+      "position": [2.46, 0.475, 1.2],
       "size": [0.5, 0.95, 0.5],
       "rotY": 270,
       "colliderId": "collider_ws_6_chair",
       "seatSockets": [
         {
           "id": "ws_6_seat",
-          "position": [2.2, 0.45, 1],
+          "position": [2.46, 0.45, 1.2],
           "rotY": 270,
           "activity": "sit_work",
-          "interactionPoint": [2.2, 0, 2.05]
+          "interactionPoint": [2.46, 0, 2.46]
         }
       ],
       "material": "chairBack"
@@ -705,7 +706,7 @@
       "id": "ws_7_desk",
       "type": "desk",
       "zone": "Workstation",
-      "position": [1, 0.375, 3.1],
+      "position": [1.26, 0.375, 3.72],
       "size": [0.6, 0.75, 1.2],
       "rotY": 90,
       "colliderId": "collider_ws_7_desk",
@@ -714,56 +715,56 @@
         {
           "id": "ws_7_computer",
           "type": "computer",
-          "position": [1, 1.02, 3.1],
+          "position": [1.26, 1.02, 3.72],
           "size": [0.12, 0.5, 0.55],
           "rotY": 90
         },
         {
           "id": "ws_7_keyboard",
           "type": "keyboard",
-          "position": [0.82, 0.77, 3.1],
+          "position": [1.08, 0.77, 3.72],
           "size": [0.12, 0.04, 0.35],
           "rotY": 90
         },
         {
           "id": "ws_7_mouse",
           "type": "mouse",
-          "position": [0.82, 0.77, 3.4],
+          "position": [1.08, 0.77, 4.02],
           "size": [0.08, 0.04, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_7_lamp",
           "type": "desk_lamp",
-          "position": [1, 0.95, 2.65],
+          "position": [1.26, 0.95, 3.27],
           "size": [0.16, 0.4, 0.16],
           "rotY": 0
         },
         {
           "id": "ws_7_stationery",
           "type": "stationery",
-          "position": [1, 0.8, 3.57],
+          "position": [1.26, 0.8, 4.19],
           "size": [0.12, 0.1, 0.12],
           "rotY": 0
         },
         {
           "id": "ws_7_decor",
           "type": "decorative_object",
-          "position": [1, 0.85, 3.42],
+          "position": [1.26, 0.85, 4.04],
           "size": [0.1, 0.2, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_7_divider",
           "type": "desk_divider",
-          "position": [1.28, 0.9, 3.1],
+          "position": [1.54, 0.9, 3.72],
           "size": [0.02, 0.3, 1.1],
           "rotY": 0
         },
         {
           "id": "ws_7_desk_frame",
           "type": "desk_frame",
-          "position": [1, 0.375, 3.1],
+          "position": [1.26, 0.375, 3.72],
           "size": [0.6, 0.75, 1.2],
           "rotY": 90
         }
@@ -773,17 +774,17 @@
       "id": "ws_7_chair",
       "type": "chair",
       "zone": "Workstation",
-      "position": [0.4, 0.475, 3.1],
+      "position": [0.66, 0.475, 3.72],
       "size": [0.5, 0.95, 0.5],
       "rotY": 90,
       "colliderId": "collider_ws_7_chair",
       "seatSockets": [
         {
           "id": "ws_7_seat",
-          "position": [0.4, 0.45, 3.1],
+          "position": [0.66, 0.45, 3.72],
           "rotY": 90,
           "activity": "sit_work",
-          "interactionPoint": [0.4, 0, 2.05]
+          "interactionPoint": [0.66, 0, 2.46]
         }
       ],
       "material": "chairBack"
@@ -792,7 +793,7 @@
       "id": "ws_8_desk",
       "type": "desk",
       "zone": "Workstation",
-      "position": [1.6, 0.375, 3.1],
+      "position": [1.86, 0.375, 3.72],
       "size": [0.6, 0.75, 1.2],
       "rotY": 270,
       "colliderId": "collider_ws_8_desk",
@@ -801,56 +802,56 @@
         {
           "id": "ws_8_computer",
           "type": "computer",
-          "position": [1.6, 1.02, 3.1],
+          "position": [1.86, 1.02, 3.72],
           "size": [0.12, 0.5, 0.55],
           "rotY": 270
         },
         {
           "id": "ws_8_keyboard",
           "type": "keyboard",
-          "position": [1.78, 0.77, 3.1],
+          "position": [2.04, 0.77, 3.72],
           "size": [0.12, 0.04, 0.35],
           "rotY": 270
         },
         {
           "id": "ws_8_mouse",
           "type": "mouse",
-          "position": [1.78, 0.77, 3.4],
+          "position": [2.04, 0.77, 4.02],
           "size": [0.08, 0.04, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_8_lamp",
           "type": "desk_lamp",
-          "position": [1.6, 0.95, 2.65],
+          "position": [1.86, 0.95, 3.27],
           "size": [0.16, 0.4, 0.16],
           "rotY": 0
         },
         {
           "id": "ws_8_stationery",
           "type": "stationery",
-          "position": [1.6, 0.8, 3.57],
+          "position": [1.86, 0.8, 4.19],
           "size": [0.12, 0.1, 0.12],
           "rotY": 0
         },
         {
           "id": "ws_8_decor",
           "type": "decorative_object",
-          "position": [1.6, 0.85, 3.42],
+          "position": [1.86, 0.85, 4.04],
           "size": [0.1, 0.2, 0.1],
           "rotY": 0
         },
         {
           "id": "ws_8_divider",
           "type": "desk_divider",
-          "position": [1.32, 0.9, 3.1],
+          "position": [1.58, 0.9, 3.72],
           "size": [0.02, 0.3, 1.1],
           "rotY": 0
         },
         {
           "id": "ws_8_desk_frame",
           "type": "desk_frame",
-          "position": [1.6, 0.375, 3.1],
+          "position": [1.86, 0.375, 3.72],
           "size": [0.6, 0.75, 1.2],
           "rotY": 270
         }
@@ -860,17 +861,17 @@
       "id": "ws_8_chair",
       "type": "chair",
       "zone": "Workstation",
-      "position": [2.2, 0.475, 3.1],
+      "position": [2.46, 0.475, 3.72],
       "size": [0.5, 0.95, 0.5],
       "rotY": 270,
       "colliderId": "collider_ws_8_chair",
       "seatSockets": [
         {
           "id": "ws_8_seat",
-          "position": [2.2, 0.45, 3.1],
+          "position": [2.46, 0.45, 3.72],
           "rotY": 270,
           "activity": "sit_work",
-          "interactionPoint": [2.2, 0, 2.05]
+          "interactionPoint": [2.46, 0, 2.46]
         }
       ],
       "material": "chairBack"
@@ -879,7 +880,7 @@
       "id": "main_door",
       "type": "main_door",
       "zone": "Entrance",
-      "position": [-0.3, 1.25, -3.94],
+      "position": [-0.36, 1.25, -4.74],
       "size": [1.1, 2.5, 0.1],
       "rotY": 0,
       "colliderId": "collider_main_door",
@@ -887,35 +888,35 @@
         {
           "id": "main_door_leaf",
           "type": "door",
-          "position": [-0.3, 1.075, -3.94],
+          "position": [-0.36, 1.075, -4.74],
           "size": [0.9, 2.15, 0.08],
           "rotY": 0
         },
         {
           "id": "main_door_frame",
           "type": "door_frame",
-          "position": [-0.3, 1.15, -3.94],
+          "position": [-0.36, 1.15, -4.74],
           "size": [1.1, 2.3, 0.1],
           "rotY": 0
         },
         {
           "id": "office_sign",
           "type": "signage",
-          "position": [-0.3, 2.4, -3.94],
+          "position": [-0.36, 2.4, -4.74],
           "size": [0.65, 0.15, 0.04],
           "rotY": 0
         },
         {
           "id": "intercom",
           "type": "intercom",
-          "position": [-0.65, 1.4, -3.94],
+          "position": [-0.71, 1.4, -4.74],
           "size": [0.25, 0.2, 0.04],
           "rotY": 0
         },
         {
           "id": "breaker_box",
           "type": "breaker_box",
-          "position": [0.05, 1.5, -3.94],
+          "position": [-0.01, 1.5, -4.74],
           "size": [0.2, 0.25, 0.04],
           "rotY": 0
         }
@@ -925,7 +926,7 @@
       "id": "entrance_plant_west",
       "type": "plant",
       "zone": "Entrance",
-      "position": [-3.225, 0.45, -3.65],
+      "position": [-3.87, 0.45, -4.38],
       "size": [0.35, 0.9, 0.35],
       "rotY": 0,
       "colliderId": "collider_entrance_plant_west"
@@ -934,7 +935,7 @@
       "id": "entrance_plant_east",
       "type": "plant",
       "zone": "Entrance",
-      "position": [-1.975, 0.45, -3.65],
+      "position": [-2.37, 0.45, -4.38],
       "size": [0.35, 0.9, 0.35],
       "rotY": 0,
       "colliderId": "collider_entrance_plant_east"
@@ -943,7 +944,7 @@
       "id": "shoe_rack",
       "type": "shoe_rack",
       "zone": "Entrance",
-      "position": [-4.6, 0.4, -3.65],
+      "position": [-5.52, 0.4, -4.38],
       "size": [0.6, 0.8, 0.3],
       "rotY": 0,
       "colliderId": "collider_shoe_rack"
@@ -952,7 +953,7 @@
       "id": "fridge",
       "type": "fridge",
       "zone": "Pantry",
-      "position": [0.8, 0.85, -3.5],
+      "position": [0.96, 0.85, -4.2],
       "size": [0.6, 1.7, 0.65],
       "rotY": 0,
       "colliderId": "collider_fridge",
@@ -962,7 +963,7 @@
       "id": "pantry_counter",
       "type": "countertop",
       "zone": "Pantry",
-      "position": [2.7, 1.3, -3.5],
+      "position": [3.24, 1.3, -4.2],
       "size": [1.4, 2.6, 0.6],
       "rotY": 0,
       "colliderId": "collider_pantry_counter",
@@ -970,35 +971,35 @@
         {
           "id": "counter_surface",
           "type": "countertop",
-          "position": [2.7, 0.9, -3.5],
+          "position": [3.24, 0.9, -4.2],
           "size": [1.4, 0.06, 0.6],
           "rotY": 0
         },
         {
           "id": "pantry_base_cabinets",
           "type": "cabinets",
-          "position": [2.7, 0.43, -3.5],
+          "position": [3.24, 0.43, -4.2],
           "size": [1.4, 0.86, 0.6],
           "rotY": 0
         },
         {
           "id": "pantry_upper_cabinets",
           "type": "cabinets",
-          "position": [2.7, 2.25, -3.6],
+          "position": [3.24, 2.25, -4.3],
           "size": [1.4, 0.7, 0.4],
           "rotY": 0
         },
         {
           "id": "coffee_machine",
           "type": "coffee_machine",
-          "position": [2.35, 1.13, -3.5],
+          "position": [2.89, 1.13, -4.2],
           "size": [0.35, 0.4, 0.35],
           "rotY": 0
         },
         {
           "id": "cups",
           "type": "cups",
-          "position": [3, 1.01, -3.5],
+          "position": [3.54, 1.01, -4.2],
           "size": [0.25, 0.16, 0.25],
           "rotY": 0
         }
@@ -1008,7 +1009,7 @@
       "id": "water_dispenser",
       "type": "water_dispenser",
       "zone": "Pantry",
-      "position": [4.55, 0.65, -3.5],
+      "position": [5.46, 0.65, -4.2],
       "size": [0.5, 1.3, 0.6],
       "rotY": 0,
       "colliderId": "collider_water_dispenser"
@@ -1017,7 +1018,7 @@
       "id": "storage_cabinet",
       "type": "storage_cabinet",
       "zone": "Storage",
-      "position": [1.1, 1.1, -1.35],
+      "position": [1.32, 1.1, -1.62],
       "size": [0.65, 2.2, 0.7],
       "rotY": 0,
       "colliderId": "collider_storage_cabinet"
@@ -1026,7 +1027,7 @@
       "id": "lockers",
       "type": "lockers",
       "zone": "Storage",
-      "position": [4.3, 1.05, -1.35],
+      "position": [5.16, 1.05, -1.62],
       "size": [0.65, 2.1, 0.7],
       "rotY": 0,
       "colliderId": "collider_lockers",
@@ -1036,7 +1037,7 @@
       "id": "shelves",
       "type": "shelves",
       "zone": "Storage",
-      "position": [2.7, 0.95, -1.35],
+      "position": [3.24, 0.95, -1.62],
       "size": [0.65, 1.9, 0.9],
       "rotY": 0,
       "colliderId": "collider_shelves",
@@ -1044,14 +1045,14 @@
         {
           "id": "personal_decor",
           "type": "personal_decorative_items",
-          "position": [2.7, 1.5, -1.35],
+          "position": [3.24, 1.5, -1.62],
           "size": [0.3, 0.2, 0.4],
           "rotY": 0
         },
         {
           "id": "boxes",
           "type": "boxes",
-          "position": [2.7, 0.4, -1.35],
+          "position": [3.24, 0.4, -1.62],
           "size": [0.4, 0.5, 0.4],
           "rotY": 0
         }
@@ -1061,7 +1062,7 @@
       "id": "air_conditioner",
       "type": "air_conditioner",
       "zone": "Workstation",
-      "position": [4.82, 2.25, 3.3],
+      "position": [5.82, 2.25, 3.96],
       "size": [0.15, 0.35, 0.9],
       "rotY": 270,
       "colliderId": "collider_air_conditioner"
@@ -1070,7 +1071,7 @@
       "id": "east_utility_door",
       "type": "utility_door",
       "zone": "Workstation",
-      "position": [4.94, 1.05, 1.4],
+      "position": [5.94, 1.05, 1.68],
       "size": [0.08, 2.1, 1],
       "rotY": 270,
       "colliderId": "collider_east_utility_door",
@@ -1080,7 +1081,7 @@
       "id": "tv",
       "type": "TV",
       "zone": "Entertainment",
-      "position": [-4.83, 1.5, -1.35],
+      "position": [-5.83, 1.5, -1.62],
       "size": [0.14, 0.9, 2.1],
       "rotY": 90,
       "colliderId": "collider_tv",
@@ -1089,21 +1090,21 @@
         {
           "id": "tv_screen",
           "type": "tv_screen",
-          "position": [-4.83, 1.5, -1.35],
+          "position": [-5.83, 1.5, -1.62],
           "size": [0.14, 0.8, 1.4],
           "rotY": 90
         },
         {
           "id": "speaker_north",
           "type": "speaker",
-          "position": [-4.83, 1.5, -2.25],
+          "position": [-5.83, 1.5, -2.52],
           "size": [0.14, 0.5, 0.3],
           "rotY": 90
         },
         {
           "id": "speaker_south",
           "type": "speaker",
-          "position": [-4.83, 1.5, -0.45],
+          "position": [-5.83, 1.5, -0.72],
           "size": [0.14, 0.5, 0.3],
           "rotY": 90
         }
@@ -1113,24 +1114,24 @@
       "id": "sofa",
       "type": "sofa",
       "zone": "Entertainment",
-      "position": [-2.1, 0.45, -1.4],
+      "position": [-2.52, 0.45, -1.68],
       "size": [0.8, 0.9, 1.8],
       "rotY": 270,
       "colliderId": "collider_sofa",
       "seatSockets": [
         {
           "id": "sofa_seat_1",
-          "position": [-2.1, 0.45, -1.85],
+          "position": [-2.52, 0.45, -2.13],
           "rotY": 270,
           "activity": "rest_relax",
-          "interactionPoint": [-1.2, 0, -1.4]
+          "interactionPoint": [-1.44, 0, -1.68]
         },
         {
           "id": "sofa_seat_2",
-          "position": [-2.1, 0.45, -0.95],
+          "position": [-2.52, 0.45, -1.23],
           "rotY": 270,
           "activity": "rest_relax",
-          "interactionPoint": [-1.2, 0, -1.4]
+          "interactionPoint": [-1.44, 0, -1.68]
         }
       ],
       "coffeeTableId": "coffee_table"
@@ -1139,7 +1140,7 @@
       "id": "coffee_table",
       "type": "coffee_table",
       "zone": "Entertainment",
-      "position": [-3.55, 0.2, -1.35],
+      "position": [-4.26, 0.2, -1.62],
       "size": [0.6, 0.4, 0.9],
       "rotY": 0,
       "colliderId": "collider_coffee_table"
@@ -1148,7 +1149,7 @@
       "id": "decorative_light",
       "type": "decorative_lighting",
       "zone": "Entertainment",
-      "position": [-0.6, 0.9, -1.35],
+      "position": [-0.72, 0.9, -1.62],
       "size": [0.3, 1.8, 0.3],
       "rotY": 0,
       "colliderId": "collider_decorative_light"
@@ -1161,18 +1162,18 @@
       "zone": "Workstation",
       "desk": {
         "itemId": "ws_1_desk",
-        "position": [-2.8, 0.375, 1],
+        "position": [-3.3, 0.375, 1.2],
         "rotY": 90
       },
       "chairId": "ws_1_chair",
       "seatSocket": {
         "id": "ws_1_seat",
-        "position": [-3.4, 0.45, 1],
+        "position": [-3.9, 0.45, 1.2],
         "rotY": 90,
         "activity": "sit_work",
-        "interactionPoint": [-3.4, 0, 2.05]
+        "interactionPoint": [-3.9, 0, 2.46]
       },
-      "interactionPoint": [-3.4, 0, 2.05]
+      "interactionPoint": [-3.9, 0, 2.46]
     },
     {
       "id": "ws_2",
@@ -1180,18 +1181,18 @@
       "zone": "Workstation",
       "desk": {
         "itemId": "ws_2_desk",
-        "position": [-2.2, 0.375, 1],
+        "position": [-2.7, 0.375, 1.2],
         "rotY": 270
       },
       "chairId": "ws_2_chair",
       "seatSocket": {
         "id": "ws_2_seat",
-        "position": [-1.6, 0.45, 1],
+        "position": [-2.1, 0.45, 1.2],
         "rotY": 270,
         "activity": "sit_work",
-        "interactionPoint": [-1.6, 0, 2.05]
+        "interactionPoint": [-2.1, 0, 2.46]
       },
-      "interactionPoint": [-1.6, 0, 2.05]
+      "interactionPoint": [-2.1, 0, 2.46]
     },
     {
       "id": "ws_3",
@@ -1199,18 +1200,18 @@
       "zone": "Workstation",
       "desk": {
         "itemId": "ws_3_desk",
-        "position": [-2.8, 0.375, 3.1],
+        "position": [-3.3, 0.375, 3.72],
         "rotY": 90
       },
       "chairId": "ws_3_chair",
       "seatSocket": {
         "id": "ws_3_seat",
-        "position": [-3.4, 0.45, 3.1],
+        "position": [-3.9, 0.45, 3.72],
         "rotY": 90,
         "activity": "sit_work",
-        "interactionPoint": [-3.4, 0, 2.05]
+        "interactionPoint": [-3.9, 0, 2.46]
       },
-      "interactionPoint": [-3.4, 0, 2.05]
+      "interactionPoint": [-3.9, 0, 2.46]
     },
     {
       "id": "ws_4",
@@ -1218,18 +1219,18 @@
       "zone": "Workstation",
       "desk": {
         "itemId": "ws_4_desk",
-        "position": [-2.2, 0.375, 3.1],
+        "position": [-2.7, 0.375, 3.72],
         "rotY": 270
       },
       "chairId": "ws_4_chair",
       "seatSocket": {
         "id": "ws_4_seat",
-        "position": [-1.6, 0.45, 3.1],
+        "position": [-2.1, 0.45, 3.72],
         "rotY": 270,
         "activity": "sit_work",
-        "interactionPoint": [-1.6, 0, 2.05]
+        "interactionPoint": [-2.1, 0, 2.46]
       },
-      "interactionPoint": [-1.6, 0, 2.05]
+      "interactionPoint": [-2.1, 0, 2.46]
     },
     {
       "id": "ws_5",
@@ -1237,18 +1238,18 @@
       "zone": "Workstation",
       "desk": {
         "itemId": "ws_5_desk",
-        "position": [1, 0.375, 1],
+        "position": [1.26, 0.375, 1.2],
         "rotY": 90
       },
       "chairId": "ws_5_chair",
       "seatSocket": {
         "id": "ws_5_seat",
-        "position": [0.4, 0.45, 1],
+        "position": [0.66, 0.45, 1.2],
         "rotY": 90,
         "activity": "sit_work",
-        "interactionPoint": [0.4, 0, 2.05]
+        "interactionPoint": [0.66, 0, 2.46]
       },
-      "interactionPoint": [0.4, 0, 2.05]
+      "interactionPoint": [0.66, 0, 2.46]
     },
     {
       "id": "ws_6",
@@ -1256,18 +1257,18 @@
       "zone": "Workstation",
       "desk": {
         "itemId": "ws_6_desk",
-        "position": [1.6, 0.375, 1],
+        "position": [1.86, 0.375, 1.2],
         "rotY": 270
       },
       "chairId": "ws_6_chair",
       "seatSocket": {
         "id": "ws_6_seat",
-        "position": [2.2, 0.45, 1],
+        "position": [2.46, 0.45, 1.2],
         "rotY": 270,
         "activity": "sit_work",
-        "interactionPoint": [2.2, 0, 2.05]
+        "interactionPoint": [2.46, 0, 2.46]
       },
-      "interactionPoint": [2.2, 0, 2.05]
+      "interactionPoint": [2.46, 0, 2.46]
     },
     {
       "id": "ws_7",
@@ -1275,18 +1276,18 @@
       "zone": "Workstation",
       "desk": {
         "itemId": "ws_7_desk",
-        "position": [1, 0.375, 3.1],
+        "position": [1.26, 0.375, 3.72],
         "rotY": 90
       },
       "chairId": "ws_7_chair",
       "seatSocket": {
         "id": "ws_7_seat",
-        "position": [0.4, 0.45, 3.1],
+        "position": [0.66, 0.45, 3.72],
         "rotY": 90,
         "activity": "sit_work",
-        "interactionPoint": [0.4, 0, 2.05]
+        "interactionPoint": [0.66, 0, 2.46]
       },
-      "interactionPoint": [0.4, 0, 2.05]
+      "interactionPoint": [0.66, 0, 2.46]
     },
     {
       "id": "ws_8",
@@ -1294,18 +1295,18 @@
       "zone": "Workstation",
       "desk": {
         "itemId": "ws_8_desk",
-        "position": [1.6, 0.375, 3.1],
+        "position": [1.86, 0.375, 3.72],
         "rotY": 270
       },
       "chairId": "ws_8_chair",
       "seatSocket": {
         "id": "ws_8_seat",
-        "position": [2.2, 0.45, 3.1],
+        "position": [2.46, 0.45, 3.72],
         "rotY": 270,
         "activity": "sit_work",
-        "interactionPoint": [2.2, 0, 2.05]
+        "interactionPoint": [2.46, 0, 2.46]
       },
-      "interactionPoint": [2.2, 0, 2.05]
+      "interactionPoint": [2.46, 0, 2.46]
     }
   ],
   "interactables": [
@@ -1314,8 +1315,8 @@
       "type": "computer",
       "zone": "Workstation",
       "itemId": "ws_1_desk",
-      "position": [-2.8, 1.02, 1],
-      "interactionPoint": [-3.4, 0, 2.05],
+      "position": [-3.3, 1.02, 1.2],
+      "interactionPoint": [-3.9, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_1"
     },
@@ -1324,8 +1325,8 @@
       "type": "chair",
       "zone": "Workstation",
       "itemId": "ws_1_chair",
-      "position": [-3.4, 0.45, 1],
-      "interactionPoint": [-3.4, 0, 2.05],
+      "position": [-3.9, 0.45, 1.2],
+      "interactionPoint": [-3.9, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_1",
       "seatId": "ws_1_seat"
@@ -1335,8 +1336,8 @@
       "type": "computer",
       "zone": "Workstation",
       "itemId": "ws_2_desk",
-      "position": [-2.2, 1.02, 1],
-      "interactionPoint": [-1.6, 0, 2.05],
+      "position": [-2.7, 1.02, 1.2],
+      "interactionPoint": [-2.1, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_2"
     },
@@ -1345,8 +1346,8 @@
       "type": "chair",
       "zone": "Workstation",
       "itemId": "ws_2_chair",
-      "position": [-1.6, 0.45, 1],
-      "interactionPoint": [-1.6, 0, 2.05],
+      "position": [-2.1, 0.45, 1.2],
+      "interactionPoint": [-2.1, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_2",
       "seatId": "ws_2_seat"
@@ -1356,8 +1357,8 @@
       "type": "computer",
       "zone": "Workstation",
       "itemId": "ws_3_desk",
-      "position": [-2.8, 1.02, 3.1],
-      "interactionPoint": [-3.4, 0, 2.05],
+      "position": [-3.3, 1.02, 3.72],
+      "interactionPoint": [-3.9, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_3"
     },
@@ -1366,8 +1367,8 @@
       "type": "chair",
       "zone": "Workstation",
       "itemId": "ws_3_chair",
-      "position": [-3.4, 0.45, 3.1],
-      "interactionPoint": [-3.4, 0, 2.05],
+      "position": [-3.9, 0.45, 3.72],
+      "interactionPoint": [-3.9, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_3",
       "seatId": "ws_3_seat"
@@ -1377,8 +1378,8 @@
       "type": "computer",
       "zone": "Workstation",
       "itemId": "ws_4_desk",
-      "position": [-2.2, 1.02, 3.1],
-      "interactionPoint": [-1.6, 0, 2.05],
+      "position": [-2.7, 1.02, 3.72],
+      "interactionPoint": [-2.1, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_4"
     },
@@ -1387,8 +1388,8 @@
       "type": "chair",
       "zone": "Workstation",
       "itemId": "ws_4_chair",
-      "position": [-1.6, 0.45, 3.1],
-      "interactionPoint": [-1.6, 0, 2.05],
+      "position": [-2.1, 0.45, 3.72],
+      "interactionPoint": [-2.1, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_4",
       "seatId": "ws_4_seat"
@@ -1398,8 +1399,8 @@
       "type": "computer",
       "zone": "Workstation",
       "itemId": "ws_5_desk",
-      "position": [1, 1.02, 1],
-      "interactionPoint": [0.4, 0, 2.05],
+      "position": [1.26, 1.02, 1.2],
+      "interactionPoint": [0.66, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_5"
     },
@@ -1408,8 +1409,8 @@
       "type": "chair",
       "zone": "Workstation",
       "itemId": "ws_5_chair",
-      "position": [0.4, 0.45, 1],
-      "interactionPoint": [0.4, 0, 2.05],
+      "position": [0.66, 0.45, 1.2],
+      "interactionPoint": [0.66, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_5",
       "seatId": "ws_5_seat"
@@ -1419,8 +1420,8 @@
       "type": "computer",
       "zone": "Workstation",
       "itemId": "ws_6_desk",
-      "position": [1.6, 1.02, 1],
-      "interactionPoint": [2.2, 0, 2.05],
+      "position": [1.86, 1.02, 1.2],
+      "interactionPoint": [2.46, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_6"
     },
@@ -1429,8 +1430,8 @@
       "type": "chair",
       "zone": "Workstation",
       "itemId": "ws_6_chair",
-      "position": [2.2, 0.45, 1],
-      "interactionPoint": [2.2, 0, 2.05],
+      "position": [2.46, 0.45, 1.2],
+      "interactionPoint": [2.46, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_6",
       "seatId": "ws_6_seat"
@@ -1440,8 +1441,8 @@
       "type": "computer",
       "zone": "Workstation",
       "itemId": "ws_7_desk",
-      "position": [1, 1.02, 3.1],
-      "interactionPoint": [0.4, 0, 2.05],
+      "position": [1.26, 1.02, 3.72],
+      "interactionPoint": [0.66, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_7"
     },
@@ -1450,8 +1451,8 @@
       "type": "chair",
       "zone": "Workstation",
       "itemId": "ws_7_chair",
-      "position": [0.4, 0.45, 3.1],
-      "interactionPoint": [0.4, 0, 2.05],
+      "position": [0.66, 0.45, 3.72],
+      "interactionPoint": [0.66, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_7",
       "seatId": "ws_7_seat"
@@ -1461,8 +1462,8 @@
       "type": "computer",
       "zone": "Workstation",
       "itemId": "ws_8_desk",
-      "position": [1.6, 1.02, 3.1],
-      "interactionPoint": [2.2, 0, 2.05],
+      "position": [1.86, 1.02, 3.72],
+      "interactionPoint": [2.46, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_8"
     },
@@ -1471,8 +1472,8 @@
       "type": "chair",
       "zone": "Workstation",
       "itemId": "ws_8_chair",
-      "position": [2.2, 0.45, 3.1],
-      "interactionPoint": [2.2, 0, 2.05],
+      "position": [2.46, 0.45, 3.72],
+      "interactionPoint": [2.46, 0, 2.46],
       "interactionRange": 2,
       "workstationId": "ws_8",
       "seatId": "ws_8_seat"
@@ -1482,8 +1483,8 @@
       "type": "main_door",
       "zone": "Entrance",
       "itemId": "main_door",
-      "position": [-0.3, 1, -3.94],
-      "interactionPoint": [-0.4, 0, -3],
+      "position": [-0.36, 1, -4.74],
+      "interactionPoint": [-0.46, 0, -3.8],
       "interactionRange": 2,
       "action": "exit_to_join",
       "decoration": "local_only"
@@ -1493,8 +1494,8 @@
       "type": "coffee_machine",
       "zone": "Pantry",
       "itemId": "pantry_counter",
-      "position": [2.35, 1.13, -3.5],
-      "interactionPoint": [2.35, 0, -2.75],
+      "position": [2.89, 1.13, -4.2],
+      "interactionPoint": [2.82, 0, -3.3],
       "interactionRange": 2
     },
     {
@@ -1502,8 +1503,8 @@
       "type": "water_dispenser",
       "zone": "Pantry",
       "itemId": "water_dispenser",
-      "position": [4.55, 0.65, -3.5],
-      "interactionPoint": [4.55, 0, -2.75],
+      "position": [5.46, 0.65, -4.2],
+      "interactionPoint": [5.46, 0, -3.3],
       "interactionRange": 2
     },
     {
@@ -1511,8 +1512,8 @@
       "type": "storage_cabinet",
       "zone": "Storage",
       "itemId": "storage_cabinet",
-      "position": [1.1, 1.1, -1.35],
-      "interactionPoint": [1.1, 0, -0.3],
+      "position": [1.32, 1.1, -1.62],
+      "interactionPoint": [1.32, 0, -0.36],
       "interactionRange": 2,
       "decoration": "local_only",
       "inventory": false
@@ -1522,8 +1523,8 @@
       "type": "TV",
       "zone": "Entertainment",
       "itemId": "tv",
-      "position": [-4.83, 1.5, -1.35],
-      "interactionPoint": [-4.2, 0, -0.35],
+      "position": [-5.83, 1.5, -1.62],
+      "interactionPoint": [-5.2, 0, -0.62],
       "interactionRange": 2
     },
     {
@@ -1531,8 +1532,8 @@
       "type": "sofa",
       "zone": "Entertainment",
       "itemId": "sofa",
-      "position": [-2.1, 0.45, -1.4],
-      "interactionPoint": [-1.2, 0, -1.4],
+      "position": [-2.52, 0.45, -1.68],
+      "interactionPoint": [-1.44, 0, -1.68],
       "interactionRange": 2,
       "seatIds": ["sofa_seat_1", "sofa_seat_2"],
       "activity": "rest_relax"
@@ -1543,18 +1544,18 @@
       "id": "wall_north_west",
       "kind": "wall",
       "ownerId": "wall_north_west",
-      "x": -2.925,
-      "z": -3.95,
-      "w": 4.15,
+      "x": -3.455,
+      "z": -4.75,
+      "w": 5.09,
       "d": 0.1
     },
     {
       "id": "wall_north_east",
       "kind": "wall",
       "ownerId": "wall_north_east",
-      "x": 2.625,
-      "z": -3.95,
-      "w": 4.75,
+      "x": 3.095,
+      "z": -4.75,
+      "w": 5.81,
       "d": 0.1
     },
     {
@@ -1562,44 +1563,44 @@
       "kind": "wall",
       "ownerId": "wall_south",
       "x": 0,
-      "z": 3.95,
-      "w": 10,
+      "z": 4.75,
+      "w": 12,
       "d": 0.1
     },
     {
       "id": "wall_west",
       "kind": "wall",
       "ownerId": "wall_west",
-      "x": -4.95,
+      "x": -5.95,
       "z": 0,
       "w": 0.1,
-      "d": 7.8
+      "d": 9.4
     },
     {
       "id": "wall_east_north",
       "kind": "wall",
       "ownerId": "wall_east_north",
-      "x": 4.95,
-      "z": -1.5,
+      "x": 5.95,
+      "z": -1.76,
       "w": 0.1,
-      "d": 4.8
+      "d": 5.88
     },
     {
       "id": "wall_east_south",
       "kind": "wall",
       "ownerId": "wall_east_south",
-      "x": 4.95,
-      "z": 2.9,
+      "x": 5.95,
+      "z": 3.44,
       "w": 0.1,
-      "d": 2
+      "d": 2.52
     },
     {
       "id": "collider_ws_1_desk",
       "kind": "furniture",
       "ownerId": "ws_1_desk",
       "zone": "Workstation",
-      "x": -2.8,
-      "z": 1,
+      "x": -3.3,
+      "z": 1.2,
       "w": 0.6,
       "d": 1.2
     },
@@ -1608,8 +1609,8 @@
       "kind": "furniture",
       "ownerId": "ws_1_chair",
       "zone": "Workstation",
-      "x": -3.4,
-      "z": 1,
+      "x": -3.9,
+      "z": 1.2,
       "w": 0.5,
       "d": 0.5
     },
@@ -1618,8 +1619,8 @@
       "kind": "furniture",
       "ownerId": "ws_2_desk",
       "zone": "Workstation",
-      "x": -2.2,
-      "z": 1,
+      "x": -2.7,
+      "z": 1.2,
       "w": 0.6,
       "d": 1.2
     },
@@ -1628,8 +1629,8 @@
       "kind": "furniture",
       "ownerId": "ws_2_chair",
       "zone": "Workstation",
-      "x": -1.6,
-      "z": 1,
+      "x": -2.1,
+      "z": 1.2,
       "w": 0.5,
       "d": 0.5
     },
@@ -1638,8 +1639,8 @@
       "kind": "furniture",
       "ownerId": "ws_3_desk",
       "zone": "Workstation",
-      "x": -2.8,
-      "z": 3.1,
+      "x": -3.3,
+      "z": 3.72,
       "w": 0.6,
       "d": 1.2
     },
@@ -1648,8 +1649,8 @@
       "kind": "furniture",
       "ownerId": "ws_3_chair",
       "zone": "Workstation",
-      "x": -3.4,
-      "z": 3.1,
+      "x": -3.9,
+      "z": 3.72,
       "w": 0.5,
       "d": 0.5
     },
@@ -1658,8 +1659,8 @@
       "kind": "furniture",
       "ownerId": "ws_4_desk",
       "zone": "Workstation",
-      "x": -2.2,
-      "z": 3.1,
+      "x": -2.7,
+      "z": 3.72,
       "w": 0.6,
       "d": 1.2
     },
@@ -1668,8 +1669,8 @@
       "kind": "furniture",
       "ownerId": "ws_4_chair",
       "zone": "Workstation",
-      "x": -1.6,
-      "z": 3.1,
+      "x": -2.1,
+      "z": 3.72,
       "w": 0.5,
       "d": 0.5
     },
@@ -1678,8 +1679,8 @@
       "kind": "furniture",
       "ownerId": "ws_5_desk",
       "zone": "Workstation",
-      "x": 1,
-      "z": 1,
+      "x": 1.26,
+      "z": 1.2,
       "w": 0.6,
       "d": 1.2
     },
@@ -1688,8 +1689,8 @@
       "kind": "furniture",
       "ownerId": "ws_5_chair",
       "zone": "Workstation",
-      "x": 0.4,
-      "z": 1,
+      "x": 0.66,
+      "z": 1.2,
       "w": 0.5,
       "d": 0.5
     },
@@ -1698,8 +1699,8 @@
       "kind": "furniture",
       "ownerId": "ws_6_desk",
       "zone": "Workstation",
-      "x": 1.6,
-      "z": 1,
+      "x": 1.86,
+      "z": 1.2,
       "w": 0.6,
       "d": 1.2
     },
@@ -1708,8 +1709,8 @@
       "kind": "furniture",
       "ownerId": "ws_6_chair",
       "zone": "Workstation",
-      "x": 2.2,
-      "z": 1,
+      "x": 2.46,
+      "z": 1.2,
       "w": 0.5,
       "d": 0.5
     },
@@ -1718,8 +1719,8 @@
       "kind": "furniture",
       "ownerId": "ws_7_desk",
       "zone": "Workstation",
-      "x": 1,
-      "z": 3.1,
+      "x": 1.26,
+      "z": 3.72,
       "w": 0.6,
       "d": 1.2
     },
@@ -1728,8 +1729,8 @@
       "kind": "furniture",
       "ownerId": "ws_7_chair",
       "zone": "Workstation",
-      "x": 0.4,
-      "z": 3.1,
+      "x": 0.66,
+      "z": 3.72,
       "w": 0.5,
       "d": 0.5
     },
@@ -1738,8 +1739,8 @@
       "kind": "furniture",
       "ownerId": "ws_8_desk",
       "zone": "Workstation",
-      "x": 1.6,
-      "z": 3.1,
+      "x": 1.86,
+      "z": 3.72,
       "w": 0.6,
       "d": 1.2
     },
@@ -1748,8 +1749,8 @@
       "kind": "furniture",
       "ownerId": "ws_8_chair",
       "zone": "Workstation",
-      "x": 2.2,
-      "z": 3.1,
+      "x": 2.46,
+      "z": 3.72,
       "w": 0.5,
       "d": 0.5
     },
@@ -1758,8 +1759,8 @@
       "kind": "furniture",
       "ownerId": "main_door",
       "zone": "Entrance",
-      "x": -0.3,
-      "z": -3.94,
+      "x": -0.36,
+      "z": -4.74,
       "w": 1.1,
       "d": 0.1
     },
@@ -1768,8 +1769,8 @@
       "kind": "furniture",
       "ownerId": "entrance_plant_west",
       "zone": "Entrance",
-      "x": -3.225,
-      "z": -3.65,
+      "x": -3.87,
+      "z": -4.38,
       "w": 0.35,
       "d": 0.35
     },
@@ -1778,8 +1779,8 @@
       "kind": "furniture",
       "ownerId": "entrance_plant_east",
       "zone": "Entrance",
-      "x": -1.975,
-      "z": -3.65,
+      "x": -2.37,
+      "z": -4.38,
       "w": 0.35,
       "d": 0.35
     },
@@ -1788,8 +1789,8 @@
       "kind": "furniture",
       "ownerId": "shoe_rack",
       "zone": "Entrance",
-      "x": -4.6,
-      "z": -3.65,
+      "x": -5.52,
+      "z": -4.38,
       "w": 0.6,
       "d": 0.3
     },
@@ -1798,8 +1799,8 @@
       "kind": "furniture",
       "ownerId": "fridge",
       "zone": "Pantry",
-      "x": 0.8,
-      "z": -3.5,
+      "x": 0.96,
+      "z": -4.2,
       "w": 0.6,
       "d": 0.65
     },
@@ -1808,8 +1809,8 @@
       "kind": "furniture",
       "ownerId": "pantry_counter",
       "zone": "Pantry",
-      "x": 2.7,
-      "z": -3.5,
+      "x": 3.24,
+      "z": -4.2,
       "w": 1.4,
       "d": 0.6
     },
@@ -1818,8 +1819,8 @@
       "kind": "furniture",
       "ownerId": "water_dispenser",
       "zone": "Pantry",
-      "x": 4.55,
-      "z": -3.5,
+      "x": 5.46,
+      "z": -4.2,
       "w": 0.5,
       "d": 0.6
     },
@@ -1828,8 +1829,8 @@
       "kind": "furniture",
       "ownerId": "storage_cabinet",
       "zone": "Storage",
-      "x": 1.1,
-      "z": -1.35,
+      "x": 1.32,
+      "z": -1.62,
       "w": 0.65,
       "d": 0.7
     },
@@ -1838,8 +1839,8 @@
       "kind": "furniture",
       "ownerId": "lockers",
       "zone": "Storage",
-      "x": 4.3,
-      "z": -1.35,
+      "x": 5.16,
+      "z": -1.62,
       "w": 0.65,
       "d": 0.7
     },
@@ -1848,8 +1849,8 @@
       "kind": "furniture",
       "ownerId": "shelves",
       "zone": "Storage",
-      "x": 2.7,
-      "z": -1.35,
+      "x": 3.24,
+      "z": -1.62,
       "w": 0.65,
       "d": 0.9
     },
@@ -1858,8 +1859,8 @@
       "kind": "furniture",
       "ownerId": "air_conditioner",
       "zone": "Workstation",
-      "x": 4.82,
-      "z": 3.3,
+      "x": 5.82,
+      "z": 3.96,
       "w": 0.15,
       "d": 0.9
     },
@@ -1868,8 +1869,8 @@
       "kind": "furniture",
       "ownerId": "east_utility_door",
       "zone": "Workstation",
-      "x": 4.94,
-      "z": 1.4,
+      "x": 5.94,
+      "z": 1.68,
       "w": 0.08,
       "d": 1
     },
@@ -1878,8 +1879,8 @@
       "kind": "furniture",
       "ownerId": "tv",
       "zone": "Entertainment",
-      "x": -4.83,
-      "z": -1.35,
+      "x": -5.83,
+      "z": -1.62,
       "w": 0.14,
       "d": 2.1
     },
@@ -1888,8 +1889,8 @@
       "kind": "furniture",
       "ownerId": "sofa",
       "zone": "Entertainment",
-      "x": -2.1,
-      "z": -1.4,
+      "x": -2.52,
+      "z": -1.68,
       "w": 0.8,
       "d": 1.8
     },
@@ -1898,8 +1899,8 @@
       "kind": "furniture",
       "ownerId": "coffee_table",
       "zone": "Entertainment",
-      "x": -3.55,
-      "z": -1.35,
+      "x": -4.26,
+      "z": -1.62,
       "w": 0.6,
       "d": 0.9
     },
@@ -1908,15 +1909,15 @@
       "kind": "furniture",
       "ownerId": "decorative_light",
       "zone": "Entertainment",
-      "x": -0.6,
-      "z": -1.35,
+      "x": -0.72,
+      "z": -1.62,
       "w": 0.3,
       "d": 0.3
     }
   ],
   "spawn": {
     "zone": "Entrance",
-    "position": [-1, 0, -2.7],
+    "position": [-1.2, 0, -3.24],
     "rotY": 270
   }
 }

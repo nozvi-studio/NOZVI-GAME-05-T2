@@ -20,7 +20,7 @@ describe('buildRoom', () => {
   it('has a floor matching the room', () => {
     const floor = room.getObjectByName('floor') as THREE.Mesh;
     const size = new THREE.Box3().setFromObject(floor).getSize(new THREE.Vector3());
-    expect(size.x).toBeCloseTo(10);
-    expect(size.z).toBeCloseTo(8);
+    expect(size.x).toBeCloseTo(12);
+    expect(size.z).toBeCloseTo(9.6);
   });
 });

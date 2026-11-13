@@ -6,6 +6,11 @@ import { isDeepStrictEqual } from 'node:util';
 // REQ-ROOM-001..008, REQ-INT-001..005, REQ-MOVE-002.
 // No dependencies; paths resolve relative to this script, not the caller's cwd.
 const EPS = 1e-8;
+// Room footprint (Phase 2.1, T-1014: widened from 10 x 8 m).
+const ROOM_W = 12,
+  ROOM_D = 9.6,
+  HX = ROOM_W / 2,
+  HZ = ROOM_D / 2;
 const errors = [];
 const check = (condition, message) => {
   if (!condition) errors.push(message);
@@ -177,7 +182,10 @@ function validate(layout) {
     if (!Array.isArray(value)) throw new Error(`${name} must be an array`);
     unique(value, name);
   }
-  check(same(room.dimensions, { width: 10, depth: 8, height: 2.7 }), 'Room must be 10 x 8 x 2.7 m');
+  check(
+    same(room.dimensions, { width: ROOM_W, depth: ROOM_D, height: 2.7 }),
+    `Room must be ${ROOM_W} x ${ROOM_D} x 2.7 m`,
+  );
   check(
     same(room.coordinateSystem, {
       origin: 'floor_center',
@@ -191,7 +199,7 @@ function validate(layout) {
     }),
     'Coordinate convention changed',
   );
-  const roomBounds = { minX: -5, maxX: 5, minZ: -4, maxZ: 4 };
+  const roomBounds = { minX: -HX, maxX: HX, minZ: -HZ, maxZ: HZ };
   const expectedZones = ['Workstation', 'Pantry', 'Storage', 'Entrance', 'Entertainment'];
   check(
     zones.length === 5 && expectedZones.every((id) => zones.some((z) => z.id === id)),
@@ -441,7 +449,7 @@ function validate(layout) {
   const tvWall = walls.find((w) => w.id === tv?.wallId);
   check(
     tvWall &&
-      near(tvWall.position[0], -4.95) &&
+      near(tvWall.position[0], -HX + 0.05) &&
       near(tv.position[0] - tv.size[0] / 2, tvWall.position[0] + tvWall.size[0] / 2),
     'TV must attach to west Entertainment wall',
   );
@@ -472,23 +480,23 @@ function validate(layout) {
       }
     }
   check(
-    door && near(door.position[2] - door.size[2] / 2, -3.99),
+    door && near(door.position[2] - door.size[2] / 2, -HZ + 0.01),
     'Main door must be on north wall',
   );
   const { shell } = layout;
   check(
-    same(shell.floor.position, [0, 0, 0]) && same(shell.floor.size, [10, 0, 8]),
+    same(shell.floor.position, [0, 0, 0]) && same(shell.floor.size, [ROOM_W, 0, ROOM_D]),
     'Missing full floor',
   );
   check(
-    same(shell.ceiling.position, [0, 2.7, 0]) && same(shell.ceiling.size, [10, 0, 8]),
+    same(shell.ceiling.position, [0, 2.7, 0]) && same(shell.ceiling.size, [ROOM_W, 0, ROOM_D]),
     'Missing full ceiling',
   );
   check(shell.windows.length > 0 && shell.lighting.length > 0, 'Missing windows or lighting');
   for (const w of shell.windows) {
     transform(w, undefined, w.id);
     check(
-      near(w.position[2], 3.95) && w.size[0] >= 9.6 && colliderMap.has(w.colliderId),
+      near(w.position[2], HZ - 0.05) && w.size[0] >= ROOM_W - 0.4 && colliderMap.has(w.colliderId),
       `${w.id}: require full south window wall and shared wall collider`,
     );
   }
@@ -528,10 +536,10 @@ function validate(layout) {
   const obstacles = colliders.map((c) => ({ ...rect(c), id: c.id }));
   function clearance(p, radius, label) {
     check(
-      p[0] >= -5 + radius - EPS &&
-        p[0] <= 5 - radius + EPS &&
-        p[2] >= -4 + radius - EPS &&
-        p[2] <= 4 - radius + EPS,
+      p[0] >= -HX + radius - EPS &&
+        p[0] <= HX - radius + EPS &&
+        p[2] >= -HZ + radius - EPS &&
+        p[2] <= HZ - radius + EPS,
       `${label}: insufficient room-boundary clearance`,
     );
     for (const c of obstacles)
@@ -542,7 +550,7 @@ function validate(layout) {
   if (errors.length) return;
   validateReachability(spawn.position, targets, obstacles, layout.collision.navigationGridStep);
   if (!errors.length) {
-    console.log('Layout valid: 10 x 8 x 2.7 m; 8 workstations in 2 pods.');
+    console.log(`Layout valid: ${ROOM_W} x ${ROOM_D} x 2.7 m; 8 workstations in 2 pods.`);
     for (const zone of zones)
       console.log(
         `${zone.id}: assemblies=${items.filter((i) => i.zone === zone.id).length}, ` +
@@ -566,18 +574,18 @@ function validateReachability(spawn, targets, obstacles, step) {
   // is collision-free continuously, including each edge; no diagonal corner cuts.
   if (!near(step, 0.1)) throw new Error('Navigation grid step must be 0.1 m');
   const radius = 0.3,
-    nx = Math.round(10 / step) + 1,
-    nz = Math.round(8 / step) + 1;
+    nx = Math.round(ROOM_W / step) + 1,
+    nz = Math.round(ROOM_D / step) + 1;
   const expanded = obstacles.map((c) => ({
     minX: c.minX - radius,
     maxX: c.maxX + radius,
     minZ: c.minZ - radius,
     maxZ: c.maxZ + radius,
   }));
-  const point = (index) => [-5 + (index % nx) * step, 0, -4 + Math.floor(index / nx) * step];
+  const point = (index) => [-HX + (index % nx) * step, 0, -HZ + Math.floor(index / nx) * step];
   const free = (p) =>
-    Math.abs(p[0]) <= 5 - radius + EPS &&
-    Math.abs(p[2]) <= 4 - radius + EPS &&
+    Math.abs(p[0]) <= HX - radius + EPS &&
+    Math.abs(p[2]) <= HZ - radius + EPS &&
     !expanded.some(
       (c) =>
         p[0] > c.minX + EPS && p[0] < c.maxX - EPS && p[2] > c.minZ + EPS && p[2] < c.maxZ - EPS,
@@ -586,8 +594,8 @@ function validateReachability(spawn, targets, obstacles, step) {
     return !expanded.some((c) => segmentIntersectsRect(a, b, c));
   }
   function neighbors(p) {
-    const fx = (p[0] + 5) / step,
-      fz = (p[2] + 4) / step;
+    const fx = (p[0] + HX) / step,
+      fz = (p[2] + HZ) / step;
     const result = [];
     for (const x of new Set([Math.floor(fx), Math.ceil(fx)]))
       for (const z of new Set([Math.floor(fz), Math.ceil(fz)])) {
