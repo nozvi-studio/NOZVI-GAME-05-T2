@@ -22,7 +22,7 @@ Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTU
 
 1. Phase 2.1 (`docs/plans/phase-2.1.md`, Meridian FEAT-46): widen the room to 12 x 9.6 m (T-1014, assigned to `t1-opus`, not started), owner UI feedback, and e2e speed-up (merge walk tests into one join, replace fixed waits with condition waits, per-file run command). Get one green e2e run there.
 2. Owner: measure FPS on a normal desktop and decide the draw-call budget (`phase-1-execution.md` §7).
-3. Phase 3 — Multiplayer Foundation.
+3. Phase 3 — Multiplayer Foundation: plan drafted in `docs/plans/phase-3.md` (Meridian FEAT-51, 11 tasks; only T-1033 and one pending proposal are entered so far). Server tasks 1-4 may start in parallel with Phase 2.1; client tasks wait for it. Owner must approve the Colyseus install and confirm the five defaults in plan §6.
 
 ## Open items
 
