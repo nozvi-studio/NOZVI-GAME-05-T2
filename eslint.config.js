@@ -19,7 +19,7 @@ export default tseslint.config(
     rules: reactHooks.configs.recommended.rules,
   },
   {
-    files: ['packages/protocol/**/*.ts'],
+    files: ['packages/protocol/**/*.ts', 'apps/web/src/net/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', { paths: ['react', 'react-dom', 'three'] }],
     },

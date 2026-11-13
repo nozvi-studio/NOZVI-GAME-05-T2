@@ -19,6 +19,7 @@ import { AvatarView } from './avatar/AvatarView';
 import { InteractionController, type Prompt } from './interaction/InteractionController';
 import { Nameplate } from './hud/Nameplate';
 import { handleAction } from './interaction/extras';
+import type { OfficeRoomHandle } from '../net';
 
 export class Game {
   readonly scene = new THREE.Scene();
@@ -68,6 +69,8 @@ export class Game {
   constructor(
     private readonly host: HTMLElement,
     private readonly identity: { name: string; avatarId: AvatarId },
+    /** Joined office room; owned by the connection, which leaves it on exit. */
+    readonly netRoom: OfficeRoomHandle,
   ) {
     const room = buildRoom(officeLayout);
     this.scene.add(room);
