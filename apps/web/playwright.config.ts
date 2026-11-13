@@ -1,8 +1,5 @@
 import { defineConfig } from '@playwright/test';
-
-// Dedicated ports so e2e never reuses another project's dev server (5173) or game server (2567).
-const WEB_PORT = 5180;
-const SERVER_PORT = 2580;
+import { SERVER_PORT, SERVER_URL, WEB_PORT } from './e2e/ports';
 
 export default defineConfig({
   testDir: 'e2e',
@@ -17,8 +14,8 @@ export default defineConfig({
       args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
     },
   },
-  // There is no offline mode: the game server runs next to the web dev server. Its join
-  // rate limit is 10 joins per minute per address, so keep the suite's joins under that.
+  // There is no offline mode: the game server runs next to the web dev server. The join
+  // limit is raised because every spec and its headless bots join from one address.
   webServer: [
     {
       command: 'pnpm --filter @office/server start',
@@ -30,7 +27,7 @@ export default defineConfig({
     {
       command: `pnpm dev --host 127.0.0.1 --port ${WEB_PORT} --strictPort`,
       url: `http://127.0.0.1:${WEB_PORT}`,
-      env: { VITE_SERVER_URL: `http://127.0.0.1:${SERVER_PORT}` },
+      env: { VITE_SERVER_URL: SERVER_URL },
       reuseExistingServer: false,
       timeout: 60_000,
     },

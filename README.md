@@ -8,13 +8,13 @@
 
 ```bash
 pnpm install
-pnpm --filter web dev        # web client
+pnpm dev                     # game server (:2567) and web client (:5173) together
 pnpm check                   # format, lint, typecheck, unit tests, build
 ```
 
-The game always connects to a server (no offline mode): run `pnpm --filter @office/server dev` next to the web client. The client uses `VITE_SERVER_URL` (default `http://localhost:2567`).
+The game always connects to a server (no offline mode): `pnpm dev` starts both. The client uses `VITE_SERVER_URL` (default `http://localhost:2567`).
 
-End-to-end tests (Playwright, software WebGL; run in the foreground, one worker). Playwright starts the game server on port 2580 and the web dev server on 5180; the server allows 10 joins per minute per address, so `--repeat-each` runs may hit `rate_limited`:
+End-to-end tests (Playwright, software WebGL; run in the foreground, one worker). Playwright starts the game server on port 2580 (join limit raised with `JOIN_LIMIT_PER_MINUTE`) and the web dev server on 5180; specs may add headless SDK bots from `e2e/bots.ts`:
 
 ```bash
 pnpm --filter web e2e                          # full suite
