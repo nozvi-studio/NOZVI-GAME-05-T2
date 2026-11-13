@@ -3,17 +3,20 @@ import {
   BALANCE,
   officeLayout,
   nextActivity,
-  stepPlayer,
   type Activity,
   type MoveInput,
   type PlayerState,
   type Vec3,
 } from '@office/protocol';
 import { AvatarView } from './avatar/AvatarView';
+import { Predictor } from '../net/prediction';
 
 export class Player {
   readonly mesh = new THREE.Group();
+  /** Presented state (what is rendered and what interaction reads). */
   state: PlayerState;
+  /** REQ-NET-003: fixed-step prediction; `Game` binds it to the joined room. */
+  readonly predictor: Predictor;
   activity: Activity = 'idle';
   private view: AvatarView | null = null;
   private seated: { position: Vec3; rotY: number } | null = null;
@@ -38,13 +41,17 @@ export class Player {
     for (const m of this.materials) m.transparent = true;
     const [x, , z] = officeLayout.spawn.position;
     this.state = { x, z, heading: (officeLayout.spawn.rotY * Math.PI) / 180 };
+    this.predictor = new Predictor(this.state, officeLayout.colliders);
     this.sync();
   }
 
   update(input: MoveInput, cameraYaw: number, dt: number): void {
     const moving = input.forward !== 0 || input.right !== 0;
     if (!this.seated) {
-      this.state = stepPlayer(this.state, input, cameraYaw, dt, officeLayout.colliders);
+      // One input per fixed 50 ms step (sent to the server); the frame shows a partial step.
+      const sample = { forward: input.forward, right: input.right, run: input.run, yaw: cameraYaw };
+      this.predictor.advance(dt, sample);
+      this.state = this.predictor.present(sample);
       if (this.activity !== 'drinking' || moving) {
         this.setActivity(nextActivity(this.activity, { type: moving ? 'move' : 'stop' }));
       }
@@ -87,6 +94,9 @@ export class Player {
     this.seated = null;
     this.state.x = point[0];
     this.state.z = point[2];
+    // Seating is local until the server owns seats (T-1039): the next patch pulls the
+    // prediction back to the server position with a blended correction.
+    this.predictor.reset(this.state);
     this.sync();
   }
 
@@ -105,9 +115,13 @@ export class Player {
     for (const m of this.materials) m.opacity = opacity;
   }
 
-  /** Places the player directly, bypassing movement and collision (debug and test use). */
+  /**
+   * Places the player directly, bypassing movement and collision (debug and test use). The
+   * server cannot teleport, so prediction detaches from server patches from here on.
+   */
   teleport(x: number, z: number, heading: number): void {
     this.state = { x, z, heading };
+    this.predictor.detach(this.state);
     this.sync();
   }
 

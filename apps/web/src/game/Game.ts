@@ -19,7 +19,7 @@ import { AvatarView } from './avatar/AvatarView';
 import { InteractionController, type Prompt } from './interaction/InteractionController';
 import { Nameplate } from './hud/Nameplate';
 import { handleAction } from './interaction/extras';
-import type { OfficeRoomHandle } from '../net';
+import { bindPrediction, type OfficeRoomHandle } from '../net';
 
 export class Game {
   readonly scene = new THREE.Scene();
@@ -65,6 +65,8 @@ export class Game {
   private readonly disposeLighting: () => void;
   private furniture: Awaited<ReturnType<typeof loadFurniture>> | undefined;
   private disposed = false;
+  /** Disconnects local prediction from the room (inputs out, patches in). */
+  private readonly unbindPrediction: () => void;
 
   constructor(
     private readonly host: HTMLElement,
@@ -72,6 +74,7 @@ export class Game {
     /** Joined office room; owned by the connection, which leaves it on exit. */
     readonly netRoom: OfficeRoomHandle,
   ) {
+    this.unbindPrediction = bindPrediction(netRoom, this.player.predictor);
     const room = buildRoom(officeLayout);
     this.scene.add(room);
     const occluders: THREE.Object3D[] = [];
@@ -208,6 +211,7 @@ export class Game {
   dispose(): void {
     this.disposed = true;
     this.renderer.setAnimationLoop(null);
+    this.unbindPrediction();
     this.input.dispose();
     window.removeEventListener('keydown', this.keydown);
     this.rig.dispose();

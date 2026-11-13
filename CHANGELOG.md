@@ -6,6 +6,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ### Added
 
+- Client prediction and reconciliation (T-1037): the local player moves in fixed 50 ms steps through the shared `applyInput`, sends `input` with seq from 1 (at most 20 per second), renders a partial step for no added input lag, and on each patch replays unacknowledged inputs from the server state; corrections above `BALANCE.net.reconcileEpsilon` blend over `BALANCE.net.correctionBlendSeconds`; the dev teleport hook detaches from server patches.
+
 - Server-authoritative activity and seating (T-1036): `intent` messages (sit, stand, toggleWork, drink, wave) queued per client behind earlier inputs (capped at `BALANCE.net.intentQueueMax`) and applied in the 50 ms tick with `nextActivity`, interaction-range checks and one `SeatRegistry` per room (first accepted sit wins); movement input while seated stands up at the interaction point and frees the seat; server drink/wave timers; leaving frees the seat.
 
 - Client connection layer and networked join (T-1035): `apps/web/src/net/` Colyseus wrapper with join/leave, status and typed errors; join screen shows connecting, room full, server unreachable, invalid identity, version mismatch and rate limited with retry; the joined room reaches `Game`; door exit leaves the room; server URL from `VITE_SERVER_URL`; e2e starts the game server next to the web dev server.

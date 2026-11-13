@@ -38,6 +38,10 @@ export const BALANCE = {
     /** Per-client cap on intents waiting for earlier inputs to apply; extra intents are dropped. */
     intentQueueMax: 4,
     joinsPerMinutePerIp: 10,
+    /** Client reconciliation: a replayed position closer than this (m) to the prediction is kept. */
+    reconcileEpsilon: 0.001,
+    /** Client reconciliation: a larger correction is blended in over this many seconds. */
+    correctionBlendSeconds: 0.15,
   },
   rendering: {
     /** 'agx' or 'aces' (THREE.AgXToneMapping / THREE.ACESFilmicToneMapping). */
