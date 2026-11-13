@@ -7,5 +7,8 @@
   },
   "scripts": {
     "test": "vitest run --exclude '**/dist/**' --exclude '**/node_modules/**'"
+  },
+  "dependencies": {
+    "@colyseus/schema": "5.0.45"
   }
 }

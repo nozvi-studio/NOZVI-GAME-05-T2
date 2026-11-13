@@ -6,6 +6,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ### Added
 
+- Phase 3 wire contract (T-1050): pinned Colyseus 0.18.12 / SDK 0.18.9 / schema 5.0.45, `packages/protocol/src/net/` (room schema, input/intent/join validators, typed join errors, fixed-step `applyInput`), `BALANCE.net`, `PROTOCOL_VERSION` 2.
+
 - Phase 2 join form with name/code validation, avatar selection, safe identity draft storage, player name/activity labels and return to the form through the exit door.
 
 - Phase 2 desk interaction: exclusive seat claims, E to sit and toggle work, WASD to stand, contextual prompts, main-door exit callback and a dev teleport hook.

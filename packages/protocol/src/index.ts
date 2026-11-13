@@ -1,4 +1,4 @@
-export const PROTOCOL_VERSION = 1;
+export * from './version';
 export * from './balance';
 export * from './layout/layout';
 export * from './collision';
@@ -7,3 +7,6 @@ export * from './identity';
 export * from './activity';
 export * from './seats';
 export * from './interaction';
+export * from './net/messages';
+export * from './net/fixedStep';
+export * from './net/schema';

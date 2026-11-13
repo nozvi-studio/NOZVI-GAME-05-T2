@@ -21,6 +21,22 @@ export const BALANCE = {
     fadeEndDistance: 1.0,
     fadeMinOpacity: 0.35,
   },
+  net: {
+    /** Server simulation rate; one client input equals one fixed step of 1 / tickHz seconds. */
+    tickHz: 20,
+    /** Server state patch interval (Colyseus patchRate). */
+    patchMs: 50,
+    /** Remote avatars are rendered this far in the past. */
+    interpolationDelayMs: 100,
+    /** Seat and avatar are held this long after an unexpected disconnect. */
+    reconnectSeconds: 20,
+    /** Client retry delays after a drop; after the last one the UI offers Rejoin. */
+    backoffSeconds: [1, 2, 4, 8],
+    maxClients: 10,
+    /** Per-client cap on queued inputs (0.5 s at 20 Hz); extra inputs are dropped. */
+    inputQueueMax: 10,
+    joinsPerMinutePerIp: 10,
+  },
   rendering: {
     /** 'agx' or 'aces' (THREE.AgXToneMapping / THREE.ACESFilmicToneMapping). */
     toneMapping: 'aces',

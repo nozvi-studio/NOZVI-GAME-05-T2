@@ -8,7 +8,9 @@
     "start": "tsx src/main.ts"
   },
   "dependencies": {
-    "@office/protocol": "workspace:*"
+    "@colyseus/schema": "5.0.45",
+    "@office/protocol": "workspace:*",
+    "colyseus": "0.18.12"
   },
   "devDependencies": {
     "tsx": "4.23.15"
