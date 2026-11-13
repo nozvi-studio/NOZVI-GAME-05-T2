@@ -2,81 +2,137 @@ import { expect, test, type Page } from '@playwright/test';
 import { join } from './helpers';
 
 type P = { x: number; z: number; heading: number };
+type Office = {
+  getPlayer(): P;
+  getCameraYaw(): number;
+  setPose(p: { x: number; z: number; heading: number }): void;
+};
 const getPlayer = (page: Page) =>
-  page.evaluate(() => (window as unknown as { __office: { getPlayer(): P } }).__office.getPlayer());
+  page.evaluate(() => (window as unknown as { __office: Office }).__office.getPlayer());
 const getYaw = (page: Page) =>
-  page.evaluate(() =>
-    (window as unknown as { __office: { getCameraYaw(): number } }).__office.getCameraYaw(),
+  page.evaluate(() => (window as unknown as { __office: Office }).__office.getCameraYaw());
+
+/** Resolves after `n` rendered frames. */
+const frames = (page: Page, n: number) =>
+  page.evaluate(
+    (count) =>
+      new Promise<void>((resolve) => {
+        const tick = () => (--count <= 0 ? resolve() : requestAnimationFrame(tick));
+        requestAnimationFrame(tick);
+      }),
+    n,
   );
 
-// Holds a key for at least `ms` and at least `minFrames` rendered frames. Software WebGL can
-// stall a single frame for longer than a short hold, and the game only samples input per frame.
-async function hold(page: Page, key: string, ms: number, minFrames = 4) {
+/**
+ * Holds `key` until the player has moved `distance` m along the unit `axis` (x, z), then
+ * releases it. Waits on movement, not wall-clock time: software WebGL renders few and uneven
+ * frames, and the game only samples input per frame. Returns the signed displacement along
+ * the axis, so a wrong direction fails the assertion instead of timing out silently.
+ */
+async function holdUntilMoved(
+  page: Page,
+  key: string,
+  axis: { x: number; z: number },
+  distance: number,
+  timeout = 15_000,
+) {
+  const a = await getPlayer(page);
   await page.keyboard.down(key);
-  await Promise.all([
-    page.waitForTimeout(ms),
-    page.evaluate(
-      (n) =>
-        new Promise<void>((resolve) => {
-          const tick = () => (--n <= 0 ? resolve() : requestAnimationFrame(tick));
-          requestAnimationFrame(tick);
-        }),
-      minFrames,
-    ),
-  ]);
-  await page.keyboard.up(key);
+  try {
+    await page.waitForFunction(
+      ({ a, axis, distance }) => {
+        const b = (window as unknown as { __office: Office }).__office.getPlayer();
+        return (b.x - a.x) * axis.x + (b.z - a.z) * axis.z >= distance;
+      },
+      { a, axis, distance },
+      { polling: 'raf', timeout },
+    );
+  } catch {
+    // Fall through: the assertion below reports how far the player actually moved.
+  } finally {
+    await page.keyboard.up(key);
+  }
+  const b = await getPlayer(page);
+  return (b.x - a.x) * axis.x + (b.z - a.z) * axis.z;
 }
 
-test.beforeEach(async ({ page }) => {
+/**
+ * Holds `key` until the player's position stops changing for `stableFrames` consecutive
+ * frames (for example, blocked by a wall), then releases it.
+ */
+async function holdUntilStopped(page: Page, key: string, stableFrames = 10, timeout = 20_000) {
+  await page.keyboard.down(key);
+  try {
+    await page.evaluate(
+      ({ stableFrames, timeout }) =>
+        new Promise<void>((resolve, reject) => {
+          const office = (window as unknown as { __office: Office }).__office;
+          const deadline = performance.now() + timeout;
+          let last = office.getPlayer();
+          let still = 0;
+          const tick = () => {
+            const p = office.getPlayer();
+            still = Math.hypot(p.x - last.x, p.z - last.z) < 1e-4 ? still + 1 : 0;
+            last = p;
+            if (still >= stableFrames) return resolve();
+            if (performance.now() > deadline) return reject(new Error('player never stopped'));
+            requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }),
+      { stableFrames, timeout },
+    );
+  } finally {
+    await page.keyboard.up(key);
+  }
+}
+
+// One join for the whole file: joining and the first software-WebGL frames (shader
+// compilation) dominate the run time, so the walk checks share a single page in order.
+test.describe.configure({ mode: 'serial' });
+
+let page: Page;
+
+test.beforeAll(async ({ browser }) => {
+  page = await browser.newPage();
   await join(page);
-  // Software WebGL stalls for ~1-2 s on the first frames (shader compilation); wait for two
-  // rendered frames so timed key holds measure steady-state movement.
-  await page.evaluate(
-    () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
-  );
+  // Let the first slow frames pass before measuring movement.
+  await frames(page, 2);
 });
 
-test('renders the office canvas', async ({ page }) => {
+test.afterAll(async () => {
+  await page?.close();
+});
+
+test('renders the office canvas', async () => {
   await expect(page.locator('canvas')).toBeVisible();
   await page.screenshot({ path: 'test-results/walk-start.png' });
 });
 
-test('W moves along the camera forward', async ({ page }) => {
-  const a = await getPlayer(page);
-  const yaw = await getYaw(page);
-  await hold(page, 'w', 600);
-  const b = await getPlayer(page);
-  const along = (b.x - a.x) * Math.sin(yaw) + (b.z - a.z) * Math.cos(yaw);
-  expect(along).toBeGreaterThan(0.5);
-});
-
-test('S, A and D move in their camera-relative directions', async ({ page }) => {
+test('W, S, A and D move in their camera-relative directions', async () => {
   const yaw = await getYaw(page);
   const fwd = { x: Math.sin(yaw), z: Math.cos(yaw) };
+  const back = { x: -fwd.x, z: -fwd.z };
   const right = { x: -Math.cos(yaw), z: Math.sin(yaw) };
-  for (const [key, axis, sign] of [
-    ['s', fwd, -1],
-    ['d', right, 1],
-    ['a', right, -1],
+  const left = { x: -right.x, z: -right.z };
+  // W then S, D then A: each pair returns near the spawn, so no move runs into furniture.
+  for (const [key, axis] of [
+    ['w', fwd],
+    ['s', back],
+    ['d', right],
+    ['a', left],
   ] as const) {
-    const a = await getPlayer(page);
-    await hold(page, key, 400);
-    const b = await getPlayer(page);
-    expect(((b.x - a.x) * axis.x + (b.z - a.z) * axis.z) * sign).toBeGreaterThan(0.3);
+    expect(await holdUntilMoved(page, key, axis, 0.5), `key ${key}`).toBeGreaterThanOrEqual(0.5);
   }
 });
 
-test('walls stop the player', async ({ page }) => {
+test('walls stop the player', async () => {
   // Back the player into the north wall (inner face z = -4.7, capsule radius 0.3) from 0.9 m
-  // away. The spawn now faces west with over 5 m of open floor behind it, so start from a fixed pose.
+  // away, starting from a fixed pose so earlier moves do not matter.
   await page.evaluate(() =>
-    (window as unknown as { __office: { setPose(p: object): void } }).__office.setPose({
-      x: -0.4,
-      z: -3.8,
-      heading: 0,
-    }),
+    (window as unknown as { __office: Office }).__office.setPose({ x: -0.4, z: -3.8, heading: 0 }),
   );
-  await hold(page, 's', 4000, 12);
+  await holdUntilStopped(page, 's');
   const p = await getPlayer(page);
   expect(p.z).toBeGreaterThan(-4.8 + 0.3 - 0.01);
   expect(p.z).toBeLessThan(-4.7 + 0.3 + 0.05);

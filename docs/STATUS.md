@@ -1,6 +1,6 @@
 # STATUS — project memory
 
-Updated: 2026-11-13 by Claude Code · Phase: Phase 2.1 T-1014 merged into `dev`, branch closed; Phase 2.1 tasks 2-5 still open
+Updated: 2026-11-13 by Claude Code · Phase: Phase 2.1 — T-1014 merged; T-1044 e2e speed-up done on `feat/T-1044-e2e-speedup` (first green e2e run)
 Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/SPEC.md` (implementation spec). `docs/GDD.md` is deprecated (casual template).
 
 ## Done
@@ -17,10 +17,11 @@ Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTU
 
 - **Phase 2 implemented** on `feat/phase-2` (`docs/plans/phase-2.md`): Tasks 1-7 committed (protocol identity/activity/seats, CC0 furniture, Quaternius avatars, sit/work/stand, join screen + nameplate + exit, coffee/wave/sofa/cabinet). Task 8 e2e spec (`apps/web/e2e/sit.spec.ts`, shared `helpers.ts`) committed in `e0b2221`.
 - 2026-11-12 verification: unit tests 94/94 pass. Playwright e2e has NO valid result: first run hit another project's dev server on 5173; e2e now uses a dedicated server on 127.0.0.1:5180, but later runs hung in webServer setup or were killed for low RAM. Owner chose to merge into `dev` without e2e evidence.
+- **Phase 2.1 T-1044** (e2e speed-up, branch `feat/T-1044-e2e-speedup`): `walk.spec.ts` shares one join (serial, one page) and holds keys until the player has moved 0.5 m (or, for the wall check, until it stops) instead of fixed `waitForTimeout`. Per-file commands in README. 2026-11-13, Claude Code cloud container (Linux, Chromium 1243 SwiftShader, 1 worker): `pnpm --filter web e2e e2e/walk.spec.ts --repeat-each=5` 15/15 pass (1.2 min); **first full green run `pnpm --filter web e2e`: 6/6 pass (1.1 min)** — sit, visual and walk specs.
 
 ## Next (ordered)
 
-1. Phase 2.1 leftovers (`docs/plans/phase-2.1.md` closing note; Meridian FEAT-46): room widening T-1014 is done and merged into `dev` (`1df1931`); branch `feat/phase-2.1` closed. Still open, on a new branch from `dev`: e2e speed-up (merge walk tests into one join, replace fixed waits with condition waits, per-file run command; the timed W/S/A/D walk tests are flaky), then one green e2e run (Phase 3 client gate), and owner UI feedback once listed. Note: Meridian auto-marked FEAT-46 delivered after T-1014 alone.
+1. Phase 2.1 leftovers (`docs/plans/phase-2.1.md` closing note; Meridian FEAT-46): room widening T-1014 is done and merged into `dev` (`1df1931`); branch `feat/phase-2.1` closed. e2e speed-up T-1044 and the first green e2e run are done on `feat/T-1044-e2e-speedup` (awaiting review/merge; this unblocks Phase 3 client tasks once merged). Still open: owner UI feedback once listed. Note: Meridian auto-marked FEAT-46 delivered after T-1014 alone.
 2. Owner: measure FPS on a normal desktop and decide the draw-call budget (`phase-1-execution.md` §7).
 3. Phase 3 — Multiplayer Foundation: plan drafted in `docs/plans/phase-3.md` (Meridian FEAT-51: tasks T-1033 to T-1041, plus two task proposals and the tech spec `phase-3-multiplayer-tech-spec` awaiting owner approval). Server tasks 1-4 may start in parallel with Phase 2.1; client tasks wait for it. Owner must approve the Colyseus install and confirm the five defaults in plan §6.
 

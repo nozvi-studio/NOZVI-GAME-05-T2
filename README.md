@@ -7,8 +7,17 @@
 ## Quick start
 
 ```bash
-# Not scaffolded yet. Planned stack: Three.js + React + TypeScript + Vite (web), Node.js + Colyseus (server).
-# Install / run / test commands will be added when the monorepo is created.
+pnpm install
+pnpm --filter web dev        # web client
+pnpm check                   # format, lint, typecheck, unit tests, build
+```
+
+End-to-end tests (Playwright, software WebGL; run in the foreground, one worker):
+
+```bash
+pnpm --filter web e2e                          # full suite
+pnpm --filter web e2e e2e/walk.spec.ts         # one spec file
+pnpm --filter web e2e e2e/walk.spec.ts --repeat-each=5   # flakiness check
 ```
 
 ## Docs map
