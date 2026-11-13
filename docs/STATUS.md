@@ -1,6 +1,6 @@
 # STATUS — project memory
 
-Updated: 2026-11-13 by Claude Code · Phase: Phase 2 merged into `dev` (e2e unverified); Phase 2.1 planned (room widening assigned)
+Updated: 2026-11-13 by Claude Code · Phase: Phase 2.1 T-1014 merged into `dev`, branch closed; Phase 2.1 tasks 2-5 still open
 Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/SPEC.md` (implementation spec). `docs/GDD.md` is deprecated (casual template).
 
 ## Done
@@ -20,7 +20,7 @@ Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTU
 
 ## Next (ordered)
 
-1. Phase 2.1 (`docs/plans/phase-2.1.md`, Meridian FEAT-46): widen the room to 12 x 9.6 m (T-1014, assigned to `t1-opus`, not started), owner UI feedback, and e2e speed-up (merge walk tests into one join, replace fixed waits with condition waits, per-file run command). Get one green e2e run there.
+1. Phase 2.1 leftovers (`docs/plans/phase-2.1.md` closing note; Meridian FEAT-46): room widening T-1014 is done and merged into `dev` (`1df1931`); branch `feat/phase-2.1` closed. Still open, on a new branch from `dev`: e2e speed-up (merge walk tests into one join, replace fixed waits with condition waits, per-file run command; the timed W/S/A/D walk tests are flaky), then one green e2e run (Phase 3 client gate), and owner UI feedback once listed. Note: Meridian auto-marked FEAT-46 delivered after T-1014 alone.
 2. Owner: measure FPS on a normal desktop and decide the draw-call budget (`phase-1-execution.md` §7).
 3. Phase 3 — Multiplayer Foundation: plan drafted in `docs/plans/phase-3.md` (Meridian FEAT-51: tasks T-1033 to T-1041, plus two task proposals and the tech spec `phase-3-multiplayer-tech-spec` awaiting owner approval). Server tasks 1-4 may start in parallel with Phase 2.1; client tasks wait for it. Owner must approve the Colyseus install and confirm the five defaults in plan §6.
 

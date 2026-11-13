@@ -14,11 +14,20 @@
 
 | #   | Task                                                                                                         | Owner / state                                            |
 | --- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
-| 1   | Widen the room to 12 x 9.6 x 2.7 m (T-1014)                                                                  | Assigned to `t1-opus` in Meridian; not started           |
+| 1   | Widen the room to 12 x 9.6 x 2.7 m (T-1014)                                                                  | Done 2026-11-13 (`30473c6`), merged into `dev`           |
 | 2   | Remaining owner UI feedback                                                                                  | Not yet listed by the owner; add tasks once it is        |
 | 3   | e2e speed-up: merge walk tests into one join, replace fixed waits with condition waits, per-file run command | Not created; run after task 1 because coordinates change |
 | 4   | One green e2e run, run in the foreground by the owner (`npx playwright test`)                                | Depends on task 3                                        |
 | 5   | Owner measures FPS on a normal desktop and decides the draw-call budget (`phase-1-execution.md` §7)          | Owner                                                    |
+
+## Closing note (2026-11-13)
+
+Branch `feat/phase-2.1` was merged into `dev` (`1df1931`) and closed at the owner's request after task 1. Tasks 2 to 5 carry over unchanged and start on a new branch cut from `dev`:
+
+- Task 2: no owner UI feedback items listed yet.
+- Task 3: still needed. Evidence from T-1014 runs (agy, 2026-11-13): `sit.spec` and `visual.spec` pass; `walk.spec` "walls stop the player" passes 3/3; the timed W/S/A/D tests fail intermittently (0.24 to 0.40 m moved against 0.3 to 0.5 m thresholds, a different test on each repeat). Cause: fixed `waitForTimeout` key holds on software WebGL.
+- Task 4: blocked on task 3. This is also the Phase 3 entry gate for client tasks 5 to 11.
+- Task 5: owner, unchanged.
 
 ## Task 1 acceptance (T-1014)
 
