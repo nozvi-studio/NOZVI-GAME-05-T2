@@ -20,7 +20,10 @@ End-to-end tests (Playwright, software WebGL; run in the foreground, one worker)
 pnpm --filter web e2e                          # full suite
 pnpm --filter web e2e e2e/walk.spec.ts         # one spec file
 pnpm --filter web e2e e2e/walk.spec.ts --repeat-each=5   # flakiness check
+NET_PROFILE=test pnpm --filter web e2e e2e/netProfile.spec.ts --trace off   # 10 min soak, REQ-NET-004 profile
 ```
+
+Manual multi-client check: start the server with `JOIN_LIMIT_PER_MINUTE=1000` (add `NET_PROFILE=test` for the dev-only 100 ms RTT / jitter / 1% retransmit profile in `BALANCE.net.testProfile`), run `pnpm --filter @office/server bots -- --code TEN-01 --count 9` and join `TEN-01` in a browser.
 
 ## Docs map
 

@@ -1,6 +1,6 @@
 # Phase 3 — Multiplayer Foundation
 
-> Status: Draft plan, 2026-11-13. Branch: `feat/phase-3` (create from `dev` after Phase 2.1 merges). Tracked in Meridian as FEAT-51 with tech spec doc `phase-3-multiplayer-tech-spec`; task ids are in §4 ("proposal" means it awaits owner approval in Meridian). This plan lists design, scope and acceptance; step-by-step implementation detail belongs in each task.
+> Status: Implemented, 2026-11-13 (verification in §10; owner checks pending). Branch: `feat/phase-3` (create from `dev` after Phase 2.1 merges). Tracked in Meridian as FEAT-51 with tech spec doc `phase-3-multiplayer-tech-spec`; task ids are in §4 ("proposal" means it awaits owner approval in Meridian). This plan lists design, scope and acceptance; step-by-step implementation detail belongs in each task.
 
 **Goal:** 3 to 10 employees join the same office code and see each other move, sit, work and take breaks in real time, with no ghost avatars after a disconnect (`PRD/RoadMap.md` Phase 3).
 
@@ -117,3 +117,43 @@ Shared TV (Phase 4), deployment and hosting accounts (Phase 5), chat, accounts, 
 ## 9. Documents to update when the phase lands (task 11)
 
 `docs/CODEMAP.md` (server and `net` rows), `docs/ARCHITECTURE.md` §5 (name length is 1 to 20 per SPEC, not 1 to 24; rate limits per SPEC), `docs/DECISIONS.md` (fixed-step input model and the confirmed items from §6), `docs/STATUS.md`, `CHANGELOG.md`.
+
+## 10. Verification record (task 11, T-1041, 2026-11-13)
+
+Environment: Claude Code cloud container (Linux, Node 22, headless Chromium with SwiftShader software WebGL, 1280x720, one Playwright worker). Software-rendered numbers are evidence of behaviour, not of real-hardware performance.
+
+**Ten-client check** (`apps/web/e2e/ten.spec.ts`, plan §6 item 1): one browser plus nine headless bots walking 2 m squares at 20 inputs/s. The browser's list shows the ten names, the entrance board reads "Online: 10" and nine remote avatars render. The eleventh join is refused twice: a headless bot gets `room_full`, and a second browser shows "This office is full" with no game started; the observer still lists ten. Measured in that browser: 352 draw calls (158 main + 194 shadow), 145,296 triangles, 6.4 FPS over 3 s. Manual equivalent: `pnpm --filter @office/server bots -- --code TEN-01 --count 11` printed ten joins and `Bot11 rejected: room_full`.
+
+**Network profile soak** (`NET_PROFILE=test`, `apps/web/e2e/netProfile.spec.ts`, 10.1 min): profile 100 ms ± 20 ms added downlink delay with 1% of messages delayed a further 200 ms (TCP retransmit model: a "lost" message is late and holds back the ones behind it; nothing goes missing). One browser observed nine walking bots and walked its own player for 1 s every 20 s.
+
+| Measure                                                    | Result                                       |
+| ---------------------------------------------------------- | -------------------------------------------- |
+| Patches received by one bot                                | 11,944; gap p50 49 ms, p99 89 ms, max 284 ms |
+| Patch gaps over 150 ms (retransmit spikes)                 | 111                                          |
+| Remote avatar frame samples                                | 14,040                                       |
+| Remote frames faster than 3 m/s (1.5x walk) and over 0.1 m | 87 (0.6%), max 8.1 m/s, max step 2.26 m      |
+| Local player frames over the same threshold                | 1 (max 13.3 m/s)                             |
+| Browser frame rate / longest frame                         | 2.6 FPS / 1,259 ms                           |
+| Draw calls at the end (10 employees)                       | 368 (174 main + 194 shadow), 146,716 tris    |
+
+Observed result: **jumps seen**. Remote movement is continuous for 99.4% of frames; the remaining 0.6% are most likely catch-up steps after the 100 ms interpolation buffer runs dry: their count is in line with the 111 patch gaps longer than 150 ms (not proven frame by frame). The local player had one visible correction in 10 minutes. At 2.6 FPS every frame is coarse, so the owner should judge the visual quality on real hardware; OQ-017 still has no numeric jump threshold.
+
+**REQ-NET-007 baseline**: manifests pin `@colyseus/core` 0.18.28, `@colyseus/ws-transport` 0.18.5, `@colyseus/schema` 5.0.45 (server and protocol) and `@colyseus/sdk` 0.18.9 (web, server dev); the lockfile resolves exactly these with one core instance. Divergence from the tested `colyseus` 0.18.12 is the one recorded in DECISIONS (T-1050, T-1033) and covered by the server integration tests; nothing new.
+
+**Phase acceptance (§5)**
+
+| Item                                                                                                                          | State                                                                                                                                                         | Evidence                                                                                                                                      |
+| ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Two browsers on one code see each other's avatar, position, heading, animation; another code sees neither                     | Done                                                                                                                                                          | e2e `remote.spec.ts` (two pages)                                                                                                              |
+| Sit / work / stand seen remotely; simultaneous sit gives one winner                                                           | Done                                                                                                                                                          | `apps/server/test/activity.test.ts` (same-tick contest), e2e `seats.spec.ts`                                                                  |
+| Ten clients fill a room while a browser observes; eleventh gets room-full, no second room                                     | Done (owner default: nine bots + one browser = ten)                                                                                                           | e2e `ten.spec.ts`, `connect.spec.ts` (ten bots, browser refused), `apps/server/test/officeRoom.test.ts` (11th `room_full`, one room per code) |
+| Drop shows "reconnecting"; back within 20 s with full state, or removed after 20 s; consented leave removes at once; no ghost | Done                                                                                                                                                          | e2e `reconnect.spec.ts`, `employees.spec.ts` (door exit), `officeRoom.test.ts` (hold, restore, expiry)                                        |
+| Controlled-clock unit tests: 50 ms tick, ≤ 20 sends/s, 100 ms interpolation, 1/2/4/8 s backoff then Rejoin                    | Done                                                                                                                                                          | `apps/server/test/movement.test.ts`, `officeRoom.test.ts`; `apps/web/test/prediction.test.ts`, `interpolation.test.ts`, `reconnect.test.ts`   |
+| `pnpm check` passes; one green foreground Playwright run by the owner                                                         | Agent runs green: `pnpm check` (protocol 80, server 72, web 131 unit tests; build ok); full e2e 20 passed, 1 skipped (soak) in 7.0 min; **owner run pending** | `pnpm check`, `pnpm --filter @office/web e2e --trace off`                                                                                     |
+
+**Open gaps (owner only)**
+
+1. FPS and draw calls on a normal desktop with ten employees (REQ-PERF-001); the numbers above are SwiftShader only.
+2. Draw-call budget decision: ten employees measure 352 to 368 calls (about 160 to 175 main pass) and about 146k triangles, against the 45-call and 120k-triangle targets. Still open since T-1038.
+3. LAN playtest with real browsers on several machines, including a visual judgement of remote smoothness under the network profile.
+4. One foreground Playwright run by the owner.

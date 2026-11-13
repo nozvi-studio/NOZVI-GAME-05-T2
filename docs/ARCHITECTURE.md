@@ -1,6 +1,6 @@
 # Architecture — Virtual 3D Office (prototype)
 
-Updated: 2026-11-09 · Status: Accepted (lead decision) · Requirements source: `PRD/` · Visual reference: `except/`
+Updated: 2026-11-13 · Status: Accepted (lead decision) · Requirements source: `PRD/` · Visual reference: `except/`
 
 Synthesized from two independent proposals (Codex: engineering foundation; Antigravity: 3D client). Rationale per choice lives in `docs/DECISIONS.md`.
 
@@ -40,10 +40,13 @@ Node LTS + pnpm (pinned via `packageManager`/`engines`), TypeScript strict with 
 
 ## 5. Realtime
 
-- Colyseus, one `OfficeRoom` per normalized office code, single Node process, `maxClients = 10`; 11th player rejected (no duplicate room for same code).
-- Server-authoritative fixed 20 Hz simulation, 50 ms patch rate. Client sends movement intent + sequence (≤ 20/s), predicts local avatar, reconciles; remote avatars interpolated ~100 ms behind.
-- Reconnect: seat held 20 s (`allowReconnection`), token in `sessionStorage`, full resync on reconnect, explicit rejoin after expiry.
-- Validation: office code 4–12 chars `[A-Z0-9-]` (uppercased); name 1–24 visible chars, no control chars/markup, rendered as text; known avatar IDs only; speed, bounds, collision, interaction range and state-transition checks; token buckets ≈25 move/s, 5 interact/s, 2 TV/s per session, join cap per IP. Limits are tunable defaults, not PRD rules.
+- Colyseus 0.18 in one Node process: `@colyseus/core` 0.18.28 + `@colyseus/ws-transport` 0.18.5 on the server (not the `colyseus` meta-package, see DECISIONS 2026-11-13), `@colyseus/sdk` 0.18.9 on the client, `@colyseus/schema` 5.0.45 shared. `GET /health` and the WebSocket upgrade share one HTTP port.
+- One `OfficeRoom` per normalized office code (room id = code), `maxClients = 10`; the 11th player gets `room_full` (no duplicate room for the same code).
+- Server-authoritative fixed 20 Hz simulation, 50 ms patch rate. One client input = one fixed 50 ms step through the shared `applyInput` on both sides; the client sends input + sequence (≤ 20/s), predicts the local avatar and reconciles on `lastSeq`; remote avatars are interpolated ~100 ms behind. Seating waits for the server (no optimistic sit).
+- Reconnect: avatar and seat held 20 s (`allowReconnection`) with `connected = false`, token in `sessionStorage`, client-owned 1/2/4/8 s backoff then explicit Rejoin, full resync on reconnect. A consented leave removes the employee at once.
+- Validation: office code 4–12 chars `[A-Z0-9-]` (uppercased); name 1–20 visible chars after trim, no control chars/markup, rendered as text (SPEC REQ-NFR-004); known avatar IDs only; speed, bounds, collision, interaction range and state-transition checks; queued inputs per client are capped so flooding cannot move a player faster than real time.
+- Rate limits (SPEC REQ-NFR-005): joins 10 per minute per socket address (`BALANCE.net.joinsPerMinutePerIp`; proxy headers ignored until Phase 5), TV commands 5 per 10 s per client (Phase 4, also a balance value). Movement sends are capped at 20/s by REQ-NET-003, separate from these abuse limits. The prototype is chat-free.
+- Dev only: `NET_PROFILE=test` on the server delays and jitters outgoing messages to the REQ-NET-004 test profile (`BALANCE.net.testProfile`); off by default and refused when `NODE_ENV=production`.
 - Shared TV: `SharedTVState` (PRD-SRS §3.4) with server timestamp; commands serialized in room order; client drift correction: < 0.5 s ignore, 0.5–2 s playback-rate nudge, > 2 s hard seek; resync on `visibilitychange`.
 
 ## 6. Deployment (free)
