@@ -149,6 +149,6 @@ Consequence: E shows nothing until the server confirms (about 50 to 150 ms). Wal
 ## 2026-11-13 — Web client on Vercel, server on Render (owner)
 
 Context: Owner asked to deploy early (Phase 5 work) and chose Vercel for the web client.
-Choice: Vercel hosts the static Vite build of `apps/web` (`vercel.json` at the repo root); Render Free hosts the Colyseus server (`render.yaml` Blueprint, health check `/health`, Singapore region). `VITE_SERVER_URL` on Vercel points at Render; `ALLOWED_ORIGINS` on Render lists the Vercel origin. Steps in `docs/DEPLOY.md`.
+Choice: Vercel hosts the static Vite build of `apps/web` (`vercel.json` at the repo root); Render Free hosts the Colyseus server (`render.yaml` Blueprint, health check `/health`, Singapore region). `VITE_SERVER_URL` on Vercel points at Render; `ALLOWED_ORIGINS` on Render lists the Vercel origin. Steps in `docs/DEPLOY.md`. Production deploys only from GitHub Actions (`deploy.yml`, after `ci` passes on `main`); Render auto-deploy and Vercel Git deploys are off so an unchecked commit cannot reach production.
 Alternatives: Cloudflare Pages for the web client (the earlier ARCHITECTURE choice; equivalent for a static build); the server on Vercel (not possible: no long-lived WebSockets).
 Consequence: Supersedes the Cloudflare Pages part of the 2026-11-09 hosting entry; Render limits are unchanged (15 min sleep, ~1 min cold start, restart wipes rooms). Behind Render's proxy the join limit sees the proxy address until proxy-header handling lands in Phase 5.

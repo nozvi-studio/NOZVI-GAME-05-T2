@@ -3,5 +3,8 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm --filter @office/web build",
   "outputDirectory": "apps/web/dist",
-  "framework": null
+  "framework": null,
+  "git": {
+    "deploymentEnabled": false
+  }
 }

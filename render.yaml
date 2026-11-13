@@ -9,7 +9,8 @@ services:
     buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false
     startCommand: pnpm --filter @office/server start
     healthCheckPath: /health
-    autoDeploy: true
+    # Deploys come from .github/workflows/deploy.yml (after CI) via the deploy hook.
+    autoDeploy: false
     envVars:
       - key: NODE_VERSION
         value: '24'

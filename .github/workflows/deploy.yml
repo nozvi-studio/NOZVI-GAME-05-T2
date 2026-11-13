@@ -1,0 +1,68 @@
+name: deploy
+# Production deploy after CI passes on main: server to Render, then web to Vercel.
+# Manual runs (Actions → deploy → Run workflow) deploy the chosen ref without waiting for CI.
+# Setup and required secrets: docs/DEPLOY.md.
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  server:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      SERVER_URL: ${{ vars.SERVER_URL }}
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - name: Check configuration
+        run: |
+          test -n "$RENDER_DEPLOY_HOOK_URL" || { echo "::error::secret RENDER_DEPLOY_HOOK_URL is not set (docs/DEPLOY.md)"; exit 1; }
+          test -n "$SERVER_URL" || { echo "::error::variable SERVER_URL is not set (docs/DEPLOY.md)"; exit 1; }
+      - name: Trigger Render deploy of this commit
+        run: curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}&ref=${SHA}" > /dev/null
+      - name: Wait for /health
+        # Render builds for a few minutes; the free plan may also be waking up.
+        run: |
+          sleep 60
+          for i in $(seq 1 40); do
+            if curl -fsS --max-time 10 "$SERVER_URL/health" | grep -q '"ok"'; then echo "server healthy"; exit 0; fi
+            sleep 15
+          done
+          echo "::error::$SERVER_URL/health did not answer ok"; exit 1
+
+  web:
+    needs: server
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Check configuration
+        run: |
+          for v in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            test -n "${!v}" || { echo "::error::secret $v is not set (docs/DEPLOY.md)"; exit 1; }
+          done
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      # Pulls project settings and production env (VITE_SERVER_URL) from Vercel, builds here, uploads the result.
+      - run: npx --yes vercel@65.8.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - run: npx --yes vercel@65.8.0 build --prod --token="$VERCEL_TOKEN"
+      - run: npx --yes vercel@65.8.0 deploy --prebuilt --prod --token="$VERCEL_TOKEN" | tee deploy-url.txt
+      - run: echo "Deployed $(tail -n1 deploy-url.txt)" >> "$GITHUB_STEP_SUMMARY"

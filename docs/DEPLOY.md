@@ -4,6 +4,24 @@ Owner decision 2026-11-13 (see DECISIONS): the web client goes to Vercel, the Co
 
 Order: deploy the server first, then the web client (it needs the server URL at build time), then put the web URL back into the server's `ALLOWED_ORIGINS`.
 
+## CI/CD (GitHub Actions)
+
+- `.github/workflows/ci.yml`: `pnpm check` on every push and PR; Playwright e2e (one retry, report uploaded on failure) on PRs and on pushes to `main` / `dev`.
+- `.github/workflows/deploy.yml`: when `ci` succeeds on `main`, deploys the same commit to Render (deploy hook), waits for `/health`, then builds and deploys the web client to Vercel with the Vercel CLI. **Actions → deploy → Run workflow** deploys any branch by hand.
+- Render auto-deploy is off (`render.yaml`) and Vercel's Git auto-deploy is off (`vercel.json`), so only the workflow deploys production.
+
+One-time setup after steps 1 to 3 below, in GitHub → repo **Settings → Secrets and variables → Actions** (or the `production` environment):
+
+| Name                     | Kind     | Value                                                                                              |
+| ------------------------ | -------- | -------------------------------------------------------------------------------------------------- |
+| `RENDER_DEPLOY_HOOK_URL` | secret   | Render → service → Settings → Deploy Hook                                                          |
+| `VERCEL_TOKEN`           | secret   | vercel.com → Account Settings → Tokens                                                             |
+| `VERCEL_ORG_ID`          | secret   | Vercel project → Settings → General (Team/Owner ID), or `.vercel/project.json` after `vercel link` |
+| `VERCEL_PROJECT_ID`      | secret   | Vercel project → Settings → General → Project ID                                                   |
+| `SERVER_URL`             | variable | `https://<service>.onrender.com` (used for the health check)                                       |
+
+Missing values make the deploy job fail with a message naming the missing one; CI itself does not need them.
+
 ## 1. Server on Render
 
 1. render.com → **New → Blueprint** → connect GitHub → pick `nozvi-studio/NOZVI-GAME-05-T2` and the branch to deploy. Render reads `render.yaml` at the repo root.
@@ -17,7 +35,7 @@ Free-tier behaviour: the service sleeps after 15 minutes without traffic and nee
 1. vercel.com → **Add New → Project** → import `nozvi-studio/NOZVI-GAME-05-T2`.
 2. Keep **Root Directory** at the repository root; `vercel.json` sets install, build and output (`apps/web/dist`).
 3. **Environment Variables**: `VITE_SERVER_URL` = `https://<service>.onrender.com` (no trailing slash). It is baked into the browser bundle at build time, so change it → redeploy.
-4. Pick the production branch in Project → Settings → Git, then deploy.
+4. Run a first deploy from the dashboard (or the deploy workflow once the secrets exist). Later deploys come from GitHub Actions.
 
 ## 3. Lock the server to the web origin
 
