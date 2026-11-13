@@ -15,11 +15,11 @@
 
 ## 2. Entry gates
 
-| Gate                                                                 | Blocks                         | Why                                                                |
-| -------------------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------ |
-| Owner approves installing the Colyseus packages                      | Task 1                         | AGENTS.md §8; agy installs                                         |
-| Phase 2.1 merged: room 12 x 9.6 m (T-1014) and one green e2e run     | Tasks 5 to 11 (client)         | Client tasks touch `Game.ts` and e2e; they need a verified base    |
-| Owner FPS measurement and draw-call budget (Phase 2.1 task 5)        | Task 7 acceptance              | Up to 9 remote avatars multiply skinned-mesh draw calls            |
+| Gate                                                             | Blocks                 | Why                                                             |
+| ---------------------------------------------------------------- | ---------------------- | --------------------------------------------------------------- |
+| Owner approves installing the Colyseus packages                  | Task 1                 | AGENTS.md §8; agy installs                                      |
+| Phase 2.1 merged: room 12 x 9.6 m (T-1014) and one green e2e run | Tasks 5 to 11 (client) | Client tasks touch `Game.ts` and e2e; they need a verified base |
+| Owner FPS measurement and draw-call budget (Phase 2.1 task 5)    | Task 7 acceptance      | Up to 9 remote avatars multiply skinned-mesh draw calls         |
 
 Tasks 1 to 4 (protocol and server) do not depend on the room size, because the layout is data, and may start while Phase 2.1 is still running.
 
@@ -60,19 +60,19 @@ Decision: one input equals one fixed 50 ms step on both sides.
 
 ## 4. Tasks
 
-| #   | Meridian | Task                                                                 | Size | Depends on | Requirements                         |
-| --- | -------- | -------------------------------------------------------------------- | ---- | ---------- | ------------------------------------ |
-| 1   | proposal | Pin Colyseus packages; wire contract, schema and `BALANCE.net`       | M    | owner OK   | REQ-NET-007, REQ-NET-008, REQ-NFR-004 |
-| 2   | T-1033   | Server: `OfficeRoom`, room per office code, join validation, capacity | M    | 1          | REQ-NET-001, REQ-UI-002, REQ-NFR-005 |
-| 3   | T-1034   | Server: authoritative fixed-step movement at 20 Hz                   | M    | 2          | REQ-NET-002, REQ-NET-003             |
-| 4   | T-1036   | Server: authoritative activity and seats                             | M    | 3          | REQ-NET-002, REQ-INT-002             |
-| 5   | T-1035   | Client: connection layer and networked join flow                     | M    | 2, P2.1    | REQ-UI-002, REQ-NET-008              |
-| 6   | T-1037   | Client: fixed-step prediction and reconciliation                     | L    | 3, 5       | REQ-NET-003, REQ-NET-004             |
-| 7   | T-1038   | Client: remote avatars with interpolation and nameplates             | L    | 5          | REQ-NET-004, REQ-UI-001              |
-| 8   | T-1039   | Client: replicated seats and activities                              | M    | 4, 6, 7    | REQ-NET-002, REQ-INT-002             |
-| 9   | T-1040   | Online employee list and entrance count board                        | S    | 7          | REQ-UI-003                           |
-| 10  | proposal | Disconnect, 20 s reconnect, backoff and rejoin                       | L    | 8          | REQ-NET-005, REQ-NET-006, REQ-UI-003 |
-| 11  | T-1041   | Multi-client verification, draw-call measurement, docs               | M    | 9, 10      | REQ-NET-001, REQ-NET-004             |
+| #   | Meridian | Task                                                                  | Size | Depends on | Requirements                          |
+| --- | -------- | --------------------------------------------------------------------- | ---- | ---------- | ------------------------------------- |
+| 1   | proposal | Pin Colyseus packages; wire contract, schema and `BALANCE.net`        | M    | owner OK   | REQ-NET-007, REQ-NET-008, REQ-NFR-004 |
+| 2   | T-1033   | Server: `OfficeRoom`, room per office code, join validation, capacity | M    | 1          | REQ-NET-001, REQ-UI-002, REQ-NFR-005  |
+| 3   | T-1034   | Server: authoritative fixed-step movement at 20 Hz                    | M    | 2          | REQ-NET-002, REQ-NET-003              |
+| 4   | T-1036   | Server: authoritative activity and seats                              | M    | 3          | REQ-NET-002, REQ-INT-002              |
+| 5   | T-1035   | Client: connection layer and networked join flow                      | M    | 2, P2.1    | REQ-UI-002, REQ-NET-008               |
+| 6   | T-1037   | Client: fixed-step prediction and reconciliation                      | L    | 3, 5       | REQ-NET-003, REQ-NET-004              |
+| 7   | T-1038   | Client: remote avatars with interpolation and nameplates              | L    | 5          | REQ-NET-004, REQ-UI-001               |
+| 8   | T-1039   | Client: replicated seats and activities                               | M    | 4, 6, 7    | REQ-NET-002, REQ-INT-002              |
+| 9   | T-1040   | Online employee list and entrance count board                         | S    | 7          | REQ-UI-003                            |
+| 10  | proposal | Disconnect, 20 s reconnect, backoff and rejoin                        | L    | 8          | REQ-NET-005, REQ-NET-006, REQ-UI-003  |
+| 11  | T-1041   | Multi-client verification, draw-call measurement, docs                | M    | 9, 10      | REQ-NET-001, REQ-NET-004              |
 
 **Milestone A (after task 7):** two browsers on one office code see each other walk. Stop here for a short LAN playtest with two or three colleagues before investing in tasks 8 to 10. If remote movement looks wrong, fix it before adding seats and reconnect on top.
 
@@ -103,16 +103,16 @@ Shared TV (Phase 4), deployment and hosting accounts (Phase 5), chat, accounts, 
 
 ## 8. Risks
 
-| Risk                                                                                              | Mitigation                                                                                                     |
-| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Schema classes use decorators; the web build may not compile them from `packages/protocol` source | Task 1 proves the schema compiles under `tsx` and `vite build`; the client may import schema types only         |
-| Registry versions have moved past the tested 0.18 baseline                                         | Pin the tested versions exactly (REQ-NET-007); record any divergence in DECISIONS                              |
-| Prediction and server diverge near colliders                                                      | Fixed 50 ms step on both sides; a determinism test runs the same input trace through client and server code    |
-| Ten avatars exceed the draw-call budget                                                           | Measure in task 7 with `__office.getDrawCalls()`; budget decision comes from Phase 2.1                          |
-| e2e with two pages plus a server exceeds RAM                                                      | One worker, foreground run by the owner, logic covered by Node tests; only two specs use two pages             |
-| Reconnect is the least predictable part (SDK auto-reconnect needs 5 s room uptime)                | Own retry path (REQ-NET-006); scheduled last so the core demo does not wait on it                               |
-| WebSocket runs on TCP, so "1% loss" appears as delay spikes, not missing packets                  | Dev-only server flag adds latency and jitter to approximate the 100 ms RTT profile; record what was measured    |
-| Phase 2.1 slips                                                                                    | Server tasks 1 to 4 proceed in parallel; client tasks wait                                                      |
+| Risk                                                                                              | Mitigation                                                                                                   |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Schema classes use decorators; the web build may not compile them from `packages/protocol` source | Task 1 proves the schema compiles under `tsx` and `vite build`; the client may import schema types only      |
+| Registry versions have moved past the tested 0.18 baseline                                        | Pin the tested versions exactly (REQ-NET-007); record any divergence in DECISIONS                            |
+| Prediction and server diverge near colliders                                                      | Fixed 50 ms step on both sides; a determinism test runs the same input trace through client and server code  |
+| Ten avatars exceed the draw-call budget                                                           | Measure in task 7 with `__office.getDrawCalls()`; budget decision comes from Phase 2.1                       |
+| e2e with two pages plus a server exceeds RAM                                                      | One worker, foreground run by the owner, logic covered by Node tests; only two specs use two pages           |
+| Reconnect is the least predictable part (SDK auto-reconnect needs 5 s room uptime)                | Own retry path (REQ-NET-006); scheduled last so the core demo does not wait on it                            |
+| WebSocket runs on TCP, so "1% loss" appears as delay spikes, not missing packets                  | Dev-only server flag adds latency and jitter to approximate the 100 ms RTT profile; record what was measured |
+| Phase 2.1 slips                                                                                   | Server tasks 1 to 4 proceed in parallel; client tasks wait                                                   |
 
 ## 9. Documents to update when the phase lands (task 11)
 
