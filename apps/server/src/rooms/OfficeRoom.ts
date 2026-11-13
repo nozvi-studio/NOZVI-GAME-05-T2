@@ -12,7 +12,8 @@ import {
   type JoinOptions,
 } from '@office/protocol';
 import { JoinRateLimiter } from '../joinRateLimiter';
-import { MovementSim, startMovementLoop } from '../sim/movement';
+import { OfficeSim } from '../sim/activity';
+import { startMovementLoop } from '../sim/movement';
 
 export function joinError(code: JoinErrorCode): ServerError {
   return new ServerError(JOIN_ERROR_STATUS[code], code);
@@ -39,8 +40,11 @@ function socketAddress(context: AuthContext | undefined): string {
 export class OfficeRoom extends Room<{ state: OfficeState }> {
   override maxClients = BALANCE.net.maxClients;
   override state = new OfficeState();
-  /** REQ-NET-002, REQ-NET-003: the only path by which a client changes its position. */
-  readonly movement = new MovementSim();
+  /**
+   * REQ-NET-002, REQ-NET-003, REQ-INT-002: the only path by which a client changes its
+   * employee (position, activity, seat). One `SeatRegistry` per room lives inside it.
+   */
+  readonly sim = new OfficeSim();
 
   override onCreate(options: { officeCode?: unknown }): void {
     const code =
@@ -51,13 +55,17 @@ export class OfficeRoom extends Room<{ state: OfficeState }> {
     if (matchMaker.getLocalRoomById(code)) throw joinError('room_full');
     this.roomId = code;
     this.patchRate = BALANCE.net.patchMs;
-    // A client can only queue inputs for its own employee; no message sets position.
+    // A client can only queue inputs and intents for its own employee; no message sets
+    // state directly. Both are applied in the tick, in the order the client sent them.
     this.onMessage(MSG.input, (client, raw: unknown) => {
-      this.movement.enqueue(client.sessionId, raw);
+      this.sim.input(client.sessionId, raw);
+    });
+    this.onMessage(MSG.intent, (client, raw: unknown) => {
+      this.sim.intent(client.sessionId, raw);
     });
     startMovementLoop(
       (tick, delayMs) => this.setTimestep(tick, delayMs),
-      () => this.movement.tick(this.state.employees, officeLayout.colliders),
+      () => this.sim.tick(this.state.employees, officeLayout.colliders, this.clock.currentTime),
     );
   }
 
@@ -78,12 +86,13 @@ export class OfficeRoom extends Room<{ state: OfficeState }> {
     employee.z = z;
     employee.heading = (officeLayout.spawn.rotY * Math.PI) / 180;
     this.state.employees.set(client.sessionId, employee);
-    this.movement.add(client.sessionId, employee.lastSeq);
+    this.sim.add(client.sessionId, employee.lastSeq);
   }
 
   override onLeave(client: Client): void {
-    // The 20 s reconnect window arrives with T-1051; until then any leave removes at once.
-    this.movement.remove(client.sessionId);
+    // The 20 s reconnect window arrives with T-1051; until then any leave removes the
+    // employee and frees its seat at once.
+    this.sim.remove(client.sessionId);
     this.state.employees.delete(client.sessionId);
   }
 }

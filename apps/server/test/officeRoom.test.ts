@@ -8,6 +8,7 @@ import {
   OFFICE_ROOM,
   PROTOCOL_VERSION,
   BALANCE,
+  officeLayout,
   type EmployeeState,
   type OfficeState,
 } from '@office/protocol';
@@ -190,5 +191,78 @@ describe('OfficeRoom movement', () => {
     await waitFor(() => seen(b)?.lastSeq === 7);
     expect(seen(b)!.z).toBe(e.z);
     expect(seen(b)!.activity).toBe('idle');
+  });
+});
+
+describe('OfficeRoom activity and seats', () => {
+  const DESK = 'ws_1_seat';
+  const ws1 = officeLayout.workstations.find((w) => w.seat.id === DESK)!;
+
+  /** Test setup only: puts an employee next to the ws_1 desk on the server. */
+  function placeAtDesk(code: string, sessionId: string): void {
+    const e = local(code).state.employees.get(sessionId)!;
+    e.x = ws1.interactionPoint[0];
+    e.z = ws1.interactionPoint[2];
+  }
+
+  async function settle(): Promise<void> {
+    await new Promise((r) => setTimeout(r, 4 * (1000 / BALANCE.net.tickHz)));
+  }
+
+  it('gives a contested desk to exactly one of two clients and frees it on leave', async () => {
+    const a = (await join('seat-01')) as Room<OfficeState>;
+    const b = (await join('seat-01', { name: 'Bao' })) as Room<OfficeState>;
+    placeAtDesk('SEAT-01', a.sessionId);
+    placeAtDesk('SEAT-01', b.sessionId);
+    a.send(MSG.intent, { type: 'sit', seatId: DESK });
+    b.send(MSG.intent, { type: 'sit', seatId: DESK });
+    const employees = local('SEAT-01').state.employees;
+    await waitFor(() => [...employees.values()].some((e) => e.seatId === DESK));
+    await settle();
+    const seated = [...employees.values()].filter((e) => e.seatId === DESK);
+    expect(seated).toHaveLength(1);
+    expect(seated[0]!.activity).toBe('sitting');
+    const [winner, loser] = employees.get(a.sessionId)!.seatId === DESK ? [a, b] : [b, a];
+    expect(employees.get(loser.sessionId)).toMatchObject({ seatId: '', activity: 'idle' });
+
+    // The other client sees the seat and activity replicated.
+    await waitFor(() => loser.state.employees?.get(winner.sessionId)?.seatId === DESK);
+
+    // toggleWork from the occupant works; from the loser it changes nothing.
+    winner.send(MSG.intent, { type: 'toggleWork' });
+    loser.send(MSG.intent, { type: 'toggleWork' });
+    await waitFor(() => employees.get(winner.sessionId)?.activity === 'working');
+    await settle();
+    expect(employees.get(loser.sessionId)!.activity).toBe('idle');
+
+    // Leaving frees the desk for the other client.
+    await winner.leave(true);
+    loser.send(MSG.intent, { type: 'sit', seatId: DESK });
+    await waitFor(() => employees.get(loser.sessionId)?.seatId === DESK);
+  });
+
+  it('stands a seated employee up when a movement input arrives', async () => {
+    const a = (await join('stand-01')) as Room<OfficeState>;
+    placeAtDesk('STAND-01', a.sessionId);
+    a.send(MSG.intent, { type: 'sit', seatId: DESK });
+    const e = () => local('STAND-01').state.employees.get(a.sessionId)!;
+    await waitFor(() => e().seatId === DESK);
+    a.send(MSG.input, { seq: 1, forward: 1, right: 0, run: false, yaw: 0 });
+    await waitFor(() => e().lastSeq === 1);
+    expect(e()).toMatchObject({ seatId: '', activity: 'walking' });
+    expect(e().x).toBeCloseTo(ws1.interactionPoint[0], 9);
+    expect(local('STAND-01').sim.activity.seats.occupant(DESK)).toBeNull();
+  });
+
+  it('ignores a sit from outside the interaction range or for an unknown seat', async () => {
+    const a = (await join('far-01')) as Room<OfficeState>;
+    a.send(MSG.intent, { type: 'sit', seatId: DESK });
+    a.send(MSG.intent, { type: 'sit', seatId: 'nope' });
+    await settle();
+    expect(local('FAR-01').state.employees.get(a.sessionId)).toMatchObject({
+      seatId: '',
+      activity: 'idle',
+    });
+    expect(local('FAR-01').sim.activity.seats.occupant(DESK)).toBeNull();
   });
 });
