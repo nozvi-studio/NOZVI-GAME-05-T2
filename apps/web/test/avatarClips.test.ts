@@ -5,7 +5,10 @@ import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { AvatarView, CLIP_FOR } from '../src/game/avatar/AvatarView';
 import { Player } from '../src/game/player';
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  AvatarView.clearCache();
+});
 
 const UAL = [
   'Idle_Loop',
@@ -165,4 +168,35 @@ it('rejects an avatar without a skinned mesh without replacing the capsule', asy
   );
   expect(player.mesh.children).toEqual(capsule);
   expect(player.viewFinite()).toBe(false);
+});
+
+it('loads each avatar GLB once and clones it for further views', async () => {
+  const load = vi
+    .spyOn(GLTFLoader.prototype, 'loadAsync')
+    .mockImplementation((url) => loadLocalGltf(url));
+  const [a, b] = await Promise.all([AvatarView.load('men_suit'), AvatarView.load('men_suit')]);
+  const c = await AvatarView.load('men_suit');
+  const avatarLoads = load.mock.calls.filter(([url]) => url === '/assets/avatars/men_suit.glb');
+  expect(avatarLoads).toHaveLength(1);
+  const skinned = (v: AvatarView) => {
+    let found: THREE.SkinnedMesh | undefined;
+    v.root.traverse((o) => {
+      if (!found && o instanceof THREE.SkinnedMesh) found = o;
+    });
+    return found!;
+  };
+  const [ma, mb, mc] = [skinned(a), skinned(b), skinned(c)];
+  expect(new Set([ma, mb, mc]).size).toBe(3);
+  expect(mb.geometry).toBe(ma.geometry);
+  expect(mb.material).not.toBe(ma.material);
+  expect(mb.skeleton.bones[0]).not.toBe(ma.skeleton.bones[0]);
+  // Each clone animates its own skeleton.
+  b.setActivity('walking');
+  for (let i = 0; i < 30; i++) b.update(1 / 30);
+  expect(b.hasFiniteBones()).toBe(true);
+  const dispose = vi.spyOn(mb.material as THREE.Material, 'dispose');
+  b.dispose();
+  expect(dispose).toHaveBeenCalledTimes(1);
+  expect(b.root.parent).toBeNull();
+  expect(a.hasFiniteBones()).toBe(true);
 });

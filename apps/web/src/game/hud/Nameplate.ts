@@ -13,8 +13,14 @@ export class Nameplate {
     this.object = new CSS2DObject(el);
     this.object.position.set(0, 2.1, 0);
   }
+  /** Text only: a replicated name is never parsed as markup. */
   set(name: string, status: string): void {
-    this.nameEl.textContent = name;
-    this.statusEl.textContent = status;
+    if (this.nameEl.textContent !== name) this.nameEl.textContent = name;
+    if (this.statusEl.textContent !== status) this.statusEl.textContent = status;
+  }
+  /** Detaches the label; CSS2DObject removes its element from the overlay on 'removed'. */
+  dispose(): void {
+    this.object.removeFromParent();
+    this.object.element.remove();
   }
 }

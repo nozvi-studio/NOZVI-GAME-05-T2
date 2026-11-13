@@ -6,6 +6,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ### Added
 
+- Remote avatars (T-1038): `apps/web/src/game/remote/RemoteAvatars.ts` adds one avatar and nameplate per remote employee and disposes both on leave; poses come from the pure `apps/web/src/net/interpolation.ts` buffer 100 ms in the past (shortest-arc heading, last pose held when dry); avatar GLBs load once per `avatarId` and are cloned; shared `activityLabel`; dev hook `getRemotes()` / `getRemoteCount()`; two-page e2e `remote.spec.ts`.
+
 - Server-authoritative activity and seating (T-1036): `intent` messages (sit, stand, toggleWork, drink, wave) queued per client behind earlier inputs (capped at `BALANCE.net.intentQueueMax`) and applied in the 50 ms tick with `nextActivity`, interaction-range checks and one `SeatRegistry` per room (first accepted sit wins); movement input while seated stands up at the interaction point and frees the seat; server drink/wave timers; leaving frees the seat.
 
 - Client connection layer and networked join (T-1035): `apps/web/src/net/` Colyseus wrapper with join/leave, status and typed errors; join screen shows connecting, room full, server unreachable, invalid identity, version mismatch and rate limited with retry; the joined room reaches `Game`; door exit leaves the room; server URL from `VITE_SERVER_URL`; e2e starts the game server next to the web dev server.
