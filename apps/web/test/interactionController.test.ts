@@ -1,73 +1,104 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   SeatRegistry,
-  officeLayout,
   type Activity,
+  type IntentMessage,
   type PlayerState,
-  type Vec3,
 } from '@office/protocol';
 import { InteractionController } from '../src/game/interaction/InteractionController';
+import { roomOccupancy, type SeatOccupancy } from '../src/net/occupancy';
 
-function fakePlayer(state: PlayerState) {
-  return {
-    state,
-    activity: 'idle' as Activity,
-    seatedAt: null as Vec3 | null,
-    setActivity(a: Activity) {
-      this.activity = a;
-    },
-    seatAt(s: { position: Vec3; rotY: number }) {
-      this.seatedAt = s.position;
-      this.state = { x: s.position[0], z: s.position[2], heading: (s.rotY * Math.PI) / 180 };
-    },
-    standAt(p: Vec3) {
-      this.seatedAt = null;
-      this.state = { ...this.state, x: p[0], z: p[2] };
-    },
-  };
+function fakePlayer(state: PlayerState, activity: Activity = 'idle') {
+  return { state, activity };
+}
+
+function setup(state: PlayerState, seats: SeatOccupancy = new SeatRegistry()) {
+  const p = fakePlayer(state);
+  const sent: IntentMessage[] = [];
+  const onExit = vi.fn();
+  const c = new InteractionController(p, seats, 'me', {
+    onExit,
+    sendIntent: (i) => sent.push(i),
+  });
+  return { p, c, sent, onExit, seats };
 }
 
 describe('InteractionController', () => {
-  it('sits at the faced free desk, toggles work and stands', () => {
-    const seats = new SeatRegistry();
-    const p = fakePlayer({ x: 0.66, z: 2.46, heading: Math.PI });
-    const c = new InteractionController(p, seats, 'me', { onExit: vi.fn() });
+  it('sends sit for the faced free desk and changes nothing until the server confirms', () => {
+    const { p, c, sent } = setup({ x: 0.66, z: 2.46, heading: Math.PI });
     expect(c.currentPrompt()?.text).toBe('E — Sit');
     c.press();
-    expect(p.activity).toBe('sitting');
-    expect(p.seatedAt).toEqual(
-      officeLayout.workstations.find((w) => w.id === 'ws_5')!.seat.position,
-    );
-    expect(seats.occupant('ws_5_seat')).toBe('me');
+    expect(sent).toEqual([{ type: 'sit', seatId: 'ws_5_seat' }]);
+    // No optimistic sit: activity and position are untouched.
+    expect(p.activity).toBe('idle');
+    expect(p.state).toEqual({ x: 0.66, z: 2.46, heading: Math.PI });
+  });
+
+  it('toggles work through intents while the server reports the player seated', () => {
+    const { p, c, sent } = setup({ x: 0.66, z: 1.2, heading: Math.PI / 2 });
+    p.activity = 'sitting';
     expect(c.currentPrompt()?.text).toBe('E — Start working · WASD — Stand up');
     c.press();
-    expect(p.activity).toBe('working');
+    p.activity = 'working';
     expect(c.currentPrompt()?.text).toBe('E — Stop working · WASD — Stand up');
     c.press();
-    expect(p.activity).toBe('sitting');
+    expect(sent).toEqual([{ type: 'toggleWork' }, { type: 'toggleWork' }]);
+    p.activity = 'resting';
+    expect(c.currentPrompt()?.text).toBe('WASD — Stand up');
     c.press();
-    c.onMoveIntent();
-    expect(p.activity).toBe('idle');
-    expect([p.state.x, p.state.z]).toEqual([0.66, 2.46]);
-    expect(seats.occupant('ws_5_seat')).toBeNull();
-    expect(c.currentPrompt()?.text).toBe('E — Sit');
+    expect(sent).toHaveLength(2);
   });
-  it('refuses a taken desk', () => {
+
+  it('shows a desk held by another employee as taken and sends nothing', () => {
     const seats = new SeatRegistry();
     seats.claim('ws_5_seat', 'other');
-    const p = fakePlayer({ x: 0.66, z: 2.46, heading: Math.PI });
-    const c = new InteractionController(p, seats, 'me', { onExit: vi.fn() });
+    const { p, c, sent } = setup({ x: 0.66, z: 2.46, heading: Math.PI }, seats);
     expect(c.currentPrompt()).toEqual({ text: 'Desk taken', available: false });
     c.press();
+    expect(sent).toEqual([]);
     expect(p.activity).toBe('idle');
-    expect(seats.occupant('ws_5_seat')).toBe('other');
   });
-  it('leaves through the main door', () => {
-    const onExit = vi.fn();
-    const p = fakePlayer({ x: -0.46, z: -3.8, heading: Math.PI });
-    const c = new InteractionController(p, new SeatRegistry(), 'me', { onExit });
+
+  it('reads desk occupancy from replicated room state', () => {
+    const employees = new Map([
+      ['me', { seatId: '' }],
+      ['other', { seatId: '' }],
+    ]);
+    const occupancy = roomOccupancy({ state: { employees } });
+    const { c } = setup({ x: 0.66, z: 2.46, heading: Math.PI }, occupancy);
+    expect(c.currentPrompt()?.text).toBe('E — Sit');
+    employees.get('other')!.seatId = 'ws_5_seat';
+    expect(occupancy.occupant('ws_5_seat')).toBe('other');
+    expect(c.currentPrompt()).toEqual({ text: 'Desk taken', available: false });
+    employees.get('other')!.seatId = '';
+    expect(c.currentPrompt()?.text).toBe('E — Sit');
+    // The local player's own seat is never "taken".
+    employees.get('me')!.seatId = 'ws_5_seat';
+    expect(c.seatFree('ws_5_seat')).toBe(true);
+    expect(roomOccupancy({}).occupant('ws_5_seat')).toBeNull();
+  });
+
+  it('does not send sit while the activity forbids it', () => {
+    const { p, c, sent } = setup({ x: 0.66, z: 2.46, heading: Math.PI });
+    p.activity = 'drinking';
+    c.press();
+    expect(sent).toEqual([]);
+  });
+
+  it('sends wave only when the activity allows it', () => {
+    const { p, c, sent } = setup({ x: 0, z: 0, heading: 0 });
+    c.wave();
+    expect(sent).toEqual([{ type: 'wave' }]);
+    p.activity = 'sitting';
+    c.wave();
+    expect(sent).toHaveLength(1);
+  });
+
+  it('leaves through the main door locally', () => {
+    const { c, onExit, sent } = setup({ x: -0.46, z: -3.8, heading: Math.PI });
     expect(c.currentPrompt()).toEqual({ text: 'E — Leave office', available: true });
     c.press();
     expect(onExit).toHaveBeenCalledOnce();
+    expect(sent).toEqual([]);
   });
 });

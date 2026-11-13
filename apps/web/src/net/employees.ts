@@ -9,6 +9,8 @@ export type ReplicatedEmployee = {
   readonly z: number;
   readonly heading: number;
   readonly activity: string;
+  /** Seat held ('' = none); a seated employee is drawn on the seat socket. */
+  readonly seatId: string;
 };
 
 /** Add / remove / change notifications for `room.state.employees`; each returns an unsubscribe. */

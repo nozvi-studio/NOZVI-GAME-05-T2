@@ -5,8 +5,11 @@ type StateChange<S> = ((callback: (state: S) => void) => unknown) & {
   remove(callback: (state: S) => void): void;
 };
 
+/** The replicated fields of the local employee: position for reconciliation, plus seat. */
+export type LocalSnapshot = ServerSnapshot & { readonly activity: string; readonly seatId: string };
+
 /** The part of the joined room the local prediction uses; tests substitute a fake. */
-export type PredictionRoom<S = { employees: { get(id: string): ServerSnapshot | undefined } }> = {
+export type PredictionRoom<S = { employees: { get(id: string): LocalSnapshot | undefined } }> = {
   readonly sessionId: string;
   send(type: typeof MSG.input, input: InputMessage): void;
   onStateChange: StateChange<S>;
@@ -14,10 +17,15 @@ export type PredictionRoom<S = { employees: { get(id: string): ServerSnapshot | 
 
 /**
  * Connects a predictor to the joined room: every produced input is sent as `MSG.input`, and
- * every state patch reconciles against the local employee (keyed by `sessionId`). Returns
- * the function that disconnects both directions.
+ * every state patch hands the local employee (keyed by `sessionId`) to `apply`, which by
+ * default reconciles the predictor (`Player.applyServer` also follows seat and activity).
+ * Returns the function that disconnects both directions.
  */
-export function bindPrediction(room: PredictionRoom, predictor: Predictor): () => void {
+export function bindPrediction(
+  room: PredictionRoom,
+  predictor: Predictor,
+  apply: (self: LocalSnapshot) => void = (self) => predictor.reconcile(self),
+): () => void {
   predictor.onInput = (input) => {
     try {
       room.send(MSG.input, input);
@@ -26,9 +34,9 @@ export function bindPrediction(room: PredictionRoom, predictor: Predictor): () =
       console.warn('Input not sent.', error);
     }
   };
-  const onPatch = (state: { employees: { get(id: string): ServerSnapshot | undefined } }) => {
+  const onPatch = (state: { employees: { get(id: string): LocalSnapshot | undefined } }) => {
     const self = state.employees.get(room.sessionId);
-    if (self) predictor.reconcile(self);
+    if (self) apply(self);
   };
   room.onStateChange(onPatch);
   return () => {

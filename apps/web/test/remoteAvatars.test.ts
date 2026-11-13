@@ -87,6 +87,7 @@ function setup() {
     z: 0,
     heading: 0,
     activity: 'idle',
+    seatId: '',
   });
   return {
     source,
@@ -139,6 +140,46 @@ describe('RemoteAvatars (REQ-NET-004, REQ-UI-001)', () => {
     t.source.change(e, { activity: 'bogus' });
     t.remotes.update(0.016);
     expect(t.remotes.list()[0]!.activity).toBe('idle');
+  });
+
+  it('draws a seated employee on the seat socket and never blends through furniture', async () => {
+    const t = setup();
+    const e = t.employee('Sam', 0.66);
+    e.z = 2.3;
+    t.source.add!('s', e);
+    await Promise.resolve();
+    await Promise.resolve();
+    t.tick(50);
+    t.source.change(e, { z: 2.4, activity: 'walking' });
+    // The server seats Sam on ws_5 (socket 0.66, 1.2, rotY 90).
+    t.tick(50);
+    t.source.change(e, {
+      x: 0.66,
+      z: 1.2,
+      heading: Math.PI / 2,
+      activity: 'sitting',
+      seatId: 'ws_5_seat',
+    });
+    t.remotes.update(0.016);
+    let info = t.remotes.list()[0]!;
+    // Placed on the socket at once, although render time is still 100 ms in the past.
+    expect([info.x, info.z, info.heading]).toEqual([0.66, 1.2, Math.PI / 2]);
+    expect(info).toMatchObject({ activity: 'sitting', seatId: 'ws_5_seat' });
+    expect(t.views[0]!.activities.at(-1)).toBe('sitting');
+    t.source.change(e, { activity: 'working' });
+    t.remotes.update(0.016);
+    expect(t.views[0]!.activities.at(-1)).toBe('working');
+    expect(t.plates[0]!.text[1]).toBe('Working');
+    // Standing up: the server moves Sam to the stand point; the avatar jumps there.
+    t.tick(50);
+    t.source.change(e, { z: 2.46, activity: 'idle', seatId: '' });
+    for (let i = 0; i < 4; i++) {
+      t.remotes.update(0.016);
+      info = t.remotes.list()[0]!;
+      expect([info.x, info.z]).toEqual([0.66, 2.46]);
+      t.tick(30);
+    }
+    expect(info).toMatchObject({ activity: 'idle', seatId: '' });
   });
 
   it('removes the avatar, nameplate and capsule resources when the employee leaves', async () => {

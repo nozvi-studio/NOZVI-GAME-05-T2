@@ -130,31 +130,64 @@ it.each(['men_suit', 'women_suit'] as const)(
 
 it('keeps seated players on the floor at the socket and resumes movement after standing', () => {
   const player = new Player();
-  player.seatAt({ position: [0, 0.45, 0], rotY: 90 });
-  player.setActivity('sitting');
+  const lastSeq = () => player.predictor.pending.at(-1)?.seq ?? 0;
+  // The server seats the player on ws_5 (socket 0.66, 1.2 facing +x).
+  player.applyServer({
+    x: 0.66,
+    z: 1.2,
+    heading: Math.PI / 2,
+    lastSeq: 0,
+    activity: 'sitting',
+    seatId: 'ws_5_seat',
+  });
+  player.update({ forward: 0, right: 0, run: false }, 0, 0.1);
+  expect(player.activity).toBe('sitting');
   const seatedState = { ...player.state };
+  expect(seatedState).toEqual({ x: 0.66, z: 1.2, heading: Math.PI / 2 });
+  // Moving while seated does not move the seat pose before the server stands the player up.
   player.update({ forward: 1, right: 0, run: false }, 0, 0.1);
   expect(player.state).toEqual(seatedState);
-  expect(player.mesh.position.toArray()).toEqual([0, 0, 0]);
+  expect(player.activity).toBe('sitting');
+  expect(player.mesh.position.toArray()).toEqual([0.66, 0, 1.2]);
   expect(player.mesh.rotation.y).toBeCloseTo(Math.PI / 2);
-  player.standAt([0, 0.45, 1]);
-  expect(player.state).toEqual({ x: 0, z: 1, heading: Math.PI / 2 });
+  player.applyServer({
+    x: 0.66,
+    z: 2.46,
+    heading: Math.PI / 2,
+    lastSeq: lastSeq(),
+    activity: 'idle',
+    seatId: '',
+  });
+  player.update({ forward: 0, right: 0, run: false }, 0, 0.05);
+  expect(player.state).toEqual({ x: 0.66, z: 2.46, heading: Math.PI / 2 });
   expect(player.mesh.position.y).toBe(0);
-  player.setActivity('idle');
+  expect(player.activity).toBe('idle');
   player.update({ forward: 1, right: 0, run: false }, 0, 0.1);
   expect(player.activity).toBe('walking');
-  expect(player.state.z).toBeGreaterThan(1);
+  expect(player.state.z).toBeGreaterThan(2.46);
   player.update({ forward: 0, right: 0, run: false }, 0, 0.1);
   expect(player.activity).toBe('idle');
 });
 
-it('preserves drinking while stationary and interrupts it when movement starts', () => {
+it('shows a break only while the server reports it, and walking at once when moving', () => {
   const player = new Player();
-  player.setActivity('drinking');
+  const self = { ...player.state, lastSeq: 0, seatId: '' };
+  player.update({ forward: 0, right: 0, run: false }, 0, 0.1);
+  expect(player.activity).toBe('idle');
+  player.applyServer({ ...self, activity: 'drinking' });
   player.update({ forward: 0, right: 0, run: false }, 0, 0.1);
   expect(player.activity).toBe('drinking');
   player.update({ forward: 1, right: 0, run: false }, 0, 0.1);
   expect(player.activity).toBe('walking');
+  player.applyServer({ ...self, activity: 'waving' });
+  player.update({ forward: 0, right: 0, run: false }, 0, 0.1);
+  expect(player.activity).toBe('waving');
+  // The server ends the break; there is no client timer.
+  for (let i = 0; i < 100; i++) player.update({ forward: 0, right: 0, run: false }, 0, 0.1);
+  expect(player.activity).toBe('waving');
+  player.applyServer({ ...self, activity: 'idle' });
+  player.update({ forward: 0, right: 0, run: false }, 0, 0.1);
+  expect(player.activity).toBe('idle');
 });
 
 it('rejects an avatar without a skinned mesh without replacing the capsule', async () => {

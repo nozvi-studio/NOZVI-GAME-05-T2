@@ -55,6 +55,7 @@ export class Predictor {
   private offset = { x: 0, z: 0 };
   private blendLeft = 0;
   private detachedValue = false;
+  private seatedValue = false;
   private readonly step: number;
   private readonly epsilon: number;
   private readonly blendSeconds: number;
@@ -87,6 +88,11 @@ export class Predictor {
     return this.detachedValue;
   }
 
+  /** True while the server reports the local player seated (see `seat`). */
+  get seated(): boolean {
+    return this.seatedValue;
+  }
+
   /** Advances the clock by `dt` seconds and runs every due fixed step with `sample`. */
   advance(dt: number, sample: InputSample): InputMessage[] {
     if (!(dt > 0) || !Number.isFinite(dt)) return [];
@@ -98,7 +104,9 @@ export class Predictor {
     while (this.accumulator >= this.step && this.underRateCap()) {
       this.accumulator -= this.step;
       const input: InputMessage = { seq: this.nextSeq++, ...sample };
-      this.fixed = applyInput(this.fixed, input, this.colliders);
+      // Seated: the input is still sent (a moving one makes the server stand the player up),
+      // but the seat pose does not move until the server reports the stand.
+      if (!this.seatedValue) this.fixed = applyInput(this.fixed, input, this.colliders);
       if (!this.detachedValue) this.pendingInputs.push(input);
       this.recentSends.push(this.clock);
       if (this.recentSends.length > this.maxPerSecond) this.recentSends.shift();
@@ -110,6 +118,7 @@ export class Predictor {
 
   /** The state to render this frame: fixed state + partial step + blended correction. */
   present(sample: InputSample): PlayerState {
+    if (this.seatedValue) return { ...this.fixed };
     const partial =
       this.accumulator > 0
         ? stepPlayer(this.fixed, sample, sample.yaw, this.accumulator, this.colliders)
@@ -128,11 +137,8 @@ export class Predictor {
    */
   reconcile(server: ServerSnapshot): boolean {
     if (this.detachedValue) return false;
-    while (this.pendingInputs.length > 0 && this.pendingInputs[0]!.seq <= server.lastSeq) {
-      this.pendingInputs.shift();
-    }
-    let replayed: PlayerState = { x: server.x, z: server.z, heading: server.heading };
-    for (const input of this.pendingInputs) replayed = applyInput(replayed, input, this.colliders);
+    const replayed = this.replay(server);
+    if (this.seatedValue) return false;
     const dx = this.fixed.x - replayed.x;
     const dz = this.fixed.z - replayed.z;
     if (Math.hypot(dx, dz) < this.epsilon) return false;
@@ -144,11 +150,33 @@ export class Predictor {
     return true;
   }
 
-  /** Moves the fixed state locally (seat sockets) without a blend; reconciliation continues. */
+  /** Moves the fixed state locally without a blend; reconciliation continues. */
   reset(state: PlayerState): void {
     this.fixed = { ...state };
     this.offset = { x: 0, z: 0 };
     this.blendLeft = 0;
+  }
+
+  /**
+   * REQ-INT-002: the server reports the local player seated. Prediction pauses on the seat
+   * pose `socket`: inputs are still produced and sent, but none moves the fixed state, and
+   * patches only acknowledge them.
+   */
+  seat(socket: PlayerState): void {
+    this.seatedValue = true;
+    this.reset(socket);
+  }
+
+  /**
+   * The server reports the local player standing again. Prediction resumes from the server
+   * position: inputs it has not applied yet are replayed from there (the server stood the
+   * player up at the seat's stand point before applying the moving input, exactly as the
+   * replay does), and the jump off the seat is shown at once, not blended.
+   */
+  unseat(server: ServerSnapshot): void {
+    this.seatedValue = false;
+    const { x, z, heading } = server;
+    this.reset(this.detachedValue ? { x, z, heading } : this.replay(server));
   }
 
   /**
@@ -159,6 +187,16 @@ export class Predictor {
     this.reset(state);
     this.detachedValue = true;
     this.pendingInputs.length = 0;
+  }
+
+  /** Drops inputs acknowledged by `server.lastSeq` and replays the rest from its position. */
+  private replay(server: ServerSnapshot): PlayerState {
+    while (this.pendingInputs.length > 0 && this.pendingInputs[0]!.seq <= server.lastSeq) {
+      this.pendingInputs.shift();
+    }
+    let replayed: PlayerState = { x: server.x, z: server.z, heading: server.heading };
+    for (const input of this.pendingInputs) replayed = applyInput(replayed, input, this.colliders);
+    return replayed;
   }
 
   private underRateCap(): boolean {

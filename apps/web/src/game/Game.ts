@@ -1,13 +1,6 @@
 import * as THREE from 'three';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
-import {
-  BALANCE,
-  isSeated,
-  nextActivity,
-  officeLayout,
-  SeatRegistry,
-  type AvatarId,
-} from '@office/protocol';
+import { BALANCE, MSG, officeLayout, type AvatarId, type IntentMessage } from '@office/protocol';
 import { CameraRig } from './camera';
 import { fadeOpacity } from './cameraMath';
 import { KeyboardInput } from './input';
@@ -23,7 +16,7 @@ import { activityLabel } from './hud/activityLabel';
 import { RemoteAvatars } from './remote/RemoteAvatars';
 import { EntranceBoard } from './hud/EntranceBoard';
 import { EmployeeRoster } from '../ui/employeeRoster';
-import { bindPrediction, employeeSource, type OfficeRoomHandle } from '../net';
+import { bindPrediction, employeeSource, roomOccupancy, type OfficeRoomHandle } from '../net';
 
 export class Game {
   readonly scene = new THREE.Scene();
@@ -33,34 +26,17 @@ export class Game {
   private readonly nameplate = new Nameplate();
   readonly player = new Player();
   readonly input = new KeyboardInput(window);
-  readonly seats = new SeatRegistry();
-  readonly controller = new InteractionController(this.player, this.seats, 'local', {
-    onExit: () => this.onExit?.(),
-    onAction: (target) => {
-      const result = handleAction(target, this.player, this.controller);
-      // Feedback-only actions must not cancel a break that is still running.
-      if (result.timer > 0) this.actionTimer = result.timer;
-      if (result.message) this.onToast?.(result.message);
-    },
-  });
-  private actionTimer = 0;
+  /** Seats are owned by the server; this only sends intents (see `Player.applyServer`). */
+  readonly controller: InteractionController;
   onPrompt: ((prompt: Prompt) => void) | undefined;
   onToast: ((message: string) => void) | undefined;
   onExit: (() => void) | undefined;
   onFrame: ((dt: number) => void) | undefined;
   private promptText: string | null = null;
+  // WASD while seated needs no handler: movement inputs reach the server, which stands up.
   private readonly keydown = (e: KeyboardEvent): void => {
     if (e.code === 'KeyE' && !e.repeat) this.controller.press();
-    if (e.code === 'KeyG' && !e.repeat) {
-      const activity = nextActivity(this.player.activity, { type: 'wave' });
-      if (activity !== this.player.activity) {
-        this.player.setActivity(activity);
-        this.actionTimer = BALANCE.activity.waveSeconds;
-      }
-    }
-    if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code) && isSeated(this.player.activity)) {
-      this.controller.onMoveIntent();
-    }
+    if (e.code === 'KeyG' && !e.repeat) this.controller.wave();
   };
   private readonly timer = new THREE.Timer();
   private readonly resizeObserver: ResizeObserver;
@@ -83,7 +59,22 @@ export class Game {
     /** Joined office room; owned by the connection, which leaves it on exit. */
     readonly netRoom: OfficeRoomHandle,
   ) {
-    this.unbindPrediction = bindPrediction(netRoom, this.player.predictor);
+    this.controller = new InteractionController(
+      this.player,
+      roomOccupancy(netRoom),
+      netRoom.sessionId,
+      {
+        onExit: () => this.onExit?.(),
+        sendIntent: (intent) => this.sendIntent(intent),
+        onAction: (target) => {
+          const result = handleAction(target, this.player, this.controller);
+          if (result.message) this.onToast?.(result.message);
+        },
+      },
+    );
+    this.unbindPrediction = bindPrediction(netRoom, this.player.predictor, (self) =>
+      this.player.applyServer(self),
+    );
     const room = buildRoom(officeLayout);
     this.remotes = new RemoteAvatars(this.scene, employeeSource(netRoom), netRoom.sessionId);
     this.scene.add(room);
@@ -143,6 +134,10 @@ export class Game {
           this.player.teleport(x, z, heading);
           this.rig.yaw = heading;
         },
+        // Turns the camera only, so e2e can walk with keys in a server-visible way.
+        setCameraYaw: (yaw: number) => {
+          this.rig.yaw = yaw;
+        },
         avatarOk: () => this.player.viewFinite(),
         getRemotes: () => this.remotes.list(),
         getRemoteCount: () => this.remotes.count,
@@ -159,6 +154,15 @@ export class Game {
     this.resizeObserver.observe(host);
     this.resize();
     window.addEventListener('keydown', this.keydown);
+  }
+
+  private sendIntent(intent: IntentMessage): void {
+    try {
+      this.netRoom.send(MSG.intent, intent);
+    } catch (error) {
+      // A closed socket drops the request; nothing changes until the server confirms.
+      console.warn('Intent not sent.', error);
+    }
   }
 
   private resize(): void {
@@ -189,18 +193,7 @@ export class Game {
       this.timer.update();
       const dt = Math.min(this.timer.getDelta(), 0.1);
       const input = this.input.read();
-      if (isSeated(this.player.activity) && (input.forward !== 0 || input.right !== 0)) {
-        this.controller.onMoveIntent();
-      }
       this.player.update(input, this.rig.yaw, dt);
-      if (this.actionTimer > 0) {
-        this.actionTimer = Math.max(0, this.actionTimer - dt);
-        const activity = this.player.activity;
-        if (activity !== 'drinking' && activity !== 'waving') this.actionTimer = 0;
-        else if (this.actionTimer === 0) {
-          this.player.setActivity(nextActivity(activity, { type: 'actionDone' }));
-        }
-      }
       const prompt = this.controller.currentPrompt();
       const text = prompt?.text ?? null;
       if (text !== this.promptText) {

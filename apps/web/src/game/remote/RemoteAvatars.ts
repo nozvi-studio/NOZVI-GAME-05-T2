@@ -7,6 +7,7 @@ import {
   type ReplicatedEmployee,
 } from '../../net';
 import { AvatarView, CLIP_FOR } from '../avatar/AvatarView';
+import { seatPose, seatSocket } from '../interaction/seats';
 import { Nameplate } from '../hud/Nameplate';
 import { activityLabel } from '../hud/activityLabel';
 
@@ -38,6 +39,7 @@ export type RemoteInfo = {
   z: number;
   heading: number;
   activity: Activity;
+  seatId: string;
   model: 'avatar' | 'capsule';
 };
 
@@ -49,6 +51,8 @@ type Remote = {
   readonly nameplate: RemoteNameplate;
   readonly unsubscribe: () => void;
   activity: Activity;
+  /** The seat seen in the last snapshot; a change restarts interpolation. */
+  seatId: string;
   view: RemoteView | null;
   disposed: boolean;
 };
@@ -120,9 +124,15 @@ export class RemoteAvatars {
     if (id === this.localSessionId) return;
     this.remove(id);
     const buffer = new InterpolationBuffer();
-    const snapshot = () =>
-      buffer.push({ t: this.deps.now(), x: employee.x, z: employee.z, heading: employee.heading });
-    snapshot();
+    let seatId = employee.seatId;
+    const snapshot = () => {
+      const s = { t: this.deps.now(), x: employee.x, z: employee.z, heading: employee.heading };
+      // Sitting down or standing up is a jump on the server: never blend through furniture.
+      if (employee.seatId !== seatId) buffer.reset(s);
+      else buffer.push(s);
+      seatId = employee.seatId;
+      remote.seatId = seatId;
+    };
     const group = new THREE.Group();
     group.name = `remote:${id}`;
     const capsule = createCapsule();
@@ -137,9 +147,11 @@ export class RemoteAvatars {
       nameplate,
       unsubscribe: this.source.onChange(employee, snapshot),
       activity: toActivity(employee.activity),
+      seatId,
       view: null,
       disposed: false,
     };
+    snapshot();
     this.remotes.set(id, remote);
     this.place(remote, 0);
     this.parent.add(group);
@@ -173,7 +185,10 @@ export class RemoteAvatars {
   }
 
   private place(remote: Remote, dt: number): void {
-    const pose = remote.buffer.sample(renderTime(this.deps.now()));
+    // REQ-INT-002: a seated employee sits on the socket with the seated animation; the
+    // interpolated position (100 ms behind) would still be walking toward the chair.
+    const socket = seatSocket(remote.employee.seatId);
+    const pose = socket ? seatPose(socket) : remote.buffer.sample(renderTime(this.deps.now()));
     if (pose) {
       remote.group.position.set(pose.x, 0, pose.z);
       remote.group.rotation.y = pose.heading;
@@ -198,6 +213,7 @@ export class RemoteAvatars {
       z: r.group.position.z,
       heading: r.group.rotation.y,
       activity: r.activity,
+      seatId: r.seatId,
       model: r.view ? 'avatar' : 'capsule',
     }));
   }

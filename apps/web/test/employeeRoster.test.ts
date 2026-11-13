@@ -30,7 +30,15 @@ class FakeSource implements EmployeeSource {
     return () => void set.delete(h);
   }
   join(id: string, name: string, activity = 'idle'): Employee {
-    const e: Employee = { name, avatarId: 'men_suit', x: 0, z: 0, heading: 0, activity };
+    const e: Employee = {
+      name,
+      avatarId: 'men_suit',
+      x: 0,
+      z: 0,
+      heading: 0,
+      activity,
+      seatId: '',
+    };
     this.employees.set(id, e);
     for (const h of this.adds) h(id, e);
     return e;

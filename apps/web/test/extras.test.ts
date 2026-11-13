@@ -1,133 +1,88 @@
 import { expect, it, vi } from 'vitest';
 import {
-  BALANCE,
   SeatRegistry,
   officeLayout,
   type Activity,
+  type IntentMessage,
   type PlayerState,
-  type Vec3,
 } from '@office/protocol';
 import { InteractionController } from '../src/game/interaction/InteractionController';
 import { handleAction } from '../src/game/interaction/extras';
 import { Game } from '../src/game/Game';
 import { Player } from '../src/game/player';
 
-function fake(state: PlayerState) {
-  return {
-    state,
-    activity: 'idle' as Activity,
-    setActivity(a: Activity) {
-      this.activity = a;
-    },
-    seatAt(s: { position: Vec3; rotY: number }) {
-      this.state = { x: s.position[0], z: s.position[2], heading: (s.rotY * Math.PI) / 180 };
-    },
-    standAt(p: Vec3) {
-      this.state = { ...this.state, x: p[0], z: p[2] };
-    },
-  };
+function setup(state: PlayerState, seats = new SeatRegistry(), onAction = vi.fn()) {
+  const p = { state, activity: 'idle' as Activity };
+  const sent: IntentMessage[] = [];
+  const c = new InteractionController(p, seats, 'me', {
+    onExit: vi.fn(),
+    sendIntent: (i) => sent.push(i),
+    onAction,
+  });
+  return { p, c, sent, onAction };
 }
 
-it.each(['coffee_machine', 'water_dispenser'])('%s starts a timed break', (type) => {
-  const p = fake({ x: 2.35, z: -2.75, heading: Math.PI });
-  const t = officeLayout.interactables.find((i) => i.type === type)!;
-  const c = new InteractionController(p, new SeatRegistry(), 'me', { onExit: vi.fn() });
-  const r = handleAction(t, p, c);
-  expect(p.activity).toBe('drinking');
-  expect(r.timer).toBeCloseTo(BALANCE.activity.drinkSeconds);
+const target = (id: string) => officeLayout.interactables.find((i) => i.id === id)!;
+
+it.each(['coffee_machine', 'water_dispenser'])('%s sends a drink intent', (id) => {
+  const { p, c, sent } = setup({ x: 2.35, z: -2.75, heading: Math.PI });
+  expect(handleAction(target(id), p, c)).toEqual({});
+  expect(sent).toEqual([{ type: 'drink' }]);
+  // The server starts and ends the break.
+  expect(p.activity).toBe('idle');
 });
 
-it.each(['waving', 'drinking', 'resting'] as const)(
-  'a rejected drink during %s does not replace the action timer',
-  (activity) => {
-    const p = fake({ x: 2.35, z: -2.75, heading: Math.PI });
-    p.activity = activity;
-    const c = new InteractionController(p, new SeatRegistry(), 'me', { onExit: vi.fn() });
-    const r = handleAction(
-      officeLayout.interactables.find((i) => i.id === 'coffee_machine')!,
-      p,
-      c,
-    );
-    expect(r.timer).toBe(0);
-    expect(p.activity).toBe(activity);
-  },
-);
+it.each(['waving', 'drinking', 'resting'] as const)('does not send drink during %s', (activity) => {
+  const { p, c, sent } = setup({ x: 2.35, z: -2.75, heading: Math.PI });
+  p.activity = activity;
+  handleAction(target('coffee_machine'), p, c);
+  expect(sent).toEqual([]);
+});
 
-it('sofa seats the player on the first free sofa seat and releases it on movement', () => {
-  const p = fake({ x: -1.2, z: -1.4, heading: -Math.PI / 2 });
+it('sofa requests the first sofa seat no other employee holds', () => {
   const seats = new SeatRegistry();
   seats.claim('sofa_seat_1', 'other');
-  const c = new InteractionController(p, seats, 'me', { onExit: vi.fn() });
-  handleAction(
-    officeLayout.interactables.find((i) => i.id === 'sofa')!,
-    p,
-    c,
-  );
-  expect(p.activity).toBe('resting');
-  expect(seats.seatOf('me')).toBe('sofa_seat_2');
-  const seat = officeLayout.sofaSeats[1]!;
-  expect(p.state.heading).toBe((seat.rotY * Math.PI) / 180);
-  c.onMoveIntent();
+  const { p, c, sent } = setup({ x: -1.2, z: -1.4, heading: -Math.PI / 2 }, seats);
+  handleAction(target('sofa'), p, c);
+  expect(sent).toEqual([{ type: 'sit', seatId: 'sofa_seat_2' }]);
   expect(p.activity).toBe('idle');
-  expect(seats.seatOf('me')).toBeNull();
-  expect([p.state.x, p.state.z]).toEqual([seat.interactionPoint[0], seat.interactionPoint[2]]);
 });
 
-it('leaves the player standing when all sofa seats are occupied', () => {
-  const p = fake({ x: -1.2, z: -1.4, heading: -Math.PI / 2 });
+it('sends nothing when all sofa seats are occupied', () => {
   const seats = new SeatRegistry();
   for (const seat of officeLayout.sofaSeats) seats.claim(seat.id, seat.id);
-  const c = new InteractionController(p, seats, 'me', { onExit: vi.fn() });
-  handleAction(
-    officeLayout.interactables.find((i) => i.id === 'sofa')!,
-    p,
-    c,
-  );
-  expect(p.activity).toBe('idle');
-  expect(seats.seatOf('me')).toBeNull();
+  const { p, c, sent } = setup({ x: -1.2, z: -1.4, heading: -Math.PI / 2 }, seats);
+  handleAction(target('sofa'), p, c);
+  expect(sent).toEqual([]);
 });
 
-it('does not claim a sofa seat when the activity transition is rejected', () => {
-  const p = fake({ x: -1.2, z: -1.4, heading: -Math.PI / 2 });
+it('does not request a sofa seat when the activity transition is rejected', () => {
+  const { p, c, sent } = setup({ x: -1.2, z: -1.4, heading: -Math.PI / 2 });
   p.activity = 'drinking';
-  const seats = new SeatRegistry();
-  const c = new InteractionController(p, seats, 'me', { onExit: vi.fn() });
-  expect(c.sitOn(officeLayout.sofaSeats[0]!, 'sofa')).toBe(false);
-  expect(seats.seatOf('me')).toBeNull();
-  expect(p.activity).toBe('drinking');
+  expect(c.requestSeat(officeLayout.sofaSeats[0]!.id, 'sofa')).toBe(false);
+  expect(sent).toEqual([]);
 });
 
 it('routes E at the coffee machine through the action hook', () => {
-  const p = fake({ x: 2.35, z: -2.75, heading: Math.PI });
-  const onAction = vi.fn();
-  const c = new InteractionController(p, new SeatRegistry(), 'me', { onExit: vi.fn(), onAction });
+  const { c, onAction } = setup({ x: 2.35, z: -2.75, heading: Math.PI });
   c.press();
-  expect(onAction).toHaveBeenCalledWith(
-    officeLayout.interactables.find((i) => i.id === 'coffee_machine'),
-  );
+  expect(onAction).toHaveBeenCalledWith(target('coffee_machine'));
 });
 
-it('opening the cabinet returns feedback without changing activity', () => {
-  const p = fake({ x: 0, z: 0, heading: 0 });
-  const c = new InteractionController(p, new SeatRegistry(), 'me', { onExit: vi.fn() });
-  const r = handleAction(
-    officeLayout.interactables.find((i) => i.type === 'storage_cabinet')!,
-    p,
-    c,
-  );
-  expect(r).toEqual({ timer: 0, message: 'Cabinet opened' });
+it('opening the cabinet returns local feedback and sends nothing', () => {
+  const { p, c, sent } = setup({ x: 0, z: 0, heading: 0 });
+  expect(handleAction(target('storage_cabinet'), p, c)).toEqual({ message: 'Cabinet opened' });
+  expect(sent).toEqual([]);
   expect(p.activity).toBe('idle');
 });
 
-function frameLoop(activity: Activity, duration: number) {
+function frameLoop() {
   const player = new Player();
-  player.setActivity(activity);
   const input = { forward: 0, right: 0, run: false };
   let frame = () => {};
   // Exercise the real game loop without creating a WebGL renderer or browser DOM.
   const game = {
     player,
-    actionTimer: duration,
     timer: { update() {}, getDelta: () => 0.1 },
     input: { read: () => input },
     controller: { currentPrompt: () => null },
@@ -142,26 +97,20 @@ function frameLoop(activity: Activity, duration: number) {
   return { player, input, tick: () => frame() };
 }
 
-it.each([
-  ['drinking', BALANCE.activity.drinkSeconds],
-  ['waving', BALANCE.activity.waveSeconds],
-] as const)('finishes %s after its configured duration', (activity, duration) => {
-  const { player, tick } = frameLoop(activity, duration);
-  for (let elapsed = 0.1; elapsed < duration - 0.05; elapsed += 0.1) tick();
-  expect(player.activity).toBe(activity);
-  tick();
-  tick();
-  expect(player.activity).toBe('idle');
-});
-
-it.each([
-  ['drinking', BALANCE.activity.drinkSeconds],
-  ['waving', BALANCE.activity.waveSeconds],
-] as const)('movement cancels %s and expiry does not interrupt walking', (activity, duration) => {
-  const { player, input, tick } = frameLoop(activity, duration);
-  input.forward = 1;
-  tick();
-  expect(player.activity).toBe('walking');
-  for (let elapsed = 0; elapsed < duration + 0.1; elapsed += 0.1) tick();
-  expect(player.activity).toBe('walking');
-});
+it.each(['drinking', 'waving'] as const)(
+  '%s lasts until the server ends it; movement shows walking at once',
+  (activity) => {
+    const { player, input, tick } = frameLoop();
+    const self = { ...player.state, lastSeq: 0, seatId: '' };
+    player.applyServer({ ...self, activity });
+    for (let i = 0; i < 60; i++) tick();
+    expect(player.activity).toBe(activity);
+    player.applyServer({ ...self, activity: 'idle' });
+    tick();
+    expect(player.activity).toBe('idle');
+    player.applyServer({ ...self, activity });
+    input.forward = 1;
+    tick();
+    expect(player.activity).toBe('walking');
+  },
+);

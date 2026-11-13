@@ -2,14 +2,23 @@ import * as THREE from 'three';
 import {
   BALANCE,
   officeLayout,
-  nextActivity,
   type Activity,
   type MoveInput,
   type PlayerState,
-  type Vec3,
 } from '@office/protocol';
 import { AvatarView } from './avatar/AvatarView';
 import { Predictor } from '../net/prediction';
+import type { LocalSnapshot } from '../net/localSync';
+import { seatPose, seatSocket, toActivity } from './interaction/seats';
+
+/**
+ * The local activity to show: seat and break activities only as the server reports them;
+ * walking and idle follow local movement at once (moving always ends a break on the server).
+ */
+export function localActivity(server: Activity, moving: boolean): Activity {
+  if (moving) return 'walking';
+  return server === 'drinking' || server === 'waving' ? server : 'idle';
+}
 
 export class Player {
   readonly mesh = new THREE.Group();
@@ -18,8 +27,11 @@ export class Player {
   /** REQ-NET-003: fixed-step prediction; `Game` binds it to the joined room. */
   readonly predictor: Predictor;
   activity: Activity = 'idle';
+  /** The activity the server last reported for the local employee. */
+  private serverActivity: Activity = 'idle';
+  /** The seat the server last reported for the local employee ('' = none). */
+  private seatId = '';
   private view: AvatarView | null = null;
-  private seated: { position: Vec3; rotY: number } | null = null;
   private readonly materials: THREE.Material[] = [];
   private opacity = 1;
 
@@ -47,17 +59,40 @@ export class Player {
 
   update(input: MoveInput, cameraYaw: number, dt: number): void {
     const moving = input.forward !== 0 || input.right !== 0;
-    if (!this.seated) {
-      // One input per fixed 50 ms step (sent to the server); the frame shows a partial step.
-      const sample = { forward: input.forward, right: input.right, run: input.run, yaw: cameraYaw };
-      this.predictor.advance(dt, sample);
-      this.state = this.predictor.present(sample);
-      if (this.activity !== 'drinking' || moving) {
-        this.setActivity(nextActivity(this.activity, { type: moving ? 'move' : 'stop' }));
-      }
-    }
+    // One input per fixed 50 ms step (sent to the server); the frame shows a partial step.
+    // While seated the inputs are still sent: a moving one makes the server stand us up.
+    const sample = { forward: input.forward, right: input.right, run: input.run, yaw: cameraYaw };
+    this.predictor.advance(dt, sample);
+    this.state = this.predictor.present(sample);
+    const activity = this.predictor.seated
+      ? this.serverActivity
+      : localActivity(this.serverActivity, moving);
+    if (activity !== this.activity) this.setActivity(activity);
     this.view?.update(dt);
     this.sync();
+  }
+
+  /**
+   * REQ-INT-002, REQ-NET-002: applies the server's view of the local employee on each patch.
+   * A reported seat places the player on the seat socket and pauses prediction; leaving the
+   * seat resumes prediction from the server position; otherwise the predictor reconciles.
+   */
+  applyServer(self: LocalSnapshot): void {
+    const socket = seatSocket(self.seatId);
+    if (socket) {
+      if (!this.predictor.seated || self.seatId !== this.seatId) {
+        this.predictor.seat(seatPose(socket));
+        this.state = this.predictor.state;
+        this.sync();
+      }
+      this.predictor.reconcile(self);
+    } else if (this.predictor.seated) {
+      this.predictor.unseat(self);
+    } else {
+      this.predictor.reconcile(self);
+    }
+    this.seatId = socket ? self.seatId : '';
+    this.serverActivity = toActivity(self.activity);
   }
 
   setView(view: AvatarView): void {
@@ -80,24 +115,6 @@ export class Player {
   setActivity(a: Activity): void {
     this.activity = a;
     this.view?.setActivity(a);
-  }
-
-  seatAt(socket: { position: Vec3; rotY: number }): void {
-    this.seated = socket;
-    this.state.x = socket.position[0];
-    this.state.z = socket.position[2];
-    this.state.heading = (socket.rotY * Math.PI) / 180;
-    this.sync();
-  }
-
-  standAt(point: Vec3): void {
-    this.seated = null;
-    this.state.x = point[0];
-    this.state.z = point[2];
-    // Seating is local until the server owns seats (T-1039): the next patch pulls the
-    // prediction back to the server position with a blended correction.
-    this.predictor.reset(this.state);
-    this.sync();
   }
 
   viewFinite(): boolean {

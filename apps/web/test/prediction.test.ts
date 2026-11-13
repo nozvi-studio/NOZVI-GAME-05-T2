@@ -246,6 +246,55 @@ describe('Predictor send rate', () => {
   }
 });
 
+describe('Predictor seating (T-1039)', () => {
+  const socket: PlayerState = { x: 0.66, z: 1.2, heading: Math.PI / 2 };
+  const standPoint = { x: 0.66, z: 2.46 };
+
+  it('pauses on the seat, still sends inputs, and resumes from the server with no correction', () => {
+    const predictor = new Predictor(spawn, colliders);
+    // The server seated the player; inputs up to seq 0 are applied.
+    predictor.seat(socket);
+    expect(predictor.seated).toBe(true);
+    const sent: InputMessage[] = [];
+    const walk: InputSample = { forward: 1, right: 0, run: false, yaw: 0 };
+    for (let i = 0; i < 4; i++) sent.push(...predictor.advance(FIXED_DT, still));
+    for (let i = 0; i < 6; i++) sent.push(...predictor.advance(FIXED_DT, walk));
+    expect(sent.map((i) => i.seq)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    // Seated: moving inputs do not move the seat pose, partial steps neither.
+    predictor.advance(FIXED_DT / 2, walk);
+    expect(predictor.present(walk)).toEqual(socket);
+    // A patch while still seated only acknowledges.
+    expect(predictor.reconcile({ ...socket, lastSeq: 4 })).toBe(false);
+    expect(predictor.pending.map((i) => i.seq)).toEqual([5, 6, 7, 8, 9, 10]);
+    // Server rules (apps/server sim): a still input while seated only advances lastSeq; the
+    // first moving input stands the body up at the stand point, then applies the step.
+    let body: ServerSnapshot = { ...socket, lastSeq: 4 };
+    let seated = true;
+    for (const input of sent.slice(4, 7)) {
+      if (seated && (input.forward !== 0 || input.right !== 0)) {
+        seated = false;
+        body = { ...body, ...standPoint };
+      }
+      body = seated
+        ? { ...body, lastSeq: input.seq }
+        : { ...applyInput(body, input, colliders), lastSeq: input.seq };
+    }
+    predictor.unseat(body);
+    expect(predictor.seated).toBe(false);
+    // Inputs 8..10 were replayed from the server position.
+    let expected: PlayerState = body;
+    for (const input of sent.slice(7)) expected = applyInput(expected, input, colliders);
+    expect(predictor.state).toEqual({ x: expected.x, z: expected.z, heading: expected.heading });
+    // The jump off the seat is not blended, and later patches need no correction.
+    expect(predictor.present(still)).toEqual(predictor.state);
+    for (const input of sent.slice(7))
+      body = { ...applyInput(body, input, colliders), lastSeq: input.seq };
+    expect(predictor.reconcile(body)).toBe(false);
+    expect(predictor.state.x).toBe(body.x);
+    expect(predictor.state.z).toBe(body.z);
+  });
+});
+
 describe('bindPrediction', () => {
   function fakeRoom() {
     const listeners = new Set<(state: unknown) => void>();

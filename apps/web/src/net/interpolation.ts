@@ -56,6 +56,12 @@ export class InterpolationBuffer {
     return this.snaps.length;
   }
 
+  /** Drops every snapshot and starts again from `snapshot` (a jump that must not be blended). */
+  reset(snapshot: Snapshot): void {
+    this.snaps.length = 0;
+    this.snaps.push({ ...snapshot });
+  }
+
   push(snapshot: Snapshot): void {
     const s = { ...snapshot };
     const last = this.snaps.at(-1);
