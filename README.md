@@ -27,6 +27,8 @@ NET_PROFILE=test pnpm --filter web e2e e2e/netProfile.spec.ts --trace off   # 10
 
 Manual multi-client check: start the server with `JOIN_LIMIT_PER_MINUTE=1000` (add `NET_PROFILE=test` for the dev-only 100 ms RTT / jitter / 1% retransmit profile in `BALANCE.net.testProfile`), run `pnpm --filter @office/server bots -- --code TEN-01 --count 9` and join `TEN-01` in a browser.
 
+Test-only server override: `CHAT_TTL_SECONDS` shortens how long chat messages live (default `BALANCE.chat.ttlSeconds` = 60 s), so tests and e2e can check expiry quickly.
+
 ## Docs map
 
 | File                                                        | Purpose                                        | Who updates               |

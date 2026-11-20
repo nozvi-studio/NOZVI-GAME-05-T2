@@ -10,6 +10,10 @@ const joinLimit = Number(process.env.JOIN_LIMIT_PER_MINUTE ?? BALANCE.net.joinsP
 if (Number.isInteger(joinLimit) && joinLimit > 0)
   roomServices.joinLimiter = new JoinRateLimiter(joinLimit);
 
+// CHAT_TTL_SECONDS overrides how long chat messages live (tests and e2e shorten the 60 s TTL).
+const chatTtl = Number(process.env.CHAT_TTL_SECONDS ?? BALANCE.chat.ttlSeconds);
+if (Number.isFinite(chatTtl) && chatTtl > 0) roomServices.chatTtlSeconds = chatTtl;
+
 // NET_PROFILE=test (dev only, off by default) delays and jitters outgoing messages (REQ-NET-004).
 const netProfile = netProfileFromEnv(process.env);
 if (netProfile) {
