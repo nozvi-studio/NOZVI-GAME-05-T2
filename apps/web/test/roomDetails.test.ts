@@ -24,7 +24,8 @@ it('T-1151: window frames, glass, skirting, ceiling panels and sign are one merg
     'shell:accent-wall',
     'shell:ceiling-panels',
     'shell:chair-rail',
-    'shell:door-headers',
+    'shell:door-header:0',
+    'shell:door-header:1',
     'shell:sign',
     'shell:skirting',
     'shell:wainscot',
@@ -34,6 +35,23 @@ it('T-1151: window frames, glass, skirting, ceiling panels and sign are one merg
   for (const d of details) {
     expect((d as THREE.Mesh).isMesh).toBe(true);
     expect(d.castShadow).toBe(false);
+  }
+});
+
+it('T-1151 review: room-wide detail meshes are not camera occluders; door headers are, one per door', () => {
+  const details = buildShellDetails(officeLayout);
+  const occluders = details.filter((d) => d.userData.occluder === true).map((d) => d.name);
+  // The camera hides a whole occluder mesh when it clamps behind a wall, so a merged mesh that
+  // spans every wall must not be one, or the skirting / wainscot / frames of all walls vanish.
+  expect(occluders.sort()).toEqual(['shell:door-header:0', 'shell:door-header:1']);
+  const headerCount = doorHeaderGeometry(officeLayout).length;
+  expect(headerCount).toBe(2);
+  for (const name of occluders) {
+    const mesh = details.find((d) => d.name === name) as THREE.Mesh;
+    // One door each: the wall-thickness side of the header box is 0.1 m.
+    mesh.geometry.computeBoundingBox();
+    const size = mesh.geometry.boundingBox!.getSize(new THREE.Vector3());
+    expect(Math.min(size.x, size.z)).toBeCloseTo(0.1, 5);
   }
 });
 

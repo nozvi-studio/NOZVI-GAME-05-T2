@@ -56,7 +56,9 @@ function merged(
   mesh.name = name;
   mesh.castShadow = false;
   mesh.receiveShadow = true;
-  mesh.userData.occluder = true;
+  // Not a camera occluder (T-1151 review 2026-11-20): one merged mesh spans every wall, and the
+  // camera hides a whole occluder mesh when it clamps behind a wall, so marking it would blank
+  // the detail on all walls at once. The thin details sit on the walls, which already occlude.
   return mesh;
 }
 
@@ -270,15 +272,19 @@ export function buildShellDetails(layout: OfficeLayout): THREE.Object3D[] {
     opacity: 0.35,
     depthWrite: false,
   });
-  const headers = merged(
-    'shell:door-headers',
-    doorHeaderGeometry(layout),
-    new THREE.MeshStandardMaterial({ color: layout.palette.walls ?? '#F5F6F8' }),
-  );
-  if (headers) headers.castShadow = false;
+  // Door headers are wall pieces, so they stay camera occluders, one mesh per door: the camera
+  // hides the whole hit mesh, and a merged mesh would blank the other door's header too.
+  const headerMaterial = new THREE.MeshStandardMaterial({
+    color: layout.palette.walls ?? '#F5F6F8',
+  });
+  const headers = doorHeaderGeometry(layout).map((geometry, i) => {
+    const mesh = merged(`shell:door-header:${i}`, [geometry], headerMaterial);
+    if (mesh) mesh.userData.occluder = true;
+    return mesh;
+  });
   const wainscot = wainscotGeometry(layout);
   const meshes = [
-    headers,
+    ...headers,
     merged(
       'shell:wainscot',
       wainscot.panels,
