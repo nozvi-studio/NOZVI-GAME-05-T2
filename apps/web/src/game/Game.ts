@@ -12,6 +12,7 @@ import {
 import { CameraRig } from './camera';
 import { fadeOpacity } from './cameraMath';
 import { KeyboardInput } from './input';
+import { readsIdleInput, routeGameKey, type KeyContext } from './keys';
 import { Player } from './player';
 import { ShadowRefresh, setupLighting } from './lighting';
 import { FrameRateGovernor, initialPixelRatio, type QualityStep } from './adaptiveQuality';
@@ -98,16 +99,22 @@ export class Game {
   onFrame: ((dt: number) => void) | undefined;
   private promptText: string | null = null;
   // WASD while seated needs no handler: movement inputs reach the server, which stands up.
+  // T-1696: routing in `keys.ts`. In TV mode Esc closes the panel and other game keys wait
+  // for Close; while the chat input has focus every key is text for it.
   private readonly keydown = (e: KeyboardEvent): void => {
-    if (this.tvMode.isOpen) {
-      // Esc closes the panel while the app has focus; other game keys wait for Close.
-      if (e.code === 'Escape') this.tvMode.exit();
-      return;
-    }
-    if (e.code === 'KeyE' && !e.repeat) this.controller.press();
-    if (e.code === 'KeyG' && !e.repeat) this.controller.wave();
-    if (e.code === 'KeyF' && !e.repeat) this.controller.sip();
+    const action = routeGameKey(e, this.keyContext());
+    if (action === 'tvExit') this.tvMode.exit();
+    else if (action === 'chatOpen') {
+      e.preventDefault();
+      this.onChatOpen?.();
+    } else if (action === 'press') this.controller.press();
+    else if (action === 'wave') this.controller.wave();
+    else if (action === 'sip') this.controller.sip();
   };
+  /** T-1696: set by the chat panel while its input has focus. */
+  private chatFocused = false;
+  /** T-1696: Enter with the game focused asks the chat panel to focus its input. */
+  onChatOpen: (() => void) | undefined;
   private readonly timer = new THREE.Timer();
   private readonly resizeObserver: ResizeObserver;
   private readonly rig: CameraRig;
@@ -332,6 +339,8 @@ export class Game {
             text,
             sentAt,
           })),
+        /** T-1696: true while the chat input has focus (the game reads idle input). */
+        getChatInputFocused: () => this.chatFocused,
       };
       (window as unknown as { __office: unknown }).__office = this.debugHook;
     }
@@ -439,7 +448,26 @@ export class Game {
     this.focusGame();
   }
 
-  /** Gives keyboard focus back to the game canvas (TV Close, emote menu closed). */
+  /** T-1696: the chat input gained or lost focus; while focused the game reads idle input. */
+  setChatFocused(focused: boolean): void {
+    this.chatFocused = focused;
+  }
+
+  get chatInputFocused(): boolean {
+    return this.chatFocused;
+  }
+
+  private keyContext(): KeyContext {
+    const active = document.activeElement;
+    return {
+      tvOpen: this.tvMode.isOpen,
+      chatFocused: this.chatFocused,
+      gameFocused:
+        active === null || active === document.body || active === this.renderer.domElement,
+    };
+  }
+
+  /** Gives keyboard focus back to the game canvas (TV Close, emote menu or chat closed). */
   focusGame(): void {
     const active = document.activeElement;
     if (active instanceof HTMLElement && active !== document.body) active.blur();
@@ -476,8 +504,9 @@ export class Game {
       this.timer.update();
       const frameSeconds = this.timer.getDelta();
       const dt = Math.min(frameSeconds, 0.1);
-      // TV mode: the panel has the keyboard (URL field); the player stands still until Close.
-      const input = this.tvMode.isOpen ? IDLE_INPUT : this.input.read();
+      // TV mode (URL field) or the chat input has the keyboard: the player stands still.
+      const idle = readsIdleInput({ tvOpen: this.tvMode.isOpen, chatFocused: this.chatFocused });
+      const input = idle ? IDLE_INPUT : this.input.read();
       this.player.update(input, this.rig.yaw, dt);
       const prompt = this.tvMode.isOpen ? null : this.controller.currentPrompt();
       const text = prompt?.text ?? null;
