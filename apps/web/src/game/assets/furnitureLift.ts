@@ -51,6 +51,7 @@ export class FurnitureLift {
       source: THREE.Object3D,
       box: FurniturePlacement['box'],
       rotY: number,
+      contain?: boolean,
     ) => THREE.Group,
   ) {}
 
@@ -83,7 +84,7 @@ export class FurnitureLift {
     const current = this.lifted.get(id);
     if (current) return { object: current.group, added: [] };
     const { source, placement, meshes, index } = entry;
-    const group = this.fit(source, placement.box, placement.rotY);
+    const group = this.fit(source, placement.box, placement.rotY, placement.contain);
     const saved = meshes.map((mesh) => {
       const matrix = new THREE.Matrix4();
       mesh.getMatrixAt(index, matrix);

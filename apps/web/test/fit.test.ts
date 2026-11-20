@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { officeLayout } from '@office/protocol';
-import { fitScale } from '../src/game/assets/fit';
+import { containScale, fitScale } from '../src/game/assets/fit';
 import { fitModel, loadFurniture } from '../src/game/assets/loadFurniture';
 import { buildRoom } from '../src/game/room';
 
@@ -11,6 +11,34 @@ afterEach(() => vi.restoreAllMocks());
 
 it('scales each world axis to the target extent', () => {
   expect(fitScale([2, 1, 4], [1, 1, 1])).toEqual([0.5, 1, 0.25]);
+});
+
+it('contain keeps proportions: one scale, the largest that fits every axis', () => {
+  expect(containScale([2, 1, 4], [1, 1, 1])).toEqual([0.25, 0.25, 0.25]);
+  expect(containScale([0.085, 0.03, 0.05], [0.08, 0.04, 0.1])[0]).toBeCloseTo(0.08 / 0.085, 9);
+  expect(containScale([0, 0, 0], [1, 1, 1])).toEqual([1, 1, 1]);
+});
+
+it('fitModel with contain scales uniformly and stays inside the box, on its bottom', () => {
+  const source = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.03, 0.05));
+  const box = {
+    id: 'm',
+    type: 'mouse',
+    position: [1, 0.77, 2] as [number, number, number],
+    size: [0.08, 0.04, 0.1] as [number, number, number],
+  };
+  const fitted = fitModel(source, box, 0, true);
+  fitted.updateMatrixWorld(true);
+  const s = fitted.scale;
+  expect(s.x).toBeCloseTo(s.y, 9);
+  expect(s.x).toBeCloseTo(s.z, 9);
+  const b = new THREE.Box3().setFromObject(fitted);
+  const size = b.getSize(new THREE.Vector3());
+  // Width and depth keep the model's 0.085 : 0.05 ratio instead of the box's 0.08 : 0.1.
+  expect(size.x / size.z).toBeCloseTo(0.085 / 0.05, 6);
+  expect(size.x).toBeLessThanOrEqual(0.08 + 1e-9);
+  expect(size.z).toBeLessThanOrEqual(0.1 + 1e-9);
+  expect(b.min.y).toBeCloseTo(0.75, 9);
 });
 
 it('guards zero-size axes', () => {

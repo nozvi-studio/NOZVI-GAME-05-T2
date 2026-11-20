@@ -146,3 +146,11 @@ it('T-1609: every placed desk turns its open knee side to its chair, props stay 
     }
   }
 });
+
+it('office improvement 2026-11-20: the mouse and the books keep their proportions (contain)', () => {
+  const props = deskProps(officeLayout);
+  for (const p of props) {
+    const contain = p.type === 'mouse' || p.type === 'stationery';
+    expect(p.placement.contain === true, `${p.placement.box.id}`).toBe(contain);
+  }
+});

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { LayoutBox, OfficeLayout } from '@office/protocol';
 import { FURNITURE, MODEL_YAW } from './furnitureManifest';
-import { fitScale } from './fit';
+import { containScale, fitScale } from './fit';
 import { FurnitureLift, type LiftResult } from './furnitureLift';
 
 const loader = new GLTFLoader();
@@ -43,6 +43,8 @@ export type FurniturePlacement = {
   standalone?: boolean;
   /** Layout item whose palette box this placement removes (T-1158 pantry). */
   replaces?: string;
+  /** Keep the model's proportions inside the box instead of stretching to it (small props). */
+  contain?: boolean;
 };
 
 /** Layout rotY plus the model's yaw correction (`MODEL_YAW`, T-1609), in [0, 360). */
@@ -58,8 +60,16 @@ export function furniturePlacements(layout: OfficeLayout): FurniturePlacement[] 
   });
 }
 
-/** Rotate by rotY, then scale on world axes so the bounding box equals the layout extents. */
-export function fitModel(source: THREE.Object3D, box: LayoutBox, rotY: number): THREE.Group {
+/**
+ * Rotate by rotY, then scale on world axes so the bounding box equals the layout extents, or
+ * with `contain` one uniform scale that keeps the model inside them (centred, on the bottom).
+ */
+export function fitModel(
+  source: THREE.Object3D,
+  box: LayoutBox,
+  rotY: number,
+  contain = false,
+): THREE.Group {
   const model = source.clone(true);
   model.rotation.y = (rotY * Math.PI) / 180;
   const rotated = new THREE.Group();
@@ -71,7 +81,7 @@ export function fitModel(source: THREE.Object3D, box: LayoutBox, rotY: number): 
   model.position.sub(new THREE.Vector3(center.x, bounds.min.y, center.z));
   const wrapper = new THREE.Group();
   wrapper.add(rotated);
-  wrapper.scale.set(...fitScale([size.x, size.y, size.z], box.size));
+  wrapper.scale.set(...(contain ? containScale : fitScale)([size.x, size.y, size.z], box.size));
   wrapper.position.set(box.position[0], box.position[1] - box.size[1] / 2, box.position[2]);
   wrapper.name = box.id;
   wrapper.userData.occluder = true;
@@ -123,7 +133,7 @@ export function instanceModel(
   placements: FurniturePlacement[],
 ): THREE.InstancedMesh[] | undefined {
   const fitted = placements.map((p) => {
-    const wrapper = fitModel(source, p.box, p.rotY);
+    const wrapper = fitModel(source, p.box, p.rotY, p.contain);
     wrapper.updateMatrixWorld(true);
     return meshesOf(wrapper);
   });
@@ -202,7 +212,7 @@ export async function loadFurniture(
         return;
       }
       const instanced = present.length > 1 ? instanceModel(source, present) : undefined;
-      const objects = instanced ?? present.map((p) => fitModel(source, p.box, p.rotY));
+      const objects = instanced ?? present.map((p) => fitModel(source, p.box, p.rotY, p.contain));
       for (const p of present) {
         const box = p.standalone ? undefined : room.getObjectByName(p.box.id);
         if (box) room.remove(box);

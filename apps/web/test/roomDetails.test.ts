@@ -131,3 +131,13 @@ it('owner request 2026-11-18: the accent colour is on the TV wall above the rail
   expect(b.min.y).toBeGreaterThan(0.9);
   expect(b.max.y).toBeCloseTo(officeLayout.room.height);
 });
+
+it('office improvement 2026-11-20 (T-1151 review): the sign sits above the main door leaf', () => {
+  const door = officeLayout.items.find((i) => i.type === 'main_door')!;
+  const sign = door.components!.find((c) => c.type === 'signage')!;
+  const doorTop = door.position[1] + door.size[1] / 2;
+  const signBottom = sign.position[1] - sign.size[1] / 2;
+  const signTop = sign.position[1] + sign.size[1] / 2;
+  expect(signBottom).toBeGreaterThanOrEqual(doorTop);
+  expect(signTop).toBeLessThanOrEqual(officeLayout.room.height);
+});

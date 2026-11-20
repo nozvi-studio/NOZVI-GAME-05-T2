@@ -65,6 +65,9 @@ function modelFor(type: DeskPropType, index: number, rotY: number): { file: stri
  */
 const FACES_SEAT: ReadonlySet<DeskPropType> = new Set(['computer', 'keyboard', 'mouse']);
 
+/** Office improvement 2026-11-20 (T-1152 review): props whose model must not be stretched. */
+const CONTAIN: ReadonlySet<DeskPropType> = new Set(['mouse', 'stationery']);
+
 /**
  * T-1152: every desk prop listed under a desk's `components` in the layout, resolved to a
  * model and a fitted box. Deterministic: the same layout always gives the same props. Props
@@ -87,7 +90,14 @@ export function deskProps(layout: OfficeLayout): DeskProp[] {
           deskId: desk.id,
           deskIndex,
           type: component.type,
-          placement: { box: component, file: model.file, rotY: model.rotY, standalone: true },
+          placement: {
+            box: component,
+            file: model.file,
+            rotY: model.rotY,
+            standalone: true,
+            // The mouse and the books keep their proportions inside their layout box.
+            ...(CONTAIN.has(component.type) ? { contain: true } : {}),
+          },
         },
       ];
     }),
