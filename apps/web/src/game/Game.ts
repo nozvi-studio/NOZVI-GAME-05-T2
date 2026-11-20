@@ -27,6 +27,7 @@ import { furniturePlacements, loadFurniture, type FurnitureHandle } from './asse
 import { AvatarView } from './avatar/AvatarView';
 import { InteractionController, type Prompt } from './interaction/InteractionController';
 import { Nameplate } from './hud/Nameplate';
+import { speechBubbles } from './hud/speechBubble';
 import { handleAction } from './interaction/extras';
 import { InteractionFeedback } from './interaction/InteractionFeedback';
 import { activityLabel } from './hud/activityLabel';
@@ -341,6 +342,11 @@ export class Game {
           })),
         /** T-1696: true while the chat input has focus (the game reads idle input). */
         getChatInputFocused: () => this.chatFocused,
+        /** T-1698: the speech bubble text drawn above the local player or a remote, by name. */
+        getBubble: (name: string): string | null => {
+          if (name === this.identity.name) return this.nameplate.bubble;
+          return this.remotes.list().find((r) => r.name === name)?.bubble ?? null;
+        },
       };
       (window as unknown as { __office: unknown }).__office = this.debugHook;
     }
@@ -448,6 +454,15 @@ export class Game {
     this.focusGame();
   }
 
+  /**
+   * REQ-CHAT-003 (T-1698): bubble text per sender from the live chat. Message age is read on
+   * the server clock estimated by the TV binding (OQ-023), capped by the local first-seen time.
+   */
+  private speechBubbles(): Map<string, string> {
+    const now = Date.now();
+    return speechBubbles(this.chat.getSnapshot(), now, this.tvControls.clock.serverNow(now));
+  }
+
   /** T-1696: the chat input gained or lost focus; while focused the game reads idle input. */
   setChatFocused(focused: boolean): void {
     this.chatFocused = focused;
@@ -518,9 +533,11 @@ export class Game {
       this.rig.update(this.player.mesh.position, dt);
       this.player.setOpacity(fadeOpacity(this.rig.distanceToFocus));
       this.onFrame?.(dt);
-      this.remotes.update(dt);
+      const bubbles = this.speechBubbles();
+      this.remotes.update(dt, bubbles);
       this.steam.update(dt, this.player.activity === 'brewing' || this.remotes.someoneBrewing());
       this.nameplate.set(this.identity.name, activityLabel(this.player.activity));
+      this.nameplate.setBubble(bubbles.get(this.room.sessionId) ?? null);
       this.clock.update(new Date());
       this.deskScreens?.follow(this.room, Date.now());
       // Real frame time, not the 0.1 s-clamped simulation step: the governor judges FPS.

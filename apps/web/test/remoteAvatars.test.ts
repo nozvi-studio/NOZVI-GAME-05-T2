@@ -53,9 +53,13 @@ function fakeNameplate() {
     text: ['', ''] as [string, string],
     reconnecting: false,
     disposed: false,
+    bubble: null as string | null,
     set: (name: string, status: string, reconnecting = false) => {
       plate.text = [name, status];
       plate.reconnecting = reconnecting;
+    },
+    setBubble: (text: string | null) => {
+      plate.bubble = text;
     },
     dispose: () => {
       plate.disposed = true;
@@ -120,6 +124,17 @@ describe('RemoteAvatars (REQ-NET-004, REQ-UI-001)', () => {
     const [info] = t.remotes.list();
     expect(info).toMatchObject({ sessionId: 'a', name: 'Ann <b>x</b>', x: 2, model: 'avatar' });
     expect(t.scene.getObjectByName('remote:a')).toBeDefined();
+  });
+
+  it('T-1698: draws each sender bubble on that remote nameplate and clears it', () => {
+    const t = setup();
+    t.source.add!('a', t.employee('Ann'));
+    t.source.add!('b', t.employee('Bob'));
+    t.remotes.update(0.016, new Map([['a', 'hello']]));
+    expect(t.plates.map((p) => p.bubble)).toEqual(['hello', null]);
+    expect(t.remotes.list().map((r) => r.bubble)).toEqual(['hello', null]);
+    t.remotes.update(0.016);
+    expect(t.plates.map((p) => p.bubble)).toEqual([null, null]);
   });
 
   it('T-1161: remote avatars cast no real shadow and draw one shared blob shadow', async () => {
