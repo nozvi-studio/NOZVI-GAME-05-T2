@@ -13,7 +13,8 @@ import { CameraRig } from './camera';
 import { fadeOpacity } from './cameraMath';
 import { KeyboardInput } from './input';
 import { Player } from './player';
-import { setupLighting } from './lighting';
+import { ShadowRefresh, setupLighting } from './lighting';
+import { FrameRateGovernor, initialPixelRatio, type QualityStep } from './adaptiveQuality';
 import { applyMaterialTable } from './materials';
 import { createFrameRenderer, type FrameRenderer } from './postProcessing';
 import { buildRoom } from './room';
@@ -133,6 +134,10 @@ export class Game {
   private deskScreens: DeskScreens | undefined;
   /** REQ-INT-001/004/005 (T-1156): target highlight and local cabinet / fridge / door swings. */
   private readonly feedback: InteractionFeedback;
+  /** FPS pass 2026-11-20: steps `high` quality down on slow machines (null in `e2e`). */
+  private readonly governor: FrameRateGovernor | null;
+  /** FPS pass 2026-11-20: redraws the static sun shadow map only when needed. */
+  private readonly shadowRefresh = new ShadowRefresh();
 
   constructor(
     private readonly host: HTMLElement,
@@ -252,6 +257,11 @@ export class Game {
         },
         getDrawCalls: () => this.measureDrawCalls(),
         getRenderQuality: () => this.renderQuality,
+        /** FPS pass 2026-11-20: pixel ratio and shadows after any governor steps. */
+        getRenderState: () => ({
+          pixelRatio: this.renderer.getPixelRatio(),
+          shadows: this.renderer.shadowMap.enabled,
+        }),
         /** T-1150: true when frames go through the post-processing composer. */
         isComposed: () => this.frame.composed,
         isLightingReady: () => lightingReady,
@@ -311,7 +321,11 @@ export class Game {
       };
       (window as unknown as { __office: unknown }).__office = this.debugHook;
     }
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(initialPixelRatio(window.devicePixelRatio));
+    this.governor =
+      this.renderQuality === 'high'
+        ? new FrameRateGovernor(this.renderer.getPixelRatio(), this.renderer.shadowMap.enabled)
+        : null;
     this.frame = createFrameRenderer(this.renderer, this.scene, this.camera, this.renderQuality);
     // Stacking: CSS3D TV layer (0) under the WebGL canvas (1) under the labels (2).
     this.renderer.domElement.style.position = 'relative';
@@ -370,6 +384,23 @@ export class Game {
     }
   }
 
+  /** FPS pass 2026-11-20: applies one step down from the frame-rate governor. */
+  private applyQualityStep(step: QualityStep): void {
+    if (step.kind === 'pixelRatio') {
+      this.renderer.setPixelRatio(step.ratio);
+      this.resize();
+    } else {
+      this.renderer.shadowMap.enabled = false;
+      // Materials compiled with shadow sampling need a recompile without it.
+      this.scene.traverse((o) => {
+        const material = (o as THREE.Mesh).material;
+        if (!material) return;
+        for (const m of Array.isArray(material) ? material : [material]) m.needsUpdate = true;
+      });
+    }
+    if (import.meta.env.DEV) console.info('[quality] step down', step);
+  }
+
   private resize(): void {
     const { clientWidth: w, clientHeight: h } = this.host;
     if (w === 0 || h === 0) return;
@@ -412,11 +443,13 @@ export class Game {
   /** Renders two frames: one with the shadow pass, one reusing the shadow map (main pass only). */
   private measureDrawCalls(): { total: number; main: number; shadow: number; triangles: number } {
     const shadowMap = this.renderer.shadowMap;
+    const autoUpdate = shadowMap.autoUpdate;
+    shadowMap.autoUpdate = true;
     this.renderer.render(this.scene, this.camera);
     const total = this.renderer.info.render.calls;
     const triangles = this.renderer.info.render.triangles;
-    const autoUpdate = shadowMap.autoUpdate;
     shadowMap.autoUpdate = false;
+    shadowMap.needsUpdate = false;
     this.renderer.render(this.scene, this.camera);
     const main = this.renderer.info.render.calls;
     shadowMap.autoUpdate = autoUpdate;
@@ -426,7 +459,8 @@ export class Game {
   start(): void {
     this.renderer.setAnimationLoop(() => {
       this.timer.update();
-      const dt = Math.min(this.timer.getDelta(), 0.1);
+      const frameSeconds = this.timer.getDelta();
+      const dt = Math.min(frameSeconds, 0.1);
       // TV mode: the panel has the keyboard (URL field); the player stands still until Close.
       const input = this.tvMode.isOpen ? IDLE_INPUT : this.input.read();
       this.player.update(input, this.rig.yaw, dt);
@@ -445,6 +479,12 @@ export class Game {
       this.nameplate.set(this.identity.name, activityLabel(this.player.activity));
       this.clock.update(new Date());
       this.deskScreens?.follow(this.room, Date.now());
+      // Real frame time, not the 0.1 s-clamped simulation step: the governor judges FPS.
+      const step = this.governor?.frame(frameSeconds);
+      if (step) this.applyQualityStep(step);
+      if (this.shadowRefresh.tick(dt, this.feedback.swinging)) {
+        this.renderer.shadowMap.needsUpdate = true;
+      }
       this.frame.render();
       this.labelRenderer.render(this.scene, this.camera);
       this.tvLayer.render(this.camera);

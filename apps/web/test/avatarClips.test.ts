@@ -47,14 +47,21 @@ it.each(['men_suit', 'women_suit'] as const)(
     vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockImplementation(loadLocalGltf);
     const player = new Player();
     const capsule = [...player.mesh.children];
-    expect(capsule).toHaveLength(2);
+    // Body, nose and (FPS pass 2026-11-20) the blob shadow.
+    expect(capsule).toHaveLength(3);
+    expect(capsule.some((o) => o.castShadow)).toBe(false);
     expect(player.viewFinite()).toBe(false);
     player.setOpacity(0.35);
     player.setActivity('walking');
 
     const view = await AvatarView.load(avatarId);
     player.setView(view);
-    expect(player.mesh.children).toEqual([view.root]);
+    // FPS pass 2026-11-20: a blob shadow instead of a sun shadow; nothing on the avatar casts.
+    expect(player.mesh.children[0]).toBe(view.root);
+    expect(player.mesh.children.map((o) => o.name)).toEqual([view.root.name, 'blob-shadow']);
+    let casts = false;
+    view.root.traverse((o) => (casts ||= o.castShadow));
+    expect(casts).toBe(false);
     expect(capsule.every((o) => o.parent === null)).toBe(true);
     expect(player.viewFinite()).toBe(true);
     const arm = view.root.getObjectByName('UpperArmR')!;

@@ -30,14 +30,19 @@ describe('postProcessingConfig', () => {
     expect(postProcessingConfig('e2e')).toBeNull();
   });
 
-  it('takes MSAA and a mild bloom from the render config in high quality', () => {
+  it('FPS pass 2026-11-20: bloom is off in the render config, so high renders directly', () => {
+    expect(BALANCE.rendering.postProcessing.bloom.strength).toBe(0);
+    expect(postProcessingConfig('high')).toBeNull();
+  });
+
+  it('takes MSAA and a mild bloom from the render config in high quality when bloom is on', () => {
     const p = BALANCE.rendering.postProcessing;
-    expect(postProcessingConfig('high')).toEqual({
-      msaaSamples: p.msaaSamples,
-      bloom: { ...p.bloom },
+    const on = { msaaSamples: p.msaaSamples, bloom: { ...p.bloom, strength: 0.25 } };
+    expect(postProcessingConfig('high', on)).toEqual({
+      msaaSamples: on.msaaSamples,
+      bloom: { ...on.bloom },
     });
     // Mild: the threshold sits above lit surfaces, below the emissive ceiling panels.
-    expect(p.bloom.strength).toBeLessThanOrEqual(0.5);
     expect(p.bloom.threshold).toBeGreaterThan(1);
     expect(BALANCE.rendering.ceilingFixtures.emissiveIntensity).toBeGreaterThan(p.bloom.threshold);
   });
@@ -47,12 +52,22 @@ describe('createFrameRenderer', () => {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera();
 
-  it('renders high quality through the composer, resizes and disposes it', () => {
+  const bloomOn = {
+    msaaSamples: BALANCE.rendering.postProcessing.msaaSamples,
+    bloom: { ...BALANCE.rendering.postProcessing.bloom, strength: 0.25 },
+  };
+
+  it('renders high quality through the composer when bloom is on, resizes and disposes it', () => {
     const { renderer, render } = fakeRenderer(2);
     const { composer, factory } = fakeFactory();
-    const frame = createFrameRenderer(renderer, scene, camera, 'high', factory);
+    const frame = createFrameRenderer(renderer, scene, camera, 'high', factory, bloomOn);
     expect(frame.composed).toBe(true);
-    expect(factory).toHaveBeenCalledWith(renderer, scene, camera, postProcessingConfig('high'));
+    expect(factory).toHaveBeenCalledWith(
+      renderer,
+      scene,
+      camera,
+      postProcessingConfig('high', bloomOn),
+    );
 
     frame.render();
     expect(composer.render).toHaveBeenCalledTimes(1);
@@ -68,6 +83,16 @@ describe('createFrameRenderer', () => {
 
     frame.dispose();
     expect(composer.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders high quality directly when bloom is off (the shipped config)', () => {
+    const { renderer, render } = fakeRenderer();
+    const { factory } = fakeFactory();
+    const frame = createFrameRenderer(renderer, scene, camera, 'high', factory);
+    expect(frame.composed).toBe(false);
+    expect(factory).not.toHaveBeenCalled();
+    frame.render();
+    expect(render).toHaveBeenCalledWith(scene, camera);
   });
 
   it('renders e2e quality directly without creating a composer', () => {

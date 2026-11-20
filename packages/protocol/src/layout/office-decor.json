@@ -1,5 +1,5 @@
 {
-  "note": "T-1158 decoration only: no colliders, no interactables. Boxes use the layout convention (position = box centre, size in metres, rotY in degrees; Kenney models face +Z at rotY 0). `model` is relative to apps/web/public/assets. `replaces` removes the palette box of that layout item.",
+  "note": "T-1158 decoration only: no colliders, no interactables. Boxes use the layout convention (position = box centre, size in metres, rotY in degrees; Kenney models face +Z at rotY 0). `model` is relative to apps/web/public/assets. `replaces` removes the palette box of that layout item. `at` names a layout component whose box the decor takes instead of its own position, size and rotY (one source of truth: the coffee machine and the upper cabinets are placed by the layout).",
   "items": [
     {
       "id": "pantry_base",
@@ -12,16 +12,12 @@
     {
       "id": "pantry_upper",
       "model": "furniture/kitchenCabinetUpperDouble.glb",
-      "position": [3.24, 2.25, -4.3],
-      "size": [1.4, 0.7, 0.4],
-      "rotY": 0
+      "at": "pantry_upper_cabinets"
     },
     {
       "id": "pantry_coffee_machine",
       "model": "furniture/kitchenCoffeeMachine.glb",
-      "position": [2.89, 1.13, -4.2],
-      "size": [0.35, 0.4, 0.35],
-      "rotY": 0
+      "at": "coffee_machine"
     },
     {
       "id": "pantry_mug",

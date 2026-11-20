@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { officeDecor, officeLayout } from '@office/protocol';
+import { officeDecor, officeLayout, resolveDecor } from '@office/protocol';
 import { decorPlacements } from '../src/game/assets/decorPlacements';
 import { loadFurniture } from '../src/game/assets/loadFurniture';
 import { buildRoom } from '../src/game/room';
@@ -78,4 +78,33 @@ it('T-1158: decor loads as standalone placements and replaces the pantry palette
   // Repeats (pillows, apples) share one mesh per part.
   for (const [file, model] of Object.entries(handle.models))
     expect(model.meshes, file).toBe(model.parts);
+});
+
+describe('decor placed at layout components (T-1158 review 2026-11-20)', () => {
+  const component = (id: string) =>
+    officeLayout.items.flatMap((i) => i.components ?? []).find((c) => c.id === id)!;
+
+  it('draws the coffee machine and upper cabinets from the layout boxes, not copies', () => {
+    for (const [decorId, layoutId] of [
+      ['pantry_coffee_machine', 'coffee_machine'],
+      ['pantry_upper', 'pantry_upper_cabinets'],
+    ] as const) {
+      const item = officeDecor.items.find((i) => i.id === decorId)!;
+      const box = component(layoutId);
+      expect(item.position).toBe(box.position);
+      expect(item.size).toBe(box.size);
+      expect(item.rotY).toBe(box.rotY ?? 0);
+    }
+  });
+
+  it('follows a moved layout component and rejects an unknown id', () => {
+    const moved = structuredClone(officeLayout);
+    const machine = moved.items
+      .flatMap((i) => i.components ?? [])
+      .find((c) => c.id === 'coffee_machine')!;
+    machine.position = [1, 1.13, -4];
+    const [item] = resolveDecor([{ id: 'm', model: 'x.glb', at: 'coffee_machine' }], moved);
+    expect(item!.position).toEqual([1, 1.13, -4]);
+    expect(() => resolveDecor([{ id: 'm', model: 'x.glb', at: 'nope' }], moved)).toThrow(/nope/);
+  });
 });

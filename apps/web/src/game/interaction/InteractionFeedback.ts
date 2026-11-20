@@ -66,6 +66,11 @@ export class InteractionFeedback {
     this.openables.toggle(target.id);
   }
 
+  /** True while a cabinet, fridge or door leaf swung this frame (shadow map redraw). */
+  get swinging(): boolean {
+    return this.swung.size > 0;
+  }
+
   /** True while the door exit is waiting for the swing. */
   get exiting(): boolean {
     return this.exitTimer !== undefined;

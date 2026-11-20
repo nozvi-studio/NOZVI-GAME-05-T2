@@ -38,6 +38,10 @@ export function setupLighting(
   // r187 removed PCFSoftShadowMap; PCFShadowMap now does soft Vogel-disk filtering via shadow.radius.
   renderer.shadowMap.enabled = shadowsEnabled(quality);
   renderer.shadowMap.type = THREE.PCFShadowMap;
+  // FPS pass 2026-11-20: the casters are static, so the game loop asks for a redraw
+  // (`ShadowRefresh`) instead of three redrawing the shadow map every frame.
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
 
   scene.background = new THREE.Color(R.background);
   const environment = setupEnvironment(renderer, scene, quality);
@@ -73,21 +77,44 @@ export function setupLighting(
   };
 }
 
+/**
+ * FPS pass 2026-11-20: when to redraw the sun's shadow map. Only static meshes cast sun
+ * shadows (avatars have blob shadows), so it is redrawn on the first frame, then every
+ * `intervalSeconds` (furniture that loads later), and on every frame while `moving` (a
+ * cabinet, fridge or door leaf swinging).
+ */
+export class ShadowRefresh {
+  private since = Number.POSITIVE_INFINITY;
+
+  constructor(private readonly intervalSeconds: number = R.shadow.refreshSeconds) {}
+
+  /** True when this frame should redraw the shadow map. */
+  tick(dt: number, moving: boolean): boolean {
+    this.since += dt;
+    if (!moving && this.since < this.intervalSeconds) return false;
+    this.since = 0;
+    return true;
+  }
+}
+
 /** Image-based fill: a texture to use as `scene.environment` or a light probe to add. */
 export type EnvironmentDeps = {
-  /** `high`: PMREM of RoomEnvironment; `setupEnvironment` disposes the returned texture. */
-  pmrem: (renderer: THREE.WebGLRenderer) => THREE.Texture;
+  /**
+   * `high`: PMREM render target of RoomEnvironment; `setupEnvironment` uses its texture and
+   * disposes the whole target (framebuffer included, T-1149 review 2026-11-20).
+   */
+  pmrem: (renderer: THREE.WebGLRenderer) => { texture: THREE.Texture; dispose(): void };
   /** `e2e`: spherical-harmonics light probe baked from RoomEnvironment. */
   probe: (renderer: THREE.WebGLRenderer) => Promise<THREE.LightProbe>;
 };
 
-function roomEnvironmentPmrem(renderer: THREE.WebGLRenderer): THREE.Texture {
+function roomEnvironmentPmrem(renderer: THREE.WebGLRenderer): THREE.WebGLRenderTarget {
   const generator = new THREE.PMREMGenerator(renderer);
   const roomEnv = new RoomEnvironment();
   const target = generator.fromScene(roomEnv, R.reflections.blurSigma);
   roomEnv.dispose();
   generator.dispose();
-  return target.texture;
+  return target;
 }
 
 function roomEnvironmentProbe(renderer: THREE.WebGLRenderer): Promise<THREE.LightProbe> {
@@ -121,14 +148,15 @@ export function setupEnvironment(
   deps: EnvironmentDeps = defaultEnvironmentDeps,
 ): { ready: Promise<void>; dispose: () => void } {
   if (quality === 'high') {
-    const texture = deps.pmrem(renderer);
+    const target = deps.pmrem(renderer);
+    const texture = target.texture;
     scene.environment = texture;
     scene.environmentIntensity = R.environmentIntensity;
     return {
       ready: Promise.resolve(),
       dispose: () => {
         if (scene.environment === texture) scene.environment = null;
-        texture.dispose();
+        target.dispose();
       },
     };
   }

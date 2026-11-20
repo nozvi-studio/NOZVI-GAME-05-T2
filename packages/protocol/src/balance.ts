@@ -282,6 +282,12 @@ export const BALANCE = {
       radius: 6,
       intensity: 0.8,
       margin: 0.3,
+      /**
+       * FPS pass 2026-11-20: only static furniture and walls cast sun shadows (avatars use a
+       * blob shadow), so the shadow map is redrawn at most this often, and every frame only
+       * while a cabinet, fridge or door leaf swings. Catches furniture that finishes loading.
+       */
+      refreshSeconds: 0.5,
     },
     /**
      * T-1150: flush LED ceiling panels (layout shell.lighting[ceiling_light], room centre).
@@ -307,7 +313,27 @@ export const BALANCE = {
      */
     postProcessing: {
       msaaSamples: 4,
-      bloom: { strength: 0.25, radius: 0.4, threshold: 4 },
+      // Owner 2026-11-20: high quality fell below 30 FPS on every machine, so bloom is off
+      // (strength 0), which also skips the composer (postProcessing.ts).
+      bloom: { strength: 0, radius: 0.4, threshold: 4 },
+    },
+    /**
+     * FPS pass 2026-11-20: the canvas pixel ratio is the device's, capped here (was 2). A
+     * 1.5 cap draws 44 % fewer pixels than 2 on a retina screen.
+     */
+    maxPixelRatio: 1.5,
+    /**
+     * FPS pass 2026-11-20, `high` only (`apps/web/src/game/adaptiveQuality.ts`): when a
+     * `sampleSeconds` window averages below `targetFps`, lower the pixel ratio by
+     * `pixelRatioStep` down to `minPixelRatio`, then turn the sun shadow map off. Never raised
+     * again in a session. `settleSeconds` is skipped at start and after each step.
+     */
+    adaptive: {
+      targetFps: 45,
+      settleSeconds: 4,
+      sampleSeconds: 2,
+      pixelRatioStep: 0.25,
+      minPixelRatio: 1,
     },
     /**
      * T-1149, `high` render quality only: `scene.environment` is a PMREM of THREE

@@ -11,6 +11,7 @@ import {
   type PlayerState,
 } from '@office/protocol';
 import { AvatarView } from './avatar/AvatarView';
+import { createBlobShadow } from './avatar/blobShadow';
 import { Predictor } from '../net/prediction';
 import type { LocalSnapshot } from '../net/localSync';
 import { cupRestSpot, seatPose, seatSocket, toActivity } from './interaction/seats';
@@ -56,13 +57,14 @@ export class Player {
       new THREE.MeshStandardMaterial({ color: '#3B9AE2' }),
     );
     body.position.y = 0.85;
-    body.castShadow = true;
+    // FPS pass 2026-11-20: no avatar casts a sun shadow (the shadow map stays static).
+    body.castShadow = false;
     const nose = new THREE.Mesh(
       new THREE.BoxGeometry(0.12, 0.12, 0.2),
       new THREE.MeshStandardMaterial({ color: '#222426' }),
     );
     nose.position.set(0, 1.5, r);
-    this.mesh.add(body, nose);
+    this.mesh.add(body, nose, createBlobShadow());
     this.materials.push(body.material, nose.material);
     for (const m of this.materials) m.transparent = true;
     const [x, , z] = officeLayout.spawn.position;
@@ -136,7 +138,10 @@ export class Player {
 
   setView(view: AvatarView): void {
     this.mesh.clear();
-    this.mesh.add(view.root);
+    // FPS pass 2026-11-20: a blob shadow like remote avatars (T-1161) instead of a sun shadow,
+    // so the shadow map only holds static casters and is not redrawn every frame.
+    view.root.traverse((o) => (o.castShadow = false));
+    this.mesh.add(view.root, createBlobShadow());
     this.view = view;
     this.materials.length = 0;
     view.root.traverse((o) => {

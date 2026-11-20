@@ -17,9 +17,15 @@ export type PostProcessingConfig = {
  * Phase 4.1 task 5 (T-1150): `high` renders through an `EffectComposer` with MSAA and a mild
  * bloom; `e2e` (software WebGL in Playwright) renders directly, as before.
  */
-export function postProcessingConfig(quality: RenderQuality): PostProcessingConfig | null {
+export function postProcessingConfig(
+  quality: RenderQuality,
+  p: { msaaSamples: number; bloom: PostProcessingConfig['bloom'] } = BALANCE.rendering
+    .postProcessing,
+): PostProcessingConfig | null {
   if (quality === 'e2e') return null;
-  const p = BALANCE.rendering.postProcessing;
+  // FPS pass 2026-11-20: without bloom the composer only adds MSAA, which costs two
+  // full-screen half-float targets and an output pass; the canvas's own antialias is cheaper.
+  if (p.bloom.strength <= 0) return null;
   return { msaaSamples: p.msaaSamples, bloom: { ...p.bloom } };
 }
 
@@ -85,8 +91,9 @@ export function createFrameRenderer(
   camera: THREE.Camera,
   quality: RenderQuality,
   factory: ComposerFactory = createEffectComposer,
+  settings: Parameters<typeof postProcessingConfig>[1] = BALANCE.rendering.postProcessing,
 ): FrameRenderer {
-  const config = postProcessingConfig(quality);
+  const config = postProcessingConfig(quality, settings);
   if (!config) {
     return {
       composed: false,

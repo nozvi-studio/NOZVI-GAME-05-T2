@@ -52,11 +52,13 @@ describe('environment (T-1149)', () => {
   const renderer = {} as THREE.WebGLRenderer;
 
   function fakes() {
-    const texture = new THREE.Texture();
-    const disposeTexture = vi.spyOn(texture, 'dispose');
+    const target = new THREE.WebGLRenderTarget(1, 1);
+    const texture = target.texture;
+    // T-1149 review: the whole render target is released, not only its texture.
+    const disposeTexture = vi.spyOn(target, 'dispose');
     const probe = new THREE.LightProbe();
     const deps = {
-      pmrem: vi.fn<EnvironmentDeps['pmrem']>(() => texture),
+      pmrem: vi.fn<EnvironmentDeps['pmrem']>(() => target),
       probe: vi.fn<EnvironmentDeps['probe']>(() => Promise.resolve(probe)),
     };
     return { texture, disposeTexture, probe, deps };
