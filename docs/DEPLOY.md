@@ -2,6 +2,8 @@
 
 Owner decision 2026-11-13 (see DECISIONS): the web client goes to Vercel, the Colyseus server to Render Free. Vercel cannot host the server because its functions do not keep WebSocket connections open.
 
+Live since 2026-11-20: web https://office-eight-indol.vercel.app, server https://nozvi-game-05-t2.onrender.com (`/health`).
+
 Order: deploy the server first, then the web client (it needs the server URL at build time), then put the web URL back into the server's `ALLOWED_ORIGINS`.
 
 ## CI/CD (GitHub Actions)

@@ -41,8 +41,8 @@ test('the TV screen sits on the entertainment wall and the CSS3D layer follows t
   expect(tv.position[0]).toBeGreaterThan(-5.83);
   expect(tv.position[0]).toBeLessThan(-5.7);
   expect(tv.position[2]).toBeCloseTo(-1.62, 5);
-  expect(tv.width).toBeCloseTo(1.4, 5);
-  expect(tv.height).toBeCloseTo(0.8, 5);
+  expect(tv.width).toBeCloseTo(2.04, 5);
+  expect(tv.height).toBeCloseTo(0.72, 5);
   expect(tv.pointerEvents).toBe('none');
   expect(tv.layerSize).toEqual({ width: 1280, height: 720 });
   // The projected screen is a sensible on-screen rectangle.

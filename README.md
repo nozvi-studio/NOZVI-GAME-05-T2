@@ -4,6 +4,8 @@
 
 **Genre:** Casual · social multiplayer 3D sandbox **Platform:** web (desktop browser) **Status:** see [docs/STATUS.md](docs/STATUS.md)
 
+**Play:** https://office-eight-indol.vercel.app (server on Render Free: the first join after 15 idle minutes waits about a minute while it wakes). Deploy setup: [docs/DEPLOY.md](docs/DEPLOY.md).
+
 ## Quick start
 
 ```bash
