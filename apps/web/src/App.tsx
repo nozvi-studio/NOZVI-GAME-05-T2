@@ -8,6 +8,7 @@ import { JoinScreen, type JoinResult } from './ui/JoinScreen';
 import { ConnectionBanner } from './ui/ConnectionBanner';
 import { TvPanel } from './ui/TvPanel';
 import { EmoteMenu } from './ui/EmoteMenu';
+import { ChatPanel } from './ui/ChatPanel';
 import {
   Connection,
   serverUrl,
@@ -20,6 +21,7 @@ type Session = { identity: JoinResult; room: OfficeRoomHandle };
 
 export function App() {
   const hostRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
   const [prompt, setPrompt] = useState<P>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [joined, setJoined] = useState<Session | null>(null);
@@ -72,6 +74,8 @@ export function App() {
       setToast(message);
       toastTimer = setTimeout(() => setToast(null), 1500);
     };
+    // T-1696: Enter with the game focused opens (focuses) the chat input.
+    game.onChatOpen = () => chatInputRef.current?.focus();
     game.onExit = () => {
       // Main-door exit is a consented leave (REQ-MOVE-002).
       void connection.leave();
@@ -131,6 +135,14 @@ export function App() {
         <div role="status" style={{ position: 'absolute', bottom: 48, left: 0, right: 0 }}>
           <Prompt prompt={{ text: toast, available: true }} />
         </div>
+      )}
+      {game && (
+        <ChatPanel
+          store={game.chat}
+          inputRef={chatInputRef}
+          onFocusChange={(focused) => game.setChatFocused(focused)}
+          onClose={() => game.focusGame()}
+        />
       )}
       {game && !tvOpen && (
         <EmoteMenu

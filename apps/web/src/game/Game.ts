@@ -12,6 +12,7 @@ import {
 import { CameraRig } from './camera';
 import { fadeOpacity } from './cameraMath';
 import { KeyboardInput } from './input';
+import { readsIdleInput, routeGameKey, type KeyContext } from './keys';
 import { Player } from './player';
 import { ShadowRefresh, setupLighting } from './lighting';
 import { FrameRateGovernor, initialPixelRatio, type QualityStep } from './adaptiveQuality';
@@ -26,6 +27,7 @@ import { furniturePlacements, loadFurniture, type FurnitureHandle } from './asse
 import { AvatarView } from './avatar/AvatarView';
 import { InteractionController, type Prompt } from './interaction/InteractionController';
 import { Nameplate } from './hud/Nameplate';
+import { speechBubbles } from './hud/speechBubble';
 import { handleAction } from './interaction/extras';
 import { InteractionFeedback } from './interaction/InteractionFeedback';
 import { activityLabel } from './hud/activityLabel';
@@ -34,6 +36,8 @@ import { EntranceBoard } from './hud/EntranceBoard';
 import { EmployeeRoster } from '../ui/employeeRoster';
 import {
   bindPrediction,
+  ChatStore,
+  chatSource,
   employeeSource,
   roomBrewer,
   roomOccupancy,
@@ -96,16 +100,22 @@ export class Game {
   onFrame: ((dt: number) => void) | undefined;
   private promptText: string | null = null;
   // WASD while seated needs no handler: movement inputs reach the server, which stands up.
+  // T-1696: routing in `keys.ts`. In TV mode Esc closes the panel and other game keys wait
+  // for Close; while the chat input has focus every key is text for it.
   private readonly keydown = (e: KeyboardEvent): void => {
-    if (this.tvMode.isOpen) {
-      // Esc closes the panel while the app has focus; other game keys wait for Close.
-      if (e.code === 'Escape') this.tvMode.exit();
-      return;
-    }
-    if (e.code === 'KeyE' && !e.repeat) this.controller.press();
-    if (e.code === 'KeyG' && !e.repeat) this.controller.wave();
-    if (e.code === 'KeyF' && !e.repeat) this.controller.sip();
+    const action = routeGameKey(e, this.keyContext());
+    if (action === 'tvExit') this.tvMode.exit();
+    else if (action === 'chatOpen') {
+      e.preventDefault();
+      this.onChatOpen?.();
+    } else if (action === 'press') this.controller.press();
+    else if (action === 'wave') this.controller.wave();
+    else if (action === 'sip') this.controller.sip();
   };
+  /** T-1696: set by the chat panel while its input has focus. */
+  private chatFocused = false;
+  /** T-1696: Enter with the game focused asks the chat panel to focus its input. */
+  onChatOpen: (() => void) | undefined;
   private readonly timer = new THREE.Timer();
   private readonly resizeObserver: ResizeObserver;
   private readonly rig: CameraRig;
@@ -124,6 +134,8 @@ export class Game {
   private readonly remotes: RemoteAvatars;
   /** Employee list for the 2D panel and the entrance board (REQ-UI-003). */
   readonly roster: EmployeeRoster;
+  /** REQ-CHAT-001/002 (T-1695): live chat messages from room state, and sending. */
+  readonly chat: ChatStore;
   private readonly board = new EntranceBoard(officeLayout);
   /** REQ-INT-003 (T-1154): steam on the coffee machine while anyone brews. */
   private readonly steam = new CoffeeSteam(
@@ -176,6 +188,7 @@ export class Game {
     this.remotes = new RemoteAvatars(this.scene, employeeSource(netRoom), netRoom.sessionId);
     this.scene.add(office);
     this.roster = new EmployeeRoster(employeeSource(netRoom), netRoom.sessionId);
+    this.chat = new ChatStore(chatSource(netRoom), netRoom);
     this.scene.add(this.board.mesh);
     this.scene.add(this.tvScreen.group);
     this.scene.add(this.steam.points);
@@ -318,6 +331,22 @@ export class Game {
         openTvMode: () => this.tvMode.enter(),
         getTvView: () => this.tvControls.view(),
         getTvSync: () => ({ ...this.tvControls.snapshot, expected: this.tvControls.expected() }),
+        /** T-1695: the live chat messages as the panel lists them, oldest first. */
+        getChat: () =>
+          this.chat.getSnapshot().map(({ id, sessionId, name, text, sentAt }) => ({
+            id,
+            sessionId,
+            name,
+            text,
+            sentAt,
+          })),
+        /** T-1696: true while the chat input has focus (the game reads idle input). */
+        getChatInputFocused: () => this.chatFocused,
+        /** T-1698: the speech bubble text drawn above the local player or a remote, by name. */
+        getBubble: (name: string): string | null => {
+          if (name === this.identity.name) return this.nameplate.bubble;
+          return this.remotes.list().find((r) => r.name === name)?.bubble ?? null;
+        },
       };
       (window as unknown as { __office: unknown }).__office = this.debugHook;
     }
@@ -368,6 +397,7 @@ export class Game {
     this.unbindPrediction = this.bindRoom(netRoom);
     this.remotes.rebind(employeeSource(netRoom));
     this.roster.rebind(employeeSource(netRoom));
+    this.chat.rebind(chatSource(netRoom), netRoom);
     this.tvControls.attach(netRoom);
   }
 
@@ -424,7 +454,35 @@ export class Game {
     this.focusGame();
   }
 
-  /** Gives keyboard focus back to the game canvas (TV Close, emote menu closed). */
+  /**
+   * REQ-CHAT-003 (T-1698): bubble text per sender from the live chat. Message age is read on
+   * the server clock estimated by the TV binding (OQ-023), capped by the local first-seen time.
+   */
+  private speechBubbles(): Map<string, string> {
+    const now = Date.now();
+    return speechBubbles(this.chat.getSnapshot(), now, this.tvControls.clock.serverNow(now));
+  }
+
+  /** T-1696: the chat input gained or lost focus; while focused the game reads idle input. */
+  setChatFocused(focused: boolean): void {
+    this.chatFocused = focused;
+  }
+
+  get chatInputFocused(): boolean {
+    return this.chatFocused;
+  }
+
+  private keyContext(): KeyContext {
+    const active = document.activeElement;
+    return {
+      tvOpen: this.tvMode.isOpen,
+      chatFocused: this.chatFocused,
+      gameFocused:
+        active === null || active === document.body || active === this.renderer.domElement,
+    };
+  }
+
+  /** Gives keyboard focus back to the game canvas (TV Close, emote menu or chat closed). */
   focusGame(): void {
     const active = document.activeElement;
     if (active instanceof HTMLElement && active !== document.body) active.blur();
@@ -461,8 +519,9 @@ export class Game {
       this.timer.update();
       const frameSeconds = this.timer.getDelta();
       const dt = Math.min(frameSeconds, 0.1);
-      // TV mode: the panel has the keyboard (URL field); the player stands still until Close.
-      const input = this.tvMode.isOpen ? IDLE_INPUT : this.input.read();
+      // TV mode (URL field) or the chat input has the keyboard: the player stands still.
+      const idle = readsIdleInput({ tvOpen: this.tvMode.isOpen, chatFocused: this.chatFocused });
+      const input = idle ? IDLE_INPUT : this.input.read();
       this.player.update(input, this.rig.yaw, dt);
       const prompt = this.tvMode.isOpen ? null : this.controller.currentPrompt();
       const text = prompt?.text ?? null;
@@ -474,9 +533,11 @@ export class Game {
       this.rig.update(this.player.mesh.position, dt);
       this.player.setOpacity(fadeOpacity(this.rig.distanceToFocus));
       this.onFrame?.(dt);
-      this.remotes.update(dt);
+      const bubbles = this.speechBubbles();
+      this.remotes.update(dt, bubbles);
       this.steam.update(dt, this.player.activity === 'brewing' || this.remotes.someoneBrewing());
       this.nameplate.set(this.identity.name, activityLabel(this.player.activity));
+      this.nameplate.setBubble(bubbles.get(this.room.sessionId) ?? null);
       this.clock.update(new Date());
       this.deskScreens?.follow(this.room, Date.now());
       // Real frame time, not the 0.1 s-clamped simulation step: the governor judges FPS.
@@ -504,6 +565,7 @@ export class Game {
     this.remotes.dispose();
     this.unbindBoard();
     this.roster.dispose();
+    this.chat.dispose();
     this.board.dispose();
     const w = window as unknown as { __office?: unknown };
     if (this.debugHook !== undefined && w.__office === this.debugHook) delete w.__office;

@@ -47,6 +47,8 @@ export type RemoteView = {
 export type RemoteNameplate = {
   readonly object: THREE.Object3D;
   set(name: string, status: string, reconnecting?: boolean): void;
+  /** Optional so test fakes stay small; `Nameplate` implements it (T-1698). */
+  setBubble?(text: string | null): void;
   dispose(): void;
 };
 export type RemoteAvatarsDeps = {
@@ -70,6 +72,8 @@ export type RemoteInfo = {
   connected: boolean;
   /** The nameplate status text as drawn. */
   status: string;
+  /** The speech bubble text as drawn, null when none (REQ-CHAT-003, T-1698). */
+  bubble: string | null;
   /** Typing overlay weight as drawn, 0 to 1 (T-1219). */
   typing: number;
   /** Make-coffee overlay weight as drawn, 0 to 1 (T-1611). */
@@ -99,12 +103,15 @@ type Remote = {
   activity: Activity;
   emote: EmoteId | '';
   status: string;
+  bubble: string | null;
   /** The seat seen in the last snapshot; a change restarts interpolation. */
   seatId: string;
   view: RemoteView | null;
   disposed: boolean;
   sampledAt: number | null;
 };
+
+const NO_BUBBLES: ReadonlyMap<string, string> = new Map();
 
 const DEFAULT_DEPS: RemoteAvatarsDeps = {
   now: () => performance.now(),
@@ -224,6 +231,7 @@ export class RemoteAvatars {
       activity: toActivity(employee.activity),
       emote: toEmote(employee.emote ?? ''),
       status: '',
+      bubble: null,
       seatId,
       view: null,
       disposed: false,
@@ -292,12 +300,19 @@ export class RemoteAvatars {
     remote.nameplate.set(remote.employee.name, remote.status, reconnecting);
   }
 
-  /** Called once per rendered frame with the frame time in seconds. */
-  update(dt: number): void {
+  /**
+   * Called once per rendered frame with the frame time in seconds. `bubbles` holds the
+   * speech bubble text per sender session (REQ-CHAT-003, `speechBubbles`).
+   */
+  update(dt: number, bubbles: ReadonlyMap<string, string> = NO_BUBBLES): void {
     // T-1377: one delay for every remote, adapted to the frame time.
     this.renderNow = this.deps.now();
     this.delayMs = this.delay.update(this.renderNow);
-    for (const remote of this.remotes.values()) this.place(remote, dt);
+    for (const [id, remote] of this.remotes) {
+      this.place(remote, dt);
+      remote.bubble = bubbles.get(id) ?? null;
+      remote.nameplate.setBubble?.(remote.bubble);
+    }
   }
 
   list(): RemoteInfo[] {
@@ -313,6 +328,7 @@ export class RemoteAvatars {
       model: r.view ? 'avatar' : 'capsule',
       connected: r.employee.connected !== false,
       status: r.status,
+      bubble: r.bubble,
       typing: r.view?.typing ?? 0,
       brew: r.view?.brew ?? 0,
       emote: r.emote,

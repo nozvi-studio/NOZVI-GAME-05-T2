@@ -5,3 +5,4 @@ export * from './interpolation';
 export * from './employees';
 export * from './occupancy';
 export * from './reconnect';
+export * from './chat';
