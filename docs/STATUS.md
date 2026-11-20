@@ -25,7 +25,7 @@ Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTU
 
 ## Next (ordered)
 
-0. **2026-11-20 snapshot** (`dev` at `a033b6f`, Meridian 57/66 tasks done):
+0. **2026-11-20 snapshot** (`dev` at `a033b6f`, Meridian 56/66 tasks done):
    - Merged into `dev` since 2026-11-18: PR #4 (Phase 4.1 wave 2: T-1149 to T-1152, T-1158), PR #5 (T-1154 coffee client), PR #6 (T-1155, T-1156, T-1567, T-1568), PR #7 (T-1609, T-1610, T-1611, T-1612, T-1614), PR #8 (FEAT-143 / T-1654 avatar look), and `df7995c` (TV error 5, seek storm, screen size; item 6).
    - Technical review on Meridian 2026-11-20 (code read by t1-opus; tests not rerun in the review container because dependencies were not installed): T-1154, T-1155, T-1156, T-1567, T-1568, T-1609, T-1610, T-1611, T-1614, T-1654 approved and Done. Second batch the same day: T-1149, T-1152, T-1158, T-1376, T-1405 approved and Done; **T-1151 returned** (room-wide merged detail meshes are camera occluders, so one hit hides the skirting / frames / wainscot of every wall; fix: do not mark thin details as occluders). Review notes are comments on each task; follow-ups in Open items.
    - T-1377 stays in Dev: the owner returned it on 2026-11-19 because `remote.spec.ts` walk speed still exceeds 3 m/s in 2 of 20 runs.
