@@ -20,7 +20,8 @@ export default defineConfig({
     {
       command: 'pnpm --filter @office/server start',
       url: `http://127.0.0.1:${SERVER_PORT}/health`,
-      env: { PORT: String(SERVER_PORT), JOIN_LIMIT_PER_MINUTE: '1000' },
+      // T-1697: chat messages live CHAT_TTL_SECONDS (60 s shipped) so chat.spec sees expiry quickly.
+      env: { PORT: String(SERVER_PORT), JOIN_LIMIT_PER_MINUTE: '1000', CHAT_TTL_SECONDS: '8' },
       reuseExistingServer: false,
       timeout: 60_000,
     },
