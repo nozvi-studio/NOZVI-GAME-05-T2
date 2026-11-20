@@ -103,6 +103,7 @@ describe('design tokens (T-1159)', () => {
     'ui/Prompt.tsx',
     'ui/ConnectionBanner.tsx',
     'ui/TvPanel.tsx',
+    'ui/ChatPanel.tsx',
     'App.tsx',
     'ui/ui.css',
   ])('%s has no hard-coded colour or font', (file) => {

@@ -9,7 +9,7 @@ export type TvNoticeSource = {
   subscribe(listener: () => void): () => void;
 };
 
-type Timers = {
+export type Timers = {
   set(run: () => void, ms: number): unknown;
   clear(handle: unknown): void;
 };
@@ -20,11 +20,11 @@ const DEFAULT_TIMERS: Timers = {
 };
 
 /**
- * T-1568: the server's `tv_rate_limited` notice as a short-lived panel message. `show`
- * starts (or extends) the block; the message counts down in whole seconds and clears
- * itself after `retryAfterMs`. The binding still drops commands until then.
+ * T-1568: a server rate-limit notice as a short-lived panel message. `show` starts (or
+ * extends) the block; the message counts down in whole seconds and clears itself after
+ * `retryAfterMs`. `format` words the message (T-1695 reuses this class for chat).
  */
-export class TvRateLimitNotice implements TvNoticeSource {
+export class RateLimitNotice implements TvNoticeSource {
   private until = 0;
   private timer: unknown = null;
   private readonly listeners = new Set<() => void>();
@@ -32,6 +32,7 @@ export class TvRateLimitNotice implements TvNoticeSource {
   constructor(
     private readonly now: () => number = Date.now,
     private readonly timers: Timers = DEFAULT_TIMERS,
+    private readonly format: (seconds: number) => string = rateLimitMessage,
   ) {}
 
   show(retryAfterMs: number): void {
@@ -48,7 +49,7 @@ export class TvRateLimitNotice implements TvNoticeSource {
 
   message(): string | null {
     const left = this.until - this.now();
-    return left > 0 ? rateLimitMessage(Math.ceil(left / 1000)) : null;
+    return left > 0 ? this.format(Math.ceil(left / 1000)) : null;
   }
 
   subscribe(listener: () => void): () => void {
@@ -70,3 +71,6 @@ export class TvRateLimitNotice implements TvNoticeSource {
     for (const listener of [...this.listeners]) listener();
   }
 }
+
+/** T-1568: the `tv_rate_limited` notice; the binding still drops commands until it clears. */
+export class TvRateLimitNotice extends RateLimitNotice {}

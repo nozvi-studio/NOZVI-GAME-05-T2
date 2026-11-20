@@ -34,6 +34,8 @@ import { EntranceBoard } from './hud/EntranceBoard';
 import { EmployeeRoster } from '../ui/employeeRoster';
 import {
   bindPrediction,
+  ChatStore,
+  chatSource,
   employeeSource,
   roomBrewer,
   roomOccupancy,
@@ -124,6 +126,8 @@ export class Game {
   private readonly remotes: RemoteAvatars;
   /** Employee list for the 2D panel and the entrance board (REQ-UI-003). */
   readonly roster: EmployeeRoster;
+  /** REQ-CHAT-001/002 (T-1695): live chat messages from room state, and sending. */
+  readonly chat: ChatStore;
   private readonly board = new EntranceBoard(officeLayout);
   /** REQ-INT-003 (T-1154): steam on the coffee machine while anyone brews. */
   private readonly steam = new CoffeeSteam(
@@ -176,6 +180,7 @@ export class Game {
     this.remotes = new RemoteAvatars(this.scene, employeeSource(netRoom), netRoom.sessionId);
     this.scene.add(office);
     this.roster = new EmployeeRoster(employeeSource(netRoom), netRoom.sessionId);
+    this.chat = new ChatStore(chatSource(netRoom), netRoom);
     this.scene.add(this.board.mesh);
     this.scene.add(this.tvScreen.group);
     this.scene.add(this.steam.points);
@@ -318,6 +323,15 @@ export class Game {
         openTvMode: () => this.tvMode.enter(),
         getTvView: () => this.tvControls.view(),
         getTvSync: () => ({ ...this.tvControls.snapshot, expected: this.tvControls.expected() }),
+        /** T-1695: the live chat messages as the panel lists them, oldest first. */
+        getChat: () =>
+          this.chat.getSnapshot().map(({ id, sessionId, name, text, sentAt }) => ({
+            id,
+            sessionId,
+            name,
+            text,
+            sentAt,
+          })),
       };
       (window as unknown as { __office: unknown }).__office = this.debugHook;
     }
@@ -368,6 +382,7 @@ export class Game {
     this.unbindPrediction = this.bindRoom(netRoom);
     this.remotes.rebind(employeeSource(netRoom));
     this.roster.rebind(employeeSource(netRoom));
+    this.chat.rebind(chatSource(netRoom), netRoom);
     this.tvControls.attach(netRoom);
   }
 
@@ -504,6 +519,7 @@ export class Game {
     this.remotes.dispose();
     this.unbindBoard();
     this.roster.dispose();
+    this.chat.dispose();
     this.board.dispose();
     const w = window as unknown as { __office?: unknown };
     if (this.debugHook !== undefined && w.__office === this.debugHook) delete w.__office;

@@ -8,6 +8,7 @@ import { JoinScreen, type JoinResult } from './ui/JoinScreen';
 import { ConnectionBanner } from './ui/ConnectionBanner';
 import { TvPanel } from './ui/TvPanel';
 import { EmoteMenu } from './ui/EmoteMenu';
+import { ChatPanel } from './ui/ChatPanel';
 import {
   Connection,
   serverUrl,
@@ -132,6 +133,7 @@ export function App() {
           <Prompt prompt={{ text: toast, available: true }} />
         </div>
       )}
+      {game && <ChatPanel store={game.chat} />}
       {game && !tvOpen && (
         <EmoteMenu
           allowed={(emote) => game.canEmote(emote)}
