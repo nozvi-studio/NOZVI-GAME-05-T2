@@ -234,6 +234,21 @@ export const BALANCE = {
     },
   },
   /** Phase 4 shared TV (REQ-TV-006, REQ-NFR-005). */
+  /**
+   * REQ-CHAT-001 to 003 (Phase 4.2, owner 2026-11-19): office text chat. Messages are removed
+   * `ttlSeconds` after the server accepted them; at most `maxMessages` are held per room (the
+   * oldest goes first). `rateLimitMessages` per `rateLimitWindowSeconds` per client. Speech
+   * bubbles show the newest message for `bubbleSeconds`, cut to `bubbleMaxChars`.
+   */
+  chat: {
+    ttlSeconds: 60,
+    maxLength: 200,
+    maxMessages: 50,
+    rateLimitMessages: 5,
+    rateLimitWindowSeconds: 10,
+    bubbleSeconds: 6,
+    bubbleMaxChars: 80,
+  },
   tv: {
     /** Drift below this many seconds is left alone. */
     ignoreBelowSeconds: 0.5,

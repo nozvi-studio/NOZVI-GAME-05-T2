@@ -107,11 +107,29 @@ export function readTv(tv: {
   };
 }
 
-/** Room state; employees are keyed by Colyseus sessionId. */
+/**
+ * REQ-CHAT-001/002 (Phase 4.2): one chat message, written only by the server. `sentAt` is
+ * the server epoch ms when it accepted the message; the room tick removes the entry
+ * `BALANCE.chat.ttlSeconds` later.
+ */
+export const ChatMessageState = schema(
+  {
+    id: t.string(),
+    sessionId: t.string(),
+    name: t.string(),
+    text: t.string(),
+    sentAt: t.float64(),
+  },
+  'ChatMessageState',
+);
+export type ChatMessageState = SchemaType<typeof ChatMessageState>;
+
+/** Room state; employees are keyed by Colyseus sessionId. `chat` is oldest first. */
 export const OfficeState = schema(
   {
     employees: t.map(EmployeeState),
     tv: SharedTVState,
+    chat: t.array(ChatMessageState),
   },
   'OfficeState',
 );

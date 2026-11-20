@@ -1,15 +1,31 @@
+import { BALANCE } from '../balance';
 import { isEmoteId, type EmoteId } from '../activity';
 import { isAvatarId, normalizeOfficeCode, validateName, type AvatarId } from '../identity';
 import { officeLayout } from '../layout/layout';
 import { PROTOCOL_VERSION } from '../version';
 
 /** Client to server message names. */
-export const MSG = { input: 'input', intent: 'intent', tv: 'tv', tvTime: 'tv_time' } as const;
+export const MSG = {
+  input: 'input',
+  intent: 'intent',
+  tv: 'tv',
+  tvTime: 'tv_time',
+  chat: 'chat',
+} as const;
 
 /** Server to client message names. */
-export const SERVER_MSG = { tvRateLimited: 'tv_rate_limited', tvTime: 'tv_time' } as const;
+export const SERVER_MSG = {
+  tvRateLimited: 'tv_rate_limited',
+  tvTime: 'tv_time',
+  chatRateLimited: 'chat_rate_limited',
+} as const;
 /** REQ-NFR-005: payload of `tv_rate_limited`; the command was dropped without effect. */
 export type TvRateLimitedNotice = { retryAfterMs: number };
+
+/** REQ-CHAT-001: client to server `chat`. */
+export type ChatMessage = { text: string };
+/** REQ-CHAT-001: payload of `chat_rate_limited`; the message was dropped and reached nobody. */
+export type ChatRateLimitedNotice = { retryAfterMs: number };
 
 /**
  * OQ-023 (T-1567): client to server `tv_time`, a request for one server clock sample.
@@ -191,4 +207,22 @@ export function parseTvTimeReply(raw: unknown): TvTimeReply | null {
   const { id, serverNow } = raw;
   if (!isId(id) || typeof serverNow !== 'number' || !Number.isFinite(serverNow)) return null;
   return serverNow > 0 ? { id, serverNow } : null;
+}
+
+/** Control characters (C0, DEL, C1) are removed from chat text before it is counted. */
+const CHAT_CONTROL = /[\u0000-\u001f\u007f-\u009f]/g;
+
+/**
+ * REQ-CHAT-001: returns a clean copy of a valid `chat` payload, or null. The text is
+ * stripped of control characters and trimmed, then must hold 1 to `maxLength` visible
+ * characters (code points, the same counting as names, OQ-026). Extra fields are dropped.
+ */
+export function parseChatMessage(
+  raw: unknown,
+  maxLength: number = BALANCE.chat.maxLength,
+): ChatMessage | null {
+  if (!isRecord(raw) || typeof raw.text !== 'string') return null;
+  const text = raw.text.replace(CHAT_CONTROL, '').trim();
+  const length = Array.from(text).length;
+  return length >= 1 && length <= maxLength ? { text } : null;
 }

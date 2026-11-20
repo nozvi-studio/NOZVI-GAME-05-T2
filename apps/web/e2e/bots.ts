@@ -8,7 +8,7 @@ import { SERVER_URL } from './ports';
  */
 export const E2E_WIRE = {
   room: 'office',
-  protocolVersion: 7,
+  protocolVersion: 8,
   maxClients: 10,
   netProfileMinutes: 10,
   tvConvergenceSeconds: 5,
