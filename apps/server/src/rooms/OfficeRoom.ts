@@ -1,6 +1,7 @@
 import { type AuthContext, type Client, Room, ServerError, matchMaker } from '@colyseus/core';
 import {
   BALANCE,
+  ChatMessageState,
   EmployeeState,
   JOIN_ERROR_STATUS,
   MSG,
@@ -8,9 +9,11 @@ import {
   SERVER_MSG,
   officeLayout,
   normalizeOfficeCode,
+  parseChatMessage,
   parseJoinOptions,
   parseTvCommand,
   parseTvTimeRequest,
+  type ChatRateLimitedNotice,
   type TvRateLimitedNotice,
   type TvTimeReply,
   type JoinErrorCode,
@@ -19,6 +22,7 @@ import {
 import { CommandRateLimiter } from '../commandRateLimiter';
 import { JoinRateLimiter } from '../joinRateLimiter';
 import { OfficeSim } from '../sim/activity';
+import { appendChat, expireChat } from '../sim/chat';
 import { startMovementLoop } from '../sim/movement';
 import { TvSim } from '../sim/tv';
 
@@ -34,7 +38,12 @@ export const roomServices = {
    * the shipped value is `BALANCE.net.reconnectSeconds`.
    */
   reconnectSeconds: BALANCE.net.reconnectSeconds as number,
-  /** Server epoch-ms clock for TV timestamps and the TV rate limit; tests replace it. */
+  /**
+   * REQ-CHAT-002: how long a chat message lives. Tests and e2e shorten it (`CHAT_TTL_SECONDS`
+   * in `main.ts`); the shipped value is `BALANCE.chat.ttlSeconds`.
+   */
+  chatTtlSeconds: BALANCE.chat.ttlSeconds as number,
+  /** Server epoch-ms clock for TV and chat timestamps and their rate limits; tests replace it. */
   now: Date.now as () => number,
 };
 
@@ -72,6 +81,14 @@ export class OfficeRoom extends Room<{ state: OfficeState }> {
     BALANCE.tv.rateLimitWindowSeconds * 1000,
     () => roomServices.now(),
   );
+  /** REQ-CHAT-001: its own budget, separate from TV commands and clock samples. */
+  private readonly chatLimiter = new CommandRateLimiter(
+    BALANCE.chat.rateLimitMessages,
+    BALANCE.chat.rateLimitWindowSeconds * 1000,
+    () => roomServices.now(),
+  );
+  /** Source of chat message ids, unique within this room. */
+  private chatSeq = 0;
 
   override onCreate(options: { officeCode?: unknown }): void {
     const code =
@@ -112,9 +129,35 @@ export class OfficeRoom extends Room<{ state: OfficeState }> {
       const reply: TvTimeReply = { id: req.id, serverNow: roomServices.now() };
       client.send(SERVER_MSG.tvTime, reply);
     });
+    // REQ-CHAT-001: validator, then the per-client budget, then append with the sender's
+    // current name and the server clock. Invalid payloads are ignored silently. The text is
+    // never logged.
+    this.onMessage(MSG.chat, (client, raw: unknown) => {
+      const msg = parseChatMessage(raw);
+      if (msg === null) return;
+      const employee = this.state.employees.get(client.sessionId);
+      if (!employee) return;
+      const retryAfterMs = this.chatLimiter.tryUse(client.sessionId);
+      if (retryAfterMs > 0) {
+        const notice: ChatRateLimitedNotice = { retryAfterMs };
+        client.send(SERVER_MSG.chatRateLimited, notice);
+        return;
+      }
+      const entry = new ChatMessageState();
+      entry.id = String(++this.chatSeq);
+      entry.sessionId = client.sessionId;
+      entry.name = employee.name;
+      entry.text = msg.text;
+      entry.sentAt = roomServices.now();
+      appendChat(this.state.chat, entry, BALANCE.chat.maxMessages);
+    });
     startMovementLoop(
       (tick, delayMs) => this.setTimestep(tick, delayMs),
-      () => this.sim.tick(this.state.employees, officeLayout.colliders, this.clock.currentTime),
+      () => {
+        this.sim.tick(this.state.employees, officeLayout.colliders, this.clock.currentTime);
+        // REQ-CHAT-002: expired messages leave the state, at most one tick late.
+        expireChat(this.state.chat, roomServices.now(), roomServices.chatTtlSeconds * 1000);
+      },
     );
   }
 
@@ -159,12 +202,16 @@ export class OfficeRoom extends Room<{ state: OfficeState }> {
     if (employee) employee.connected = true;
   }
 
-  /** A consented leave, or the end of an unanswered reconnect window: remove at once. */
+  /**
+   * A consented leave, or the end of an unanswered reconnect window: remove at once. The
+   * sender's chat messages stay until they expire; only the chat budget is forgotten.
+   */
   override onLeave(client: Client): void {
     this.sim.remove(client.sessionId);
     this.tv.leave(client.sessionId);
     this.tvLimiter.forget(client.sessionId);
     this.timeLimiter.forget(client.sessionId);
+    this.chatLimiter.forget(client.sessionId);
     this.state.employees.delete(client.sessionId);
   }
 }

@@ -606,3 +606,203 @@ describe('OfficeRoom shared TV (REQ-TV-004, REQ-TV-005, REQ-NFR-005)', () => {
     expect(readTv(b.state.tv)).toMatchObject({ videoId: VIDEO, status: 'playing' });
   });
 });
+
+describe('OfficeRoom chat (REQ-CHAT-001, REQ-CHAT-002)', () => {
+  const VIDEO = 'dQw4w9WgXcQ';
+  const shippedNow = roomServices.now;
+  const shippedTtl = roomServices.chatTtlSeconds;
+  let chatNow = 1_795_000_000_000;
+  let barrierId = 0;
+
+  beforeEach(() => {
+    chatNow += 600_000;
+    roomServices.now = () => chatNow;
+    roomServices.chatTtlSeconds = shippedTtl;
+  });
+  afterAll(() => {
+    roomServices.now = shippedNow;
+    roomServices.chatTtlSeconds = shippedTtl;
+  });
+
+  /** Waits until the server has handled every message this client sent before. */
+  async function barrier(room: Room): Promise<void> {
+    const id = ++barrierId;
+    let answered = false;
+    const off = room.onMessage(SERVER_MSG.tvTime, (r: { id: number }) => {
+      if (r.id === id) answered = true;
+    });
+    room.send(MSG.tvTime, { id });
+    await waitFor(() => answered);
+    off();
+  }
+
+  async function settle(): Promise<void> {
+    await new Promise((r) => setTimeout(r, 4 * (1000 / BALANCE.net.tickHz)));
+  }
+
+  it('ships a 60 s TTL', () => {
+    expect(shippedTtl).toBe(BALANCE.chat.ttlSeconds);
+    expect(BALANCE.chat.ttlSeconds).toBe(60);
+  });
+
+  it('appends a valid message with server fields; client B decodes it', async () => {
+    const a = (await join('chat-01', { name: 'An' })) as Room<OfficeState>;
+    const b = (await join('chat-01', { name: 'Bao' })) as Room<OfficeState>;
+    a.send(MSG.chat, { text: '  hello\u0007 office  ', extra: 1 });
+    await waitFor(() => b.state.chat?.length === 1);
+    const seen = b.state.chat.at(0)!;
+    expect({
+      id: seen.id,
+      sessionId: seen.sessionId,
+      name: seen.name,
+      text: seen.text,
+      sentAt: seen.sentAt,
+    }).toEqual({
+      id: '1',
+      sessionId: a.sessionId,
+      name: 'An',
+      text: 'hello office',
+      sentAt: chatNow,
+    });
+
+    b.send(MSG.chat, { text: 'hi' });
+    await waitFor(() => a.state.chat?.length === 2);
+    expect(a.state.chat.at(1)!.id).toBe('2');
+    expect(a.state.chat.at(1)!.name).toBe('Bao');
+  });
+
+  it('ignores invalid payloads and senders without an employee', async () => {
+    const a = (await join('chat-02')) as Room<OfficeState>;
+    const room = local('CHAT-02');
+    const notices: unknown[] = [];
+    a.onMessage(SERVER_MSG.chatRateLimited, (n: unknown) => notices.push(n));
+    for (const raw of [
+      null,
+      'hi',
+      {},
+      { text: 5 },
+      { text: '   ' },
+      { text: '\u0000\u0001' },
+      { text: 'x'.repeat(BALANCE.chat.maxLength + 1) },
+    ]) {
+      a.send(MSG.chat, raw);
+    }
+    await barrier(a);
+    expect(room.state.chat.length).toBe(0);
+    expect(notices).toEqual([]);
+
+    // Test setup only: the session has no employee any more.
+    room.state.employees.delete(a.sessionId);
+    a.send(MSG.chat, { text: 'ghost' });
+    await barrier(a);
+    expect(room.state.chat.length).toBe(0);
+  });
+
+  it('refuses the 6th message within 10 s with chat_rate_limited, then allows one more', async () => {
+    const a = (await join('chat-03')) as Room<OfficeState>;
+    const room = local('CHAT-03');
+    const notices: unknown[] = [];
+    a.onMessage(SERVER_MSG.chatRateLimited, (n: unknown) => notices.push(n));
+    for (let i = 1; i <= BALANCE.chat.rateLimitMessages; i++) a.send(MSG.chat, { text: `m${i}` });
+    await waitFor(() => room.state.chat.length === 5);
+    const before = room.state.chat.map((m) => m.id);
+
+    chatNow += BALANCE.chat.rateLimitWindowSeconds * 1000 - 1;
+    a.send(MSG.chat, { text: 'too many' });
+    await waitFor(() => notices.length === 1);
+    expect(notices[0]).toEqual({ retryAfterMs: 1 });
+    expect(room.state.chat.map((m) => m.id)).toEqual(before);
+
+    chatNow += 1;
+    a.send(MSG.chat, { text: 'again' });
+    await waitFor(() => room.state.chat.length === 6);
+    expect(room.state.chat.at(5)!.text).toBe('again');
+    expect(notices).toHaveLength(1);
+  });
+
+  it('keeps the chat budget separate from TV commands', async () => {
+    const a = (await join('chat-04')) as Room<OfficeState>;
+    const room = local('CHAT-04');
+    const tvNotices: unknown[] = [];
+    const chatNotices: unknown[] = [];
+    a.onMessage(SERVER_MSG.tvRateLimited, (n: unknown) => tvNotices.push(n));
+    a.onMessage(SERVER_MSG.chatRateLimited, (n: unknown) => chatNotices.push(n));
+
+    // TV budget used up: chat still goes through.
+    a.send(MSG.tv, { type: 'load', videoId: VIDEO });
+    for (let i = 1; i <= BALANCE.tv.rateLimitCommands; i++)
+      a.send(MSG.tv, { type: 'seek', time: i });
+    await waitFor(() => tvNotices.length === 1);
+    for (let i = 1; i <= BALANCE.chat.rateLimitMessages; i++) a.send(MSG.chat, { text: `m${i}` });
+    await waitFor(() => room.state.chat.length === BALANCE.chat.rateLimitMessages);
+    expect(chatNotices).toEqual([]);
+
+    // Chat budget used up: once the TV window slides, TV commands go through again.
+    a.send(MSG.chat, { text: 'over' });
+    await waitFor(() => chatNotices.length === 1);
+    chatNow += BALANCE.tv.rateLimitWindowSeconds * 1000;
+    a.send(MSG.tv, { type: 'stop' });
+    await waitFor(() => room.state.tv.status === 'idle');
+    expect(tvNotices).toHaveLength(1);
+  });
+
+  it('keeps a message at 59.9 s and removes it at 60.05 s for every client', async () => {
+    const a = (await join('chat-05')) as Room<OfficeState>;
+    const b = (await join('chat-05', { name: 'Bao' })) as Room<OfficeState>;
+    const room = local('CHAT-05');
+    const sentAt = chatNow;
+    a.send(MSG.chat, { text: 'short lived' });
+    await waitFor(() => b.state.chat?.length === 1);
+
+    chatNow = sentAt + 59_900;
+    await settle();
+    expect(room.state.chat.length).toBe(1);
+    expect(b.state.chat.length).toBe(1);
+
+    chatNow = sentAt + 60_050;
+    await waitFor(() => room.state.chat.length === 0, 4 * (1000 / BALANCE.net.tickHz));
+    await waitFor(() => b.state.chat.length === 0);
+  });
+
+  it('drops the oldest message when the 51st arrives', async () => {
+    roomServices.chatTtlSeconds = 3600;
+    const a = (await join('chat-06')) as Room<OfficeState>;
+    const room = local('CHAT-06');
+    const step = (BALANCE.chat.rateLimitWindowSeconds * 1000) / BALANCE.chat.rateLimitMessages;
+    for (let i = 1; i <= BALANCE.chat.maxMessages + 1; i++) {
+      a.send(MSG.chat, { text: `m${i}` });
+      await barrier(a);
+      chatNow += step;
+    }
+    expect(room.state.chat.length).toBe(BALANCE.chat.maxMessages);
+    expect(room.state.chat.at(0)!.text).toBe('m2');
+    expect(room.state.chat.at(-1)!.text).toBe(`m${BALANCE.chat.maxMessages + 1}`);
+    expect(room.state.chat.at(-1)!.id).toBe(String(BALANCE.chat.maxMessages + 1));
+  });
+
+  it('keeps a sender’s messages after they leave', async () => {
+    const a = (await join('chat-07')) as Room<OfficeState>;
+    const b = (await join('chat-07', { name: 'Bao' })) as Room<OfficeState>;
+    a.send(MSG.chat, { text: 'bye' });
+    await waitFor(() => b.state.chat?.length === 1);
+    await a.leave(true);
+    await waitFor(() => local('CHAT-07').state.employees.size === 1);
+    await settle();
+    expect(b.state.chat.length).toBe(1);
+    expect(b.state.chat.at(0)!.sessionId).toBe(a.sessionId);
+  });
+
+  it('uses the injected TTL', async () => {
+    roomServices.chatTtlSeconds = 5;
+    const a = (await join('chat-08')) as Room<OfficeState>;
+    const room = local('CHAT-08');
+    const sentAt = chatNow;
+    a.send(MSG.chat, { text: 'quick' });
+    await waitFor(() => room.state.chat.length === 1);
+    chatNow = sentAt + 4_999;
+    await settle();
+    expect(room.state.chat.length).toBe(1);
+    chatNow = sentAt + 5_000;
+    await waitFor(() => room.state.chat.length === 0);
+  });
+});
