@@ -188,8 +188,18 @@ export const BALANCE = {
     tickHz: 20,
     /** Server state patch interval (Colyseus patchRate). */
     patchMs: 50,
-    /** Remote avatars are rendered this far in the past. */
+    /** Remote avatars are rendered this far in the past (the floor of the adaptive delay). */
     interpolationDelayMs: 100,
+    /**
+     * T-1377: the delay grows to one patch plus the slowest recent frame (patches are only
+     * handled between frames, so a slow frame stamps them late and the buffer runs dry), up to
+     * this cap. It moves at most `interpolationDelaySlew` ms per ms of frame time, so remote
+     * avatars slow down or speed up by at most that fraction while it adapts.
+     */
+    interpolationDelayMaxMs: 400,
+    interpolationDelaySlew: 0.2,
+    /** Frames whose slowest frame time sets the delay target. */
+    interpolationDelayWindow: 30,
     /** Seat and avatar are held this long after an unexpected disconnect. */
     reconnectSeconds: 20,
     /** Client retry delays after a drop; after the last one the UI offers Rejoin. */

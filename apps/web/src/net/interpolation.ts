@@ -27,14 +27,21 @@ export type InterpolationOptions = {
    * starts from rest over one patch instead of being stretched across the idle gap.
    */
   maxGapMs: number;
-  /** Interval used for that re-stamped rest snapshot. */
+  /** Interval used for that re-stamped rest snapshot, and the spacing kept between snapshots. */
   patchMs: number;
+  /**
+   * T-1377: how far a snapshot's stamp may run ahead of its receive time to keep `patchMs`
+   * spacing. Patches that arrive bunched (a slow frame held the socket messages) would
+   * otherwise be stamped a few ms apart, and the avatar would cover a 50 ms step in that time.
+   */
+  maxLeadMs: number;
 };
 
 const DEFAULTS: InterpolationOptions = {
   capacity: 32,
   maxGapMs: BALANCE.net.patchMs * 2,
   patchMs: BALANCE.net.patchMs,
+  maxLeadMs: BALANCE.net.interpolationDelayMs,
 };
 
 /**
@@ -62,16 +69,23 @@ export class InterpolationBuffer {
     this.snaps.push({ ...snapshot });
   }
 
-  push(snapshot: Snapshot): void {
+  /** `maxLeadMs` overrides the option, e.g. with the current adaptive delay (T-1377). */
+  push(snapshot: Snapshot, maxLeadMs: number = this.options.maxLeadMs): void {
     const s = { ...snapshot };
     const last = this.snaps.at(-1);
-    if (last && s.t <= last.t) {
-      // Same or earlier receive time (two patches in one frame): the newer pose wins.
-      this.snaps[this.snaps.length - 1] = { ...s, t: last.t };
-      return;
-    }
-    if (last && s.t - last.t > this.options.maxGapMs) {
-      this.snaps.push({ ...last, t: s.t - this.options.patchMs });
+    const { patchMs, maxGapMs } = this.options;
+    if (last && s.t - last.t > maxGapMs) {
+      this.snaps.push({ ...last, t: s.t - patchMs });
+    } else if (last) {
+      // T-1377: stamp patches at least one patch apart (each carries one server tick of
+      // movement), running at most `maxLeadMs` ahead of the receive time. Bunched arrivals
+      // keep their real spacing, so the drawn speed never exceeds the walking speed.
+      s.t = Math.max(s.t, Math.min(last.t + patchMs, snapshot.t + maxLeadMs));
+      if (s.t <= last.t) {
+        // No room left within the lead: the newer pose replaces the newest one.
+        this.snaps[this.snaps.length - 1] = { ...s, t: last.t };
+        return;
+      }
     }
     this.snaps.push(s);
     while (this.snaps.length > this.options.capacity) this.snaps.shift();
@@ -103,9 +117,62 @@ export class InterpolationBuffer {
   }
 }
 
+export type DelayOptions = {
+  baseMs: number;
+  maxMs: number;
+  patchMs: number;
+  slew: number;
+  window: number;
+};
+
+const DELAY_DEFAULTS: DelayOptions = {
+  baseMs: BALANCE.net.interpolationDelayMs,
+  maxMs: BALANCE.net.interpolationDelayMaxMs,
+  patchMs: BALANCE.net.patchMs,
+  slew: BALANCE.net.interpolationDelaySlew,
+  window: BALANCE.net.interpolationDelayWindow,
+};
+
+/**
+ * T-1377: interpolation delay that follows the frame time. Socket messages are only handled
+ * between frames, so with frames slower than the base delay a patch is stamped up to a frame
+ * late and the render time overtakes the newest snapshot: the avatar holds, then jumps. The
+ * target is one patch plus the slowest of the last `window` frames, between `baseMs` and
+ * `maxMs`; the delay moves toward it by at most `slew` ms per ms of frame time. At 60 FPS
+ * the target is below the base, so nothing changes on normal machines.
+ */
+export class InterpolationDelay {
+  private readonly options: DelayOptions;
+  private readonly frames: number[] = [];
+  private current: number;
+  private last: number | null = null;
+
+  constructor(options: Partial<DelayOptions> = {}) {
+    this.options = { ...DELAY_DEFAULTS, ...options };
+    this.current = this.options.baseMs;
+  }
+
+  /** The delay in ms after the frame at clock reading `now` (ms). */
+  update(now: number): number {
+    const { baseMs, maxMs, patchMs, slew, window } = this.options;
+    const frameMs = this.last === null ? 0 : Math.max(0, now - this.last);
+    this.last = now;
+    if (frameMs === 0) return this.current;
+    this.frames.push(frameMs);
+    if (this.frames.length > window) this.frames.shift();
+    const target = Math.min(maxMs, Math.max(baseMs, patchMs + Math.max(...this.frames)));
+    const step = slew * frameMs;
+    this.current += Math.max(-step, Math.min(step, target - this.current));
+    return this.current;
+  }
+}
+
 /** The time remote avatars are drawn at for a given local clock reading. */
-export function renderTime(now: number): number {
-  return now - BALANCE.net.interpolationDelayMs;
+export function renderTime(
+  now: number,
+  delayMs: number = BALANCE.net.interpolationDelayMs,
+): number {
+  return now - delayMs;
 }
 
 function pose(s: Snapshot): Pose {

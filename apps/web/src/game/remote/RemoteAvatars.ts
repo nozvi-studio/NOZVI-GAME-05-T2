@@ -12,6 +12,7 @@ import {
 } from '@office/protocol';
 import {
   InterpolationBuffer,
+  InterpolationDelay,
   renderTime,
   type EmployeeSource,
   type ReplicatedEmployee,
@@ -151,6 +152,10 @@ export class RemoteAvatars {
   private readonly remotes = new Map<string, Remote>();
   private readonly deps: RemoteAvatarsDeps;
   private unsubscribe: (() => void)[] = [];
+  /** T-1377: interpolation delay adapted to the frame time, and this frame's clock reading. */
+  private readonly delay = new InterpolationDelay();
+  private delayMs: number = BALANCE.net.interpolationDelayMs;
+  private renderNow = 0;
 
   constructor(
     private readonly parent: THREE.Object3D,
@@ -198,7 +203,8 @@ export class RemoteAvatars {
       const s = { t: this.deps.now(), x: employee.x, z: employee.z, heading: employee.heading };
       // Sitting down or standing up is a jump on the server: never blend through furniture.
       if (employee.seatId !== seatId) buffer.reset(s);
-      else buffer.push(s);
+      // T-1377: bunched patches may be spaced as far ahead as the current delay allows.
+      else buffer.push(s, this.delayMs);
       seatId = employee.seatId;
       remote.seatId = seatId;
     };
@@ -264,7 +270,7 @@ export class RemoteAvatars {
     // REQ-INT-002: a seated employee sits on the socket with the seated animation; the
     // interpolated position (100 ms behind) would still be walking toward the chair.
     const socket = seatSocket(remote.employee.seatId);
-    const t = renderTime(this.deps.now());
+    const t = renderTime(this.renderNow, this.delayMs);
     const pose = socket ? seatPose(socket) : remote.buffer.sample(t);
     remote.sampledAt = pose && !socket ? t : null;
     if (pose) {
@@ -288,6 +294,9 @@ export class RemoteAvatars {
 
   /** Called once per rendered frame with the frame time in seconds. */
   update(dt: number): void {
+    // T-1377: one delay for every remote, adapted to the frame time.
+    this.renderNow = this.deps.now();
+    this.delayMs = this.delay.update(this.renderNow);
     for (const remote of this.remotes.values()) this.place(remote, dt);
   }
 

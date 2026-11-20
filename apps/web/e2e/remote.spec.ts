@@ -133,7 +133,9 @@ test('a remote employee walks smoothly with walking animation, faces its heading
     }, 50);
     try {
       await expect.poll(async () => (await walker()).activity, { timeout: 10_000 }).toBe('walking');
-      await alice.waitForTimeout(1_500);
+      // T-1377: 3 s of walking, so slow software-WebGL frames (CI after Phase 4.1) still draw
+      // at least five moving frames; the thresholds below are unchanged.
+      await alice.waitForTimeout(3_000);
       forward = 0;
       await expect.poll(async () => (await walker()).activity, { timeout: 10_000 }).toBe('idle');
     } finally {

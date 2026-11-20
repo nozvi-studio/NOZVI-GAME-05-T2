@@ -6,6 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ### Fixed
 
+- Remote avatars jumping on slow frames (T-1377): patches handled in one burst keep 50 ms spacing, and the interpolation delay grows with the frame time (100 ms floor, 400 ms cap), so a remote avatar no longer holds and then jumps 0.7 m; `remote.spec.ts` walk test 20/20 in ten repeats (was the CI e2e blocker of the deploy workflow).
 - High render quality frame rate (owner: below 30 FPS on every machine, 2026-11-20): bloom is off, so frames render directly instead of through the MSAA + bloom composer; the sun shadow map only holds static casters and is redrawn every 0.5 s or while a door swings, not every frame (the local avatar has a blob shadow like remote avatars); the pixel ratio is capped at 1.5; a frame-rate governor lowers the pixel ratio to 1 and then turns shadows off when a machine stays below 45 FPS. SwiftShader, ten employees: DPR 2 2567 -> 358 ms per frame, DPR 1 687 -> 415 ms. Unit `test/adaptiveQuality.test.ts`.
 - Decor placement (T-1158 review): the pantry coffee machine and upper cabinets take their boxes from the layout components (`at` in `office-decor.json`) instead of copies, so the drawn machine moves with the interaction point.
 - PMREM environment (T-1149 review): the whole render target is disposed, not only its texture.
