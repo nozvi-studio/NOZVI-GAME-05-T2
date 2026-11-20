@@ -406,3 +406,10 @@ Context: `remote.spec.ts` walk test (and CI) measured remote walk speeds of 3.1 
 Choice: (1) `InterpolationBuffer.push` keeps at least one patch (50 ms) between stamps, running at most the current delay ahead of the receive time. (2) `InterpolationDelay` (`net/interpolation.ts`): the delay targets one patch plus the slowest of the last 30 frames, between `BALANCE.net.interpolationDelayMs` (100) and `interpolationDelayMaxMs` (400), and moves at most 0.2 ms per ms of frame time; `RemoteAvatars` uses one delay for every remote. The test walks 3 s instead of 1.5 s so slow CI frames still draw five moving frames; its thresholds (0.01 m end pose, 3 m/s) are unchanged.
 Alternatives: Raising the 3 m/s limit (hides the jump the owner would see); stamping with server time (needs a clock-offset estimate per patch, and the server does not send a patch time); extrapolating past the newest snapshot (overshoots at stops).
 Consequence: At 60 FPS nothing changes (delay stays 100 ms). On slow machines remote avatars lag up to 400 ms more but move at their real speed; delay changes speed them up or slow them down by at most 20 % while adapting. Local run 2026-11-20: `remote.spec.ts --repeat-each=10` 20/20 (before: 17/20), max drawn speed 2.0 to 2.4 m/s.
+
+## 2026-11-20 — Phase 4.2 starts while Phase 4.1 waits only on owner hardware checks
+
+Context: The Phase 4.2 plan gates its start on Phase 4.1 (FEAT-68) being closed. On 2026-11-20 FEAT-68 has two open tasks, T-1150 (owner FPS reading after the FPS pass) and T-1160 (verification on the owner's laptop); both wait only on the owner.
+Choice: Owner agreed on 2026-11-20 (chat) to start Phase 4.2 now on branch `req/feat-150`, merged into `dev` through one pull request; the remaining Phase 4.1 checks continue in parallel.
+Alternatives: Wait for the owner's hardware readings first (blocks chat for checks that do not touch the same code paths).
+Consequence: If the owner's FPS readings need more render work, it lands on `dev` separately; Phase 4.2 touches protocol, server, `App.tsx`, input and the HUD, not the render path.
