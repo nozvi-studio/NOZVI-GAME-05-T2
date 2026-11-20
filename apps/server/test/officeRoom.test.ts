@@ -792,6 +792,20 @@ describe('OfficeRoom chat (REQ-CHAT-001, REQ-CHAT-002)', () => {
     expect(b.state.chat.at(0)!.sessionId).toBe(a.sessionId);
   });
 
+  it('gives a late joiner the live messages and removes them at the same moment', async () => {
+    const a = (await join('chat-09')) as Room<OfficeState>;
+    const sentAt = chatNow;
+    a.send(MSG.chat, { text: 'before you came' });
+    await waitFor(() => a.state.chat?.length === 1);
+    chatNow = sentAt + 30_000;
+    const late = (await join('chat-09', { name: 'Late' })) as Room<OfficeState>;
+    await waitFor(() => late.state.chat?.length === 1);
+    expect(late.state.chat.at(0)!.text).toBe('before you came');
+    expect(late.state.chat.at(0)!.sentAt).toBe(sentAt);
+    chatNow = sentAt + BALANCE.chat.ttlSeconds * 1000;
+    await waitFor(() => late.state.chat.length === 0 && a.state.chat.length === 0);
+  });
+
   it('uses the injected TTL', async () => {
     roomServices.chatTtlSeconds = 5;
     const a = (await join('chat-08')) as Room<OfficeState>;
