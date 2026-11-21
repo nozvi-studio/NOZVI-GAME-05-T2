@@ -1,7 +1,8 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
+import { joinBot } from './bots';
 
 // T-1697 (REQ-CHAT-001 to 003): two pages in one office. The game server runs with
-// CHAT_TTL_SECONDS=8 (playwright.config.ts), so expiry is checked in seconds, not a minute.
+// CHAT_TTL_SECONDS=20 (playwright.config.ts), so expiry is checked in seconds, not a minute.
 
 type ChatEntry = { id: string; sessionId: string; name: string; text: string; sentAt: number };
 type Office = {
@@ -12,10 +13,17 @@ type Office = {
   getActivity(): string;
   getEmote(): string;
   getRemotes(): { name: string }[];
+  getDrawCalls(): { total: number; main: number; shadow: number; triangles: number };
+  isLightingReady(): boolean;
+  getFurniture(): unknown;
 };
 type Win = { __office: Office };
+/** The slice of decoded room state the late-joining SDK client reads. */
+type LateState = { chat?: { forEach(fn: (m: { text: string }) => void): void } };
 
-const TTL_MS = 8_000;
+const TTL_MS = 20_000;
+/** BALANCE.chat.rateLimitWindowSeconds (Playwright's loader cannot import the protocol). */
+const BALANCE_WINDOW_MS = 10_000;
 const CODE = 'CHAT-E2E-01';
 
 async function joinAs(browser: Browser, name: string): Promise<Page> {
@@ -51,16 +59,24 @@ const bubble = (page: Page, name: string) =>
 
 test.describe.configure({ mode: 'serial' });
 
-test('a message reaches both pages, shows bubbles, and both lose it after the TTL', async ({
+test('a message reaches both pages and a late joiner, shows bubbles, and all lose it after the TTL', async ({
   browser,
 }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(150_000);
   const alice = await joinAs(browser, 'Alice');
   const bob = await joinAs(browser, 'Bob');
   try {
     await expect
       .poll(() => office(bob, (o) => o.getRemotes().map((r) => r.name)))
       .toContain('Alice');
+
+    // T-1698: bubbles are CSS2D text, so the main pass draws the same before and while shown.
+    // Measure only once lighting and furniture have landed (they change the count, emote.spec).
+    await bob.waitForFunction(() => {
+      const o = (window as unknown as Win).__office;
+      return o.isLightingReady() && o.getFurniture() !== undefined;
+    });
+    const callsBefore = (await office(bob, (o) => o.getDrawCalls())).main;
 
     // Enter with the game focused opens the input; Enter sends and returns focus.
     await alice.keyboard.press('Enter');
@@ -82,6 +98,31 @@ test('a message reaches both pages, shows bubbles, and both lose it after the TT
     // REQ-CHAT-003: the bubble above the sender, on both pages.
     await expect.poll(() => bubble(bob, 'Alice')).toBe(text);
     await expect.poll(() => bubble(alice, 'Alice')).toBe(text);
+    const callsDuring = (await office(bob, (o) => o.getDrawCalls())).main;
+    expect(callsDuring).toBe(callsBefore);
+
+    // A client joining mid-TTL (a headless SDK client on the real wire, like the other specs'
+    // bots, so it does not wait for a third page to load software WebGL) gets the live message
+    // in its first state and loses it at the same moment as the pages.
+    const carol = await joinBot(CODE, 'Carol');
+    const carolTexts = () => {
+      const chat = (carol.state as unknown as LateState | undefined)?.chat;
+      if (!chat) return null; // the first state has not arrived yet
+      const texts: string[] = [];
+      chat.forEach((m) => texts.push(m.text));
+      return texts;
+    };
+    try {
+      await expect.poll(carolTexts).toEqual([text]);
+      expect(Date.now() - sentAt).toBeLessThan(TTL_MS);
+      await expect
+        .poll(async () => [await chatTexts(alice), await chatTexts(bob), carolTexts()], {
+          timeout: TTL_MS + 10_000,
+        })
+        .toEqual([[], [], []]);
+    } finally {
+      await carol.leave(true).catch(() => undefined);
+    }
 
     // REQ-CHAT-002: gone from both pages once the server TTL passes.
     await expect
@@ -144,13 +185,16 @@ test('over the limit the sender sees the notice and the extra message reaches no
   test.setTimeout(90_000);
   const alice = await joinAs(browser, 'Chatty');
   try {
-    const input = alice.getByTestId('chat-input');
-    // Six sends back to back, well inside the 10 s window even on slow software-WebGL frames;
-    // waiting for each to arrive could stretch them past the window on a loaded machine.
+    // Six sends back to back with the keyboard (Enter opens the input, Enter sends and closes).
+    // Keyboard events do not wait for element stability like fill / click, which under slow
+    // software-WebGL frames took about 3 s each and let the 10 s window pass.
+    const started = Date.now();
     for (let i = 1; i <= 6; i++) {
-      await input.fill(`msg ${i}`);
-      await alice.getByTestId('chat-send').click();
+      await alice.keyboard.press('Enter');
+      await alice.keyboard.insertText(`msg ${i}`);
+      await alice.keyboard.press('Enter');
     }
+    expect(Date.now() - started).toBeLessThan(BALANCE_WINDOW_MS);
     // The sixth is refused: the sender sees the notice, the first five arrive, the sixth never.
     await expect(alice.getByTestId('chat-rate-limited')).toBeVisible();
     await expect.poll(() => chatTexts(alice)).toContain('msg 5');

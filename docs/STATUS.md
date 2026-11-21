@@ -1,6 +1,6 @@
 # STATUS — project memory
 
-Updated: 2026-11-20 by Claude Code · Phase: Phase 4.1 (FEAT-68) waves 1-2 and follow-ups merged into `dev` (PR #3 to #8); FEAT-143 avatar look merged; TV fix `df7995c` on `dev`; Phase 4.2 text chat planned (FEAT-150, FEAT-151); **deployed**: web https://office-eight-indol.vercel.app, server https://nozvi-game-05-t2.onrender.com
+Updated: 2026-11-21 by Claude Code · Phase: Phase 4.2 text chat (FEAT-150, FEAT-151) implemented on `req/feat-150`, PR into `dev` pending owner review; Phase 4.1 waits only on owner FPS checks (T-1150, T-1160); **deployed**: web https://office-eight-indol.vercel.app, server https://nozvi-game-05-t2.onrender.com
 Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/SPEC.md` (implementation spec). `docs/GDD.md` is deprecated (casual template).
 
 ## Done
@@ -24,6 +24,8 @@ Authority: `PRD/` (requirements), `except/` (visual reference), `docs/ARCHITECTU
 - **Phase 4 merged into `dev`** (PR #1 on 2026-11-17, e2e fix T-1377 in PR #2 on 2026-11-18) from `req/feat-67` (`docs/plans/phase-4.md`, Meridian FEAT-67, T-1163 to T-1145): shared YouTube TV on the entertainment wall (CSS3D iframe with depth-only occluder, server `TvSim` with ordered commands and a 5-per-10-s limit, curated catalog plus pasted links, drift sync, TV mode panel with Close and focus recovery, muted start, per-video error UI). Owner accepted the plan §6 defaults on 2026-11-17. Verification record: plan §10 — 10-minute three-client drift soak under `NET_PROFILE=test` passes (max 0.205 s against the 1.0 s target, fake player).
 
 ## Next (ordered)
+
+0a. **Phase 4.2 text chat, 2026-11-21** (branch `req/feat-150`, not merged; plan `docs/plans/phase-4.2.md`; owner agreed to start before Phase 4.1's owner checks, DECISIONS 2026-11-20): T-1692 docs (REQ-CHAT-001 to 003, chat-free lifted), T-1693 protocol (`OfficeState.chat`, `parseChatMessage`, `BALANCE.chat`, `PROTOCOL_VERSION` 8), T-1694 server (rate limit 5 per 10 s with notice, 60 s expiry in the tick, 50 per room, `CHAT_TTL_SECONDS` for tests), T-1695 chat store and panel, T-1696 Enter / Esc and idle game input while typing, T-1698 speech bubble (6 s, 80 chars), T-1697 two-page e2e. Built by the lead with two subagent workers (server; client) under the Notion skill `leading-multi-agent-work`; the lead reviewed and re-ran each part. Verification (Claude Code cloud container): `pnpm check` passes (protocol 163, server 138, web 514); full e2e on the branch 42 passed, 3 skipped, 2 failed (emote tab order and a chat timing test, both fixed after); then `chat.spec.ts` + `emote.spec.ts` 8/8 over two repeats (message on both pages and a late SDK client, literal markup, bubbles on both pages, unchanged main-pass draw calls, expiry for all, no browser storage, typing does not walk, rate-limit notice). Owner checks open: chat between two real browsers on the live site after the merge and deploy.
 
 0. **2026-11-20 snapshot** (`dev` at `a00f67a`, Meridian 57/66 tasks done):
    - Merged into `dev` since 2026-11-18: PR #4 (Phase 4.1 wave 2: T-1149 to T-1152, T-1158), PR #5 (T-1154 coffee client), PR #6 (T-1155, T-1156, T-1567, T-1568), PR #7 (T-1609, T-1610, T-1611, T-1612, T-1614), PR #8 (FEAT-143 / T-1654 avatar look), and `df7995c` (TV error 5, seek storm, screen size; item 6).
