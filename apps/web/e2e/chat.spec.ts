@@ -98,6 +98,10 @@ test('a message reaches both pages and a late joiner, shows bubbles, and all los
     // REQ-CHAT-003: the bubble above the sender, on both pages.
     await expect.poll(() => bubble(bob, 'Alice')).toBe(text);
     await expect.poll(() => bubble(alice, 'Alice')).toBe(text);
+    // The bubble element shows the markup as literal text (textContent), never as HTML.
+    const bobBubble = bob.locator('[data-chat-bubble]').filter({ hasText: text });
+    await expect(bobBubble).toHaveText(text);
+    await expect(bobBubble.locator('b')).toHaveCount(0);
     const callsDuring = (await office(bob, (o) => o.getDrawCalls())).main;
     expect(callsDuring).toBe(callsBefore);
 
