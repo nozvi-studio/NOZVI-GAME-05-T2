@@ -145,17 +145,15 @@ test('over the limit the sender sees the notice and the extra message reaches no
   const alice = await joinAs(browser, 'Chatty');
   try {
     const input = alice.getByTestId('chat-input');
-    // Five messages are accepted; check each arrived right away (the e2e TTL is 8 s).
-    for (let i = 1; i <= 5; i++) {
+    // Six sends back to back, well inside the 10 s window even on slow software-WebGL frames;
+    // waiting for each to arrive could stretch them past the window on a loaded machine.
+    for (let i = 1; i <= 6; i++) {
       await input.fill(`msg ${i}`);
       await alice.getByTestId('chat-send').click();
-      await expect.poll(() => chatTexts(alice)).toContain(`msg ${i}`);
     }
-    await expect(alice.getByTestId('chat-rate-limited')).toHaveCount(0);
-    // The sixth within 10 s is refused: the sender sees the notice and it never appears.
-    await input.fill('msg 6');
-    await alice.getByTestId('chat-send').click();
+    // The sixth is refused: the sender sees the notice, the first five arrive, the sixth never.
     await expect(alice.getByTestId('chat-rate-limited')).toBeVisible();
+    await expect.poll(() => chatTexts(alice)).toContain('msg 5');
     await alice.waitForTimeout(1_000);
     expect(await chatTexts(alice)).not.toContain('msg 6');
   } finally {

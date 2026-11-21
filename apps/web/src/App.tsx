@@ -136,19 +136,20 @@ export function App() {
           <Prompt prompt={{ text: toast, available: true }} />
         </div>
       )}
+      {game && !tvOpen && (
+        <EmoteMenu
+          allowed={(emote) => game.canEmote(emote)}
+          onEmote={(emote) => game.emote(emote)}
+          onDone={() => game.focusGame()}
+        />
+      )}
+      {/* After the emote menu, so Tab from the game still reaches the Emotes toggle first. */}
       {game && (
         <ChatPanel
           store={game.chat}
           inputRef={chatInputRef}
           onFocusChange={(focused) => game.setChatFocused(focused)}
           onClose={() => game.focusGame()}
-        />
-      )}
-      {game && !tvOpen && (
-        <EmoteMenu
-          allowed={(emote) => game.canEmote(emote)}
-          onEmote={(emote) => game.emote(emote)}
-          onDone={() => game.focusGame()}
         />
       )}
     </div>
